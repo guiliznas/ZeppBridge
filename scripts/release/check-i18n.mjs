@@ -31,6 +31,8 @@ const SKIP_FILES = [
   'composables/useLandingLocale.ts',
   'views/landing/copy.ts',
   'views/landing/journeyCopy.ts', // Typed ten-language website copy, selected by LandingLocale.
+  'views/landing/reelCopy.ts', // Typed zh/en playback labels for MotionReel, selected by LandingLocale.
+  'demo/dialogueCopy.ts', // Typed ten-language scripted demo dialogue, selected by LandingLocale.
 ];
 
 /**
@@ -353,6 +355,9 @@ const ALLOWED_PROSE = [
   { file: 'services/updateService.ts', text: 'updateState.error', why: '更新服务自己写的本地化错误，经 errorMessage/toUserMessage。' },
   { file: 'composables/useBackups.ts', text: 'preview.blocker', why: 'restoreBlockerText 按 compatibility / problem_code 分支，原文只作兜底。' },
   { file: 'components/DeviceMarquee.vue', text: 'entry.display_name', why: '设备目录里的商品名，不是界面文案。' },
+  { file: 'views/landing/DeviceRibbon.vue', text: 'd.display_name', why: '落地页设备带用的设备目录商品名，同 DeviceMarquee，不是界面文案。' },
+  { file: 'demo/DemoConversation.vue', text: "'.message-pair:last-child .answer'", why: 'DOM 选择器里的类名 .message-pair，不是后端字段。' },
+  { file: 'demo/DemoConversation.vue', text: 'console.error(error)', why: '只把 JS 异常写进控制台，不显示给用户。' },
   { file: 'views/Overview.vue', text: 'model.profile.display_name', why: '账号里的设备商品名，不是界面文案。' },
   { file: 'lib/deviceCatalog.ts', text: 'item.display_name', why: '目录匹配用的商品名，不显示给用户当界面文案。' },
   { file: 'composables/settings/useDiagnosticReport.ts', text: 'form.error', why: '诊断表单本地状态，catch 里已经 toUserMessage。' },
