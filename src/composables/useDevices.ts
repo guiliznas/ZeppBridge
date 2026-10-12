@@ -1,6 +1,7 @@
 import { displayDateTimeFormatter } from '../lib/dateTime';
 import { computed, ref } from 'vue';
 import { backend, isDesktop, toUserMessage } from '../lib/bridge';
+import { DEVICE_READ_PREFIXES, forgetReads } from '../lib/readCache';
 import { deviceImageFor } from '../lib/deviceCatalog';
 import type { DeviceCacheMetadata, DeviceProfile, DeviceProfilesResult } from '../types';
 import { messagesOf } from '../i18n';
@@ -284,6 +285,8 @@ const assignModel = async (deviceKey: string, catalogId: string, contribute = fa
   assignMessage.value = null;
   try {
     await backend.setDeviceModelOverride(deviceKey, catalogId || null);
+    // 详情页读好的设备档案（连图片）按设备缓存着：换了型号，下次打开要读新的。
+    forgetReads(...DEVICE_READ_PREFIXES);
     await reloadAfterLocalWrite();
     if (!catalogId) {
       assignMessage.value = copy().assignmentCleared;

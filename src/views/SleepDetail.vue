@@ -19,13 +19,13 @@ import { useSyncController } from '../composables/useSyncController';
 import { useLoadingAfterMotion } from '../composables/useFirstLoad';
 import { useDevices } from '../composables/useDevices';
 import { dataProviderLabel, dataScopeLabel } from '../lib/labels';
-import { isTauri, tauriApi, toUserMessage } from '../composables/useTauriApi';
+import { isTauri, toUserMessage } from '../composables/useTauriApi';
 import { formatDate, formatDateTime, formatDuration, formatTime, isFiniteNumber } from '../lib/format';
 import { minutesToHours } from '../lib/missingValues';
 import type { DeviceProfile, SleepSession } from '../types';
 import { sleepDetailMessages as messages } from './SleepDetail.i18n';
 import { holdInPlace } from '../lib/motion/holdInPlace';
-import { sleepPageQueries } from '../lib/pageQueries';
+import { pageQuery, sleepPageQueries } from '../lib/pageQueries';
 import { cached, peekAll } from '../lib/readCache';
 import { afterMotion } from '../lib/motion/budget';
 
@@ -202,10 +202,8 @@ const loadDetail = async () => {
     ]);
     if (seq !== detailSeq) return;
     const profile = detail
-      ? await tauriApi.getDeviceProfile({
-          deviceId: detail.device_id,
-          sourceScope: detail.source_scope,
-        }).catch(() => ({ name: t.value.deviceUndetermined }))
+      ? await cached(pageQuery.deviceProfile(detail.device_id, detail.source_scope))
+        .catch(() => ({ name: t.value.deviceUndetermined }))
       : {};
     if (seq !== detailSeq) return;
     session.value = detail;

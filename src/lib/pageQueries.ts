@@ -1,6 +1,6 @@
 import { backend, isDesktop } from './bridge';
 import { SERIES_FETCH_DAYS } from './metricSeries';
-import { cached, peek, type Query } from './readCache';
+import { cached, DEVICE_READ_PREFIXES, peek, type Query } from './readCache';
 import { useTrendRange } from '../composables/useTrendRange';
 import { deviceImageFor } from './deviceCatalog';
 import { METRICS as BODY_METRICS } from '../views/body/bodyCards';
@@ -66,18 +66,24 @@ export const pageQuery = {
     key: `workout_detail:${workoutId}`,
     fetch: () => backend.getWorkoutDetail(workoutId),
   }),
-  /* 运动详情左上角那块表：设备档案连同表的图片一起备好（图片解码完才算读好）。以前它不在预加载里，
-     第一帧没有表，形变放完才冒出来、把标题往右一挤（用户 2026-10-04 录屏：点进「健走」「户外骑行」都这样）。 */
+  /* 设备档案连同表的图片一起备好（图片解码完才算读好）。按设备共享：同一块表的几十条运动只读一次、
+     图片只解一次（性能审计 02）。指认型号后由 useDevices 用 forgetReads 作废。 */
+  deviceProfile: (deviceId?: string, sourceScope?: string): Query<DeviceProfile> => ({
+    key: `${DEVICE_READ_PREFIXES[0]}${sourceScope ?? ''}:${deviceId ?? ''}`,
+    fetch: async () => {
+      const profile: DeviceProfile = await backend.getDeviceProfile({ deviceId, sourceScope });
+      await decodeImage(deviceImageFor(profile.kind, profile.image_key));
+      return profile;
+    },
+  }),
+  /* 运动详情左上角那块表。以前它不在预加载里，第一帧没有表，形变放完才冒出来、把标题往右一挤
+     （用户 2026-10-04 录屏：点进「健走」「户外骑行」都这样）。 */
   workoutDevice: (workoutId: string): Query<DeviceProfile> => ({
-    key: `workout_device:${workoutId}`,
+    key: `${DEVICE_READ_PREFIXES[1]}${workoutId}`,
     fetch: async () => {
       const detail = await cached(pageQuery.workoutDetail(workoutId));
       if (!detail) return {};
-      const profile: DeviceProfile = await backend
-        .getDeviceProfile({ deviceId: detail.device_id, sourceScope: detail.source_scope })
-        .catch(() => ({}));
-      await decodeImage(deviceImageFor(profile.kind, profile.image_key));
-      return profile;
+      return cached(pageQuery.deviceProfile(detail.device_id, detail.source_scope)).catch(() => ({}));
     },
   }),
   workoutSeries: (workoutId: string): Query<WorkoutSeries> => ({

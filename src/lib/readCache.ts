@@ -14,6 +14,9 @@ import { dataRevision, streamUpdate } from '../composables/sync/state';
  *
  * 新旧按「数据版本」判断：同步落了新数据（dataRevision / streamUpdate 变了），或者过了五分钟（「最近 24 小时」这类
  * 按钟点算的窗口），`cached` 就重读；`peek` 只要不超过半小时都给。读失败的不当新结果，旧的照旧留着。
+ *
+ * 满了按「最近用过」淘汰：读到、看到都算用过，挪到队尾；还在读的不淘汰（页面正等着它）。以前命中不挪位置，
+ * 空闲预备一口气读进一批远处记录，就把刚打开过的那页挤掉、回来又得重读（性能审计 02）。
  */
 export interface Query<T> {
   key: string;
@@ -35,8 +38,23 @@ type Entry = {
   /** 那份结果是在哪个数据版本读出来的。 */
   valueStamp: string;
   hasValue: boolean;
+  /** 这次读取已经回来了（成功或失败）；还在读的不淘汰。 */
+  settled: boolean;
 };
 const entries = new Map<string, Entry>();
+
+/** 用过的挪到队尾：Map 按插入顺序迭代，队首就是最久没用的。 */
+const touch = (key: string, entry: Entry) => {
+  entries.delete(key);
+  entries.set(key, entry);
+};
+
+const evict = () => {
+  for (const [key, entry] of entries) {
+    if (entries.size <= MAX_ENTRIES) return;
+    if (entry.settled) entries.delete(key);
+  }
+};
 
 const stamp = () => `${dataRevision.value}:${streamUpdate.value.revision}`;
 const fresh = (entry: Entry | undefined): boolean =>
@@ -45,7 +63,10 @@ const fresh = (entry: Entry | undefined): boolean =>
 /** 读一份：数据版本没变、没过期就复用（正在读的也一样）；否则重读，重读期间 `peek` 仍给上一次的。 */
 export const cached = <T>(query: Query<T>): Promise<T> => {
   const previous = entries.get(query.key);
-  if (previous && fresh(previous)) return previous.promise as Promise<T>;
+  if (previous && fresh(previous)) {
+    touch(query.key, previous);
+    return previous.promise as Promise<T>;
+  }
   const entry: Entry = {
     stamp: stamp(),
     at: Date.now(),
@@ -54,6 +75,7 @@ export const cached = <T>(query: Query<T>): Promise<T> => {
     valueAt: previous?.valueAt ?? 0,
     valueStamp: previous?.valueStamp ?? '',
     hasValue: previous?.hasValue ?? false,
+    settled: false,
   };
   entry.promise = query.fetch().then(
     (value) => {
@@ -61,17 +83,20 @@ export const cached = <T>(query: Query<T>): Promise<T> => {
       entry.valueAt = Date.now();
       entry.valueStamp = entry.stamp;
       entry.hasValue = true;
+      entry.settled = true;
+      evict();
       return value;
     },
     (cause: unknown) => {
       // 失败的不算新结果：下次照常重读，上一次读好的留着给 peek。
       entry.stamp = '';
+      entry.settled = true;
+      evict();
       throw cause;
     },
   );
-  entries.delete(query.key);
-  entries.set(query.key, entry);
-  while (entries.size > MAX_ENTRIES) entries.delete(entries.keys().next().value as string);
+  touch(query.key, entry);
+  evict();
   return entry.promise as Promise<T>;
 };
 
@@ -79,6 +104,7 @@ export const cached = <T>(query: Query<T>): Promise<T> => {
 export const peek = <T>(query: Query<T>): { value: T; fresh: boolean } | null => {
   const hit = entries.get(query.key);
   if (!hit?.hasValue || Date.now() - hit.valueAt > STALE_MS) return null;
+  touch(query.key, hit);
   return { value: hit.value as T, fresh: fresh(hit) && hit.valueStamp === hit.stamp };
 };
 
@@ -92,6 +118,17 @@ export const peekAll = <Q extends readonly Query<unknown>[]>(queries: Q): Values
     values.push(hit.value);
   }
   return values as ValuesOf<Q>;
+};
+
+/** 设备档案相关的键前缀（pageQueries.ts 的 deviceProfile / workoutDevice）：指认型号以后这两类一起作废。
+ * 放在这里而不是 pageQueries：设置页要用它，pageQueries 不进设置页的代码块。 */
+export const DEVICE_READ_PREFIXES = ['device_profile:', 'workout_device:'] as const;
+
+/** 本机写了会改变这些结果的东西（比如指认了设备型号）：键以 `prefix` 开头的立刻作废，下次重读。 */
+export const forgetReads = (...prefixes: string[]) => {
+  for (const key of [...entries.keys()]) {
+    if (prefixes.some((prefix) => key.startsWith(prefix))) entries.delete(key);
+  }
 };
 
 /** 测试用。 */
