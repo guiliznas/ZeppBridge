@@ -213,6 +213,12 @@ const tick = (ts: number) => {
   const accel = -omega * omega * x - 2 * omega * velocity;
   velocity += accel * dt;
   pos.value += velocity * dt;
+  // 离目标不到 0.1 格就先把值交出去（10-12：临界阻尼的尾巴从 0.1 格蹭到 0.002 要 0.2 秒，肉眼几乎看不出在动，
+  // 换语言却要等它完全停住才开始，点下去 0.75 秒画面才动，「非常卡」）。滚轮照样转完，交值只交一次。
+  if (!committed && Math.abs(pos.value - target) < 0.1 && Math.abs(velocity) < 3) {
+    committed = true;
+    settle();
+  }
   if (Math.abs(pos.value - target) < 0.002 && Math.abs(velocity) < 0.01) {
     pos.value = target;
     velocity = 0;
@@ -224,8 +230,10 @@ const tick = (ts: number) => {
   }
   raf = requestAnimationFrame(tick);
 };
+let committed = false;
 const animateTo = (index: number) => {
   target = clampPos(Math.round(index));
+  committed = false;
   if (reducedMotion()) {
     pos.value = target;
     settle();

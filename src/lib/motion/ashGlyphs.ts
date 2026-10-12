@@ -36,7 +36,7 @@ export type AshOrigin = { x: number; y: number };
 const LETTER = /\p{L}/u;
 const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'OPTION', 'TITLE']);
 
-type Paint = { font: string; color: string; spacing: string; transform: string; clip: DOMRect | null };
+type Paint = { font: string; color: string; spacing: string; transform: string; clip: DOMRect | null; alpha: number };
 
 /** 把可视区里看得见的文字按原样画到一张 CSS 像素大小的画布上。 */
 export const drawVisibleText = (width: number, height: number): CanvasRenderingContext2D | null => {
@@ -49,13 +49,25 @@ export const drawVisibleText = (width: number, height: number): CanvasRenderingC
   // 浏览器预览里界面缩放走根元素的 CSS zoom：位置量到的是缩放后的，字号要自己乘上。桌面端走 webview 原生缩放，这里是 1。
   const zoom = Number.parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
   const styles = new Map<Element, Paint | null>();
+  /* 有效不透明度：沿祖先连乘。卡组里退到后面、压暗到 0.12 的那排卡，以前按全亮的字色画进雾层和灰里，
+     换场时大卡上下冒出一排亮白的糊字（10-09 录屏「白边残影」）。 */
+  const alphas = new Map<Element, number>();
+  const alphaOf = (el: Element | null): number => {
+    if (!el) return 1;
+    const known = alphas.get(el);
+    if (known !== undefined) return known;
+    const value = (Number.parseFloat(getComputedStyle(el).opacity) || 0) * alphaOf(el.parentElement);
+    alphas.set(el, value);
+    return value;
+  };
   const paintOf = (el: Element): Paint | null => {
     if (styles.has(el)) return styles.get(el)!;
     let paint: Paint | null = null;
     const visible = typeof el.checkVisibility === 'function'
       ? el.checkVisibility({ opacityProperty: true, visibilityProperty: true })
       : true;
-    if (visible && !el.closest('[data-ash-skip]')) {
+    const alpha = visible ? alphaOf(el) : 0;
+    if (visible && alpha >= 0.2 && !el.closest('[data-ash-skip]')) {
       const cs = getComputedStyle(el);
       const size = Number.parseFloat(cs.fontSize) * zoom;
       if (size > 0 && cs.color !== 'rgba(0, 0, 0, 0)' && cs.color !== 'transparent') {
@@ -66,6 +78,7 @@ export const drawVisibleText = (width: number, height: number): CanvasRenderingC
           spacing: cs.letterSpacing === 'normal' ? '0px' : `${Number.parseFloat(cs.letterSpacing) * zoom}px`,
           transform: cs.textTransform,
           clip: clips ? el.getBoundingClientRect() : null,
+          alpha,
         };
       }
     }
@@ -82,6 +95,34 @@ export const drawVisibleText = (width: number, height: number): CanvasRenderingC
     ctx.fillText(text, r.left, r.top + (r.height - asc - desc) / 2 + asc);
   };
 
+  /*
+   * 被盖住的字不画（10-09 录屏：设置里开着「显示与语言」大卡换语言，压在它下面的卡组标题「Display and language」
+   * 「Show all」也化成灰、还被画成糊字，大卡上和卡外冒出错位的白色残影；遍历这些看不见的字也拖慢了整次换场）。
+   * 取字所在点的层叠列表：在它所在的那张卡（第一个包含它的元素）之前，只要有一层不透明的东西，就算被盖住。
+   * 透明的点击层（.cover-hit）、玻璃浮层这类半透明的不算。
+   */
+  const opaque = new Map<Element, boolean>();
+  const isOpaque = (el: Element) => {
+    if (opaque.has(el)) return opaque.get(el)!;
+    const cs = getComputedStyle(el);
+    // rgb(…) 不透明；rgba(…, a) 与 color-mix 算出来的 color(srgb … / a) 看 a。
+    const bg = cs.backgroundColor;
+    const alpha = bg.startsWith('rgb(') ? 1 : Number(/(?:,|\/)\s*([\d.]+)\)$/.exec(bg)?.[1] ?? 0);
+    const solid = (alpha >= 0.6 || cs.backgroundImage !== 'none')
+      && Number.parseFloat(cs.opacity) >= 0.6;
+    opaque.set(el, solid);
+    return solid;
+  };
+  const covered = (el: Element, r: DOMRect) => {
+    const x = Math.min(width - 1, Math.max(0, r.left + r.width / 2));
+    const y = Math.min(height - 1, Math.max(0, r.top + r.height / 2));
+    for (const hit of document.elementsFromPoint(x, y)) {
+      if (hit === el || hit.contains(el)) return false;
+      if (!el.contains(hit) && isOpaque(hit)) return true;
+    }
+    return false;
+  };
+
   const range = document.createRange();
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode() as Text | null; node; node = walker.nextNode() as Text | null) {
@@ -95,6 +136,7 @@ export const drawVisibleText = (width: number, height: number): CanvasRenderingC
     if (!rects.length) continue;
     const paint = paintOf(el);
     if (!paint) continue;
+    if (covered(el, rects[0]!) && covered(el, rects[rects.length - 1]!)) continue;
     ctx.save();
     if (paint.clip) {
       ctx.beginPath();
@@ -103,6 +145,7 @@ export const drawVisibleText = (width: number, height: number): CanvasRenderingC
     }
     ctx.font = paint.font;
     ctx.fillStyle = paint.color;
+    ctx.globalAlpha = paint.alpha;
     ctx.letterSpacing = paint.spacing;
     if (range.getClientRects().length === 1) {
       // 一行：整段画在那一行的位置上（开头被折叠掉的空白不占位置）。
