@@ -10,7 +10,7 @@
  * 画图的组件请一律从这里拿 `VChart`，不要直接 `import VChart from 'vue-echarts'`：
  * 那样会绕开注册，拿到一个没有 series 类型也没有主题的空图。
  */
-import { registerTheme, use } from 'echarts/core';
+import { registerTheme, throttle, use } from 'echarts/core';
 // 加新图形时**必须**同时加进下面的 `use()`。漏了不会报错、不会警告，只会
 // 得到一张空画布——膳食平衡那个环就是这么空了一版：百分比算对了、卡片和
 // 说明都在，中间什么都没有。
@@ -24,7 +24,7 @@ import {
 } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import VChartBase from 'vue-echarts';
-import { computed, defineComponent, h, onBeforeUnmount, ref, type Component, type VNode } from 'vue';
+import { computed, defineComponent, h, onBeforeUnmount, ref, shallowRef, type Component, type VNode } from 'vue';
 import { resolvedTheme } from '../composables/useTheme';
 import { chartPalettes, zeppThemeDark, zeppThemeLight } from './echartsTheme';
 import { motionBusy, whenMotionIdle } from './motion/budget';
@@ -58,6 +58,37 @@ const nextSlot = (job: () => void) => {
   if (!frame) frame = requestAnimationFrame(pump);
 };
 
+/* `autoresize` 由这里接管，不交给 vue-echarts（性能审计 03）。
+   vue-echarts 的 autoresize 在图刚建好的下一拍还要读一次容器尺寸、再无条件 resize() 一次——resize 会把画布
+   根节点 display:none 再改回来，布局又脏了。一页十几张图挨个这么做，每张都逼浏览器整页重排两三遍
+   （身体页首次进入一百多次强制布局）。刚建好的图尺寸本来就对，那一下是白做的。
+   这里做它原本的事：观察容器，尺寸真的变了才 resize()，同样 100 ms 节流；ResizeObserver 第一次回调
+   也在首帧绘制之前，建图时尺寸还不是最终值的情况照样会被纠正。 */
+const RESIZE_THROTTLE_MS = 100;
+type ChartHandle = { chart?: { getWidth: () => number; getHeight: () => number; resize: () => void }; root?: HTMLElement };
+
+const followSize = (handle: () => ChartHandle | null): (() => void) => {
+  const host = handle()?.root?.firstElementChild ?? handle()?.root;
+  if (!host || typeof ResizeObserver === 'undefined') return () => undefined;
+  let width = 0;
+  let height = 0;
+  const resize = throttle(() => {
+    const chart = handle()?.chart;
+    if (!chart || !width || !height || (width === chart.getWidth() && height === chart.getHeight())) return;
+    chart.resize();
+  }, RESIZE_THROTTLE_MS);
+  const observer = new ResizeObserver(([entry]) => {
+    width = entry.contentRect.width;
+    height = entry.contentRect.height;
+    resize();
+  });
+  observer.observe(host);
+  return () => {
+    observer.disconnect();
+    resize.clear();
+  };
+};
+
 const DeferredChart = defineComponent({
   name: 'DeferredChart',
   inheritAttrs: false,
@@ -72,14 +103,35 @@ const DeferredChart = defineComponent({
         ready.value = true;
       }));
     }
-    onBeforeUnmount(() => { alive = false; });
+    const chart = shallowRef<ChartHandle | null>(null);
+    let stopFollowing = () => {};
+    onBeforeUnmount(() => {
+      alive = false;
+      stopFollowing();
+    });
     const fadeIn = (vnode: VNode) => {
       const el = vnode.el as HTMLElement | null;
       el?.animate?.([{ opacity: 0 }, { opacity: 1 }], { duration: 300, easing: 'ease-out' });
     };
-    return () => (ready.value
-      ? h(VChartBase as Component, late ? { ...attrs, onVnodeMounted: fadeIn } : { ...attrs }, slots)
-      : h('div', { class: attrs.class, style: attrs.style, 'aria-hidden': 'true' }));
+    const onMounted = (vnode: VNode) => {
+      if (late) fadeIn(vnode);
+      stopFollowing();
+      if (autoresize()) stopFollowing = followSize(() => chart.value);
+    };
+    const onUnmounted = () => {
+      stopFollowing();
+      stopFollowing = () => {};
+    };
+    const autoresize = () => 'autoresize' in attrs && attrs.autoresize !== false;
+    return () => {
+      if (!ready.value) return h('div', { class: attrs.class, style: attrs.style, 'aria-hidden': 'true' });
+      const { autoresize: _autoresize, ...rest } = attrs;
+      return h(
+        VChartBase as Component,
+        { ...rest, ref: chart, onVnodeMounted: onMounted, onVnodeUnmounted: onUnmounted },
+        slots,
+      );
+    };
   },
 });
 
