@@ -235,9 +235,15 @@ const jumpTo = (id: string) => {
    点开一张，以前板是从「跳回顶部以后」那张卡的位置长出来的）。 */
 let closeFromTop: number | null = null;
 let openFrom: ReturnType<typeof morph.seenBoxes> | null = null;
+/* 卡包（展开全部）往下滚过再点开：记下滚到哪了。关卡时路由先把滚动区拉回顶部、returnScroll 下一帧才滚回来，
+   形变正好夹在中间——终点按滚动 0 量，放到第二三帧整页又被滚回去一截，大卡和源卡一起跳（10-09 录屏「隐私」
+   「高级与维护」：越靠下跳得越多，源卡被拉出屏幕时干脆原地淡掉）。关卡前先同步滚回去再量。 */
+let listScroll = 0;
+const scroller = () => document.getElementById('main-content');
 onBeforeRouteUpdate(() => {
   closeFromTop = props.activeId && cardEl.value ? cardEl.value.getBoundingClientRect().top : null;
   openFrom = props.activeId ? null : morph.seenBoxes();
+  if (!props.activeId) listScroll = scroller()?.scrollTop ?? 0;
 });
 
 const onListPointerMove = (event: PointerEvent) => {
@@ -263,6 +269,9 @@ watch(() => props.activeId, async (id, previous) => {
     const fromTop = closeFromTop;
     closeFromTop = null;
     await nextTick();
+    const root = scroller();
+    if (root && listScroll > 0 && Math.abs(root.scrollTop - listScroll) > 1) root.scrollTop = listScroll;
+    listScroll = 0;
     morph.close(previous, () => {
       if (closingId.value === previous) closingId.value = null;
     }, fromTop);

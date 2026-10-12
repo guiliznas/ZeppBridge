@@ -51,13 +51,20 @@ export const installReturnScroll = (router: Router) => {
     lastKey = null;
   });
 
-  router.afterEach((_to, _from, failure) => {
+  router.afterEach((to, from, failure) => {
     if (failure) return;
     const arrived = positionOf();
     current = arrived;
     const saved = arrived !== null && leaving !== null && arrived < leaving ? memory.get(arrived) : undefined;
     const root = main();
     if (!root) return;
+    // 同一页只换了参数（设置卡叠从 /settings/privacy 回到 /settings）：没有离场的旧页要垫，
+    // 页面也不用等数据长高，直接滚回去。先滚到 0 再下一帧滚回来，中间那一帧整组卡往下跳一截，
+    // 关卡的形变正夹在这两帧之间（10-09 录屏「展开全部」滑下去再返回）。
+    if (saved && to.matched[0] && to.matched[0] === from.matched[0]) {
+      root.scrollTo({ top: saved.top });
+      return;
+    }
     // 先照旧回到顶部：离场旧页的垫高就是按「滚动区回到 0」算的；要恢复的话下一帧再滚过去，
     // 并把旧页一起挪同样的距离。
     root.scrollTo({ top: 0 });
