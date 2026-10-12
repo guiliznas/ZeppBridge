@@ -148,7 +148,6 @@ onBeforeUnmount(() => {
     <div ref="canvasHost" class="swap-chart-layer">
       <VChart
         class="swap-chart-canvas"
-        :key="CHART_THEME"
         :theme="CHART_THEME"
         :option="shown"
         :update-options="SMOOTH_CHART_UPDATE"
