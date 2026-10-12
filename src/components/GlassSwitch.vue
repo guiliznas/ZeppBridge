@@ -154,7 +154,9 @@ const click = () => {
   height: 28px;
   opacity: 0;
   scale: .58;
-  transition: scale 260ms cubic-bezier(.3, 1.3, .5, 1), opacity 160ms ease;
+  /* 停着时不可见（不只是透明）：透明的透镜照样要算位移滤镜，换主题时拖慢整页重画。淡出、缩回放完再藏。 */
+  visibility: hidden;
+  transition: scale 260ms cubic-bezier(.3, 1.3, .5, 1), opacity 160ms ease, visibility 0s linear 260ms;
 }
 .gs-rim { box-shadow: var(--lens-glass-rim); }
 .gs-rim::before {
@@ -170,7 +172,7 @@ const click = () => {
 /* 没有折射（弹窗里 / 内核不支持）时，玻璃里面是一层很淡的乳白，仍看得出是一块浮起来的玻璃。 */
 .glass-switch:not(.has-lens) .gs-lens { background: color-mix(in srgb, #fff 26%, transparent); }
 .lifted .gs-disc { scale: 1.5; opacity: 0; }
-.lifted .gs-lens, .lifted .gs-rim { scale: 1; opacity: 1; }
+.lifted .gs-lens, .lifted .gs-rim { scale: 1; opacity: 1; visibility: visible; transition-delay: 0s; }
 @media (prefers-reduced-motion: reduce) {
   .gs-fill, .gs-knob, .gs-disc, .gs-lens, .gs-rim { transition: none; }
 }

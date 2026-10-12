@@ -500,7 +500,9 @@ const current = computed(() => props.items[indexOf(props.modelValue)]);
   translate: -50% 0;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 160ms ease;
+  /* 停着时不可见（不只是透明）：透明的透镜照样要算位移滤镜，换主题时拖慢整页重画。淡出放完再藏。 */
+  visibility: hidden;
+  transition: opacity 160ms ease, visibility 0s linear 160ms;
 }
 /* 玻璃边：只在转动时浮现；停着时是镜片自己（底色 + 自己的边），和胶囊选择器停着时的平胶囊一样
    （第五版，2026-10-01：停着时那圈斜对角高光描边「像个餐盒」）。 */
@@ -516,7 +518,7 @@ const current = computed(() => props.items[indexOf(props.modelValue)]);
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
 }
 .is-vertical .wheel-refract { top: 50%; bottom: auto; left: 3px; right: 3px; translate: 0 -50%; min-width: 0; }
-.capsule-wheel.is-dragging .wheel-refract, .capsule-wheel.is-animating .wheel-refract { opacity: 1; }
+.capsule-wheel.is-dragging .wheel-refract, .capsule-wheel.is-animating .wheel-refract { opacity: 1; visibility: visible; transition-delay: 0s; }
 .capsule-wheel.has-lens .wheel-lens { transition: scale var(--dur-base) var(--ease-spring), opacity 200ms ease; }
 .capsule-wheel.has-lens:is(.is-dragging, .is-animating) .wheel-lens { scale: none; opacity: 0; transition: opacity 90ms ease; }
 

@@ -914,6 +914,11 @@ onBeforeUnmount(() => {
   pointer-events: none;
 }
 .segment-lens { opacity: 0; }
+/* 停着时透镜不只是透明、还不可见：opacity 0 的元素照样要算它那条 SVG 位移滤镜，换主题整页重画时设置页里
+   十来枚待命的透镜一起算，主线程卡 100 多毫秒（10-12 实测，去掉后回到 10-04 的水平）。不可见的元素不进绘制。
+   落下时等淡出（DROP 那段 140ms）放完再藏；浮起时立刻可见，淡入照旧由脚本放。 */
+.segment-lens { visibility: hidden; transition: visibility 0s linear 320ms; }
+.segment-track.is-lifted .segment-lens { visibility: visible; transition-delay: 0s; }
 .segment-lens-rim { opacity: var(--thumb-vis, 0); }
 .segment-rim-shape {
   position: absolute;
