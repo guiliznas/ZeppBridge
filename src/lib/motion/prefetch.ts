@@ -38,6 +38,30 @@ export const preloadBeforeOpen = (href: string, capMs = 220): Promise<void> => P
   new Promise<void>((resolve) => { setTimeout(resolve, capMs); }),
 ]);
 
+/** 空闲预备一轮最多备几页（一页就是那一页首屏的一组查询）。 */
+const IDLE_BUDGET = 12;
+
+/**
+ * 当前页里看得见的和上下各一屏以内的站内链接，离视口越近越靠前，去重后最多 IDLE_BUDGET 个。
+ * 空闲回调里读矩形：布局这时一般是干净的，只读不写，不会来回强制排版。
+ */
+const nearbyHrefs = (): string[] => {
+  const scroller = main();
+  if (!scroller) return [];
+  const view = scroller.getBoundingClientRect();
+  const reach = Math.max(view.height, 1);
+  const best = new Map<string, number>();
+  for (const link of scroller.querySelectorAll<HTMLAnchorElement>('.page-host a[href^="/"]')) {
+    const href = link.getAttribute('href') ?? '';
+    const box = link.getBoundingClientRect();
+    if (!box.width && !box.height) continue;
+    const distance = box.bottom < view.top ? view.top - box.bottom : box.top > view.bottom ? box.top - view.bottom : 0;
+    if (distance > reach) continue;
+    if (distance < (best.get(href) ?? Infinity)) best.set(href, distance);
+  }
+  return [...best].sort((a, b) => a[1] - b[1]).slice(0, IDLE_BUDGET).map(([href]) => href);
+};
+
 const idle = (run: () => void) => {
   if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(run, { timeout: 2000 });
   else window.setTimeout(run, 200);
@@ -72,14 +96,16 @@ export const installPrefetch = (router: Router): (() => void) => {
   document.addEventListener('pointerdown', onEvent, true);
   document.addEventListener('focusin', onEvent, true);
 
-  // 空闲时把当前页（概览）上那几张卡要去的页一张张读好：一次只读一页，读完再等下一个空闲，不和界面抢。
+  // 空闲时把当前页上那几张卡要去的页一张张读好：一次只读一页，读完再等下一个空闲，不和界面抢。
+  // 只备看得见的和附近的（离视口近的先备），每轮最多 IDLE_BUDGET 页：以前整页链接全扫，进睡眠 / 运动列表
+  // 十秒里把两百条历史详情全读一遍（性能审计 01），还把刚备好的近处记录挤出缓存。滚到别处、按下、
+  // 换页都会重排一轮，没开始的那些就不读了；悬停 / 聚焦 / 按下的那一页照旧立刻备（上面的 warm）。
   let pass = 0;
   const warmVisibleDestinations = () => {
     const mine = ++pass;
     window.setTimeout(() => idle(() => {
       if (mine !== pass) return;
-      const hrefs = [...new Set([...(main()?.querySelectorAll<HTMLAnchorElement>('.page-host a[href^="/"]') ?? [])]
-        .map((link) => link.getAttribute('href') ?? ''))];
+      const hrefs = nearbyHrefs();
       void queries().then(async (module) => {
         for (const href of hrefs) {
           if (mine !== pass || !module.queriesFor(href).length) continue;
@@ -94,11 +120,18 @@ export const installPrefetch = (router: Router): (() => void) => {
   warmVisibleDestinations();
   const stopRevision = watch(dataRevision, warmVisibleDestinations);
   const stopRoute = router.afterEach(() => warmVisibleDestinations());
+  // 滚动和按下：正在排队的那一轮作废，停下来以后按新的视口重排（setTimeout 本身就把连续滚动合成一次）。
+  const reschedule = () => warmVisibleDestinations();
+  const scroller = main();
+  scroller?.addEventListener('scroll', reschedule, { passive: true });
+  document.addEventListener('pointerdown', reschedule, true);
 
   return () => {
     pass += 1;
     stopRevision();
     stopRoute();
+    scroller?.removeEventListener('scroll', reschedule);
+    document.removeEventListener('pointerdown', reschedule, true);
     document.removeEventListener('pointerover', onEvent, true);
     document.removeEventListener('pointerdown', onEvent, true);
     document.removeEventListener('focusin', onEvent, true);
