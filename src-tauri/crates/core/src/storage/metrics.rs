@@ -24,38 +24,58 @@ impl Database {
     /// 当成完整最大值来画，而那是在编造事实。
     ///
     /// 日期按本地时区切分：用户问的是「我那天」，不是「那个 UTC 日」。
+    ///
+    /// 分日不再交给 SQLite 的 `date(timestamp, 'localtime')`：它对每一行都调一次系统时区
+    /// 换算，180 天二十多万行要一百七八十毫秒（性能审计 07）。现在先在这边算出窗口里每个
+    /// 本地日从哪个 UTC 时刻开始（夏令时由 chrono 按本机时区规则处理，和 `localtime` 同一
+    /// 套规则），再按索引顺序把 (时刻, 值) 依次分进各天——样本时刻是统一的
+    /// `YYYY-MM-DDTHH:MM:SS+00:00`，按字符串比就是按时刻比。认不出这个格式的行逐条换算，
+    /// 换算不出的不计（和 `date()` 折成 NULL 被 BETWEEN 筛掉是同一语义）。
+    /// 最高、最低、平均、样本数的算法不变：平均仍是这一天全部样本的和除以个数。
     pub fn daily_heart_rate_extremes(&self, days: i64) -> Result<Vec<DailyHeartRateExtreme>> {
         let window_days = days.clamp(1, 1825);
         let end = Local::now().date_naive();
         let start = end - Duration::days(window_days - 1);
-        // `timestamp` 存的是 RFC 3339（带偏移）。SQLite 的 `localtime` 修饰符
-        // 按**本机**时区换算，这正是我们要的分日方式。
-        // UTC 宽限界让 uq_metric_sample_key 按 (metric, timestamp) 切出范围；
-        // date() 仍是本地日的精修谓词。
         let start_text = start.format("%Y-%m-%d").to_string();
         let end_text = end.format("%Y-%m-%d").to_string();
+        // UTC 宽限界让 uq_metric_sample_key 按 (metric, timestamp) 切出范围、按时刻排好序；
+        // 精确的本地日在下面分。
         let (utc_lower, utc_upper) = utc_bounds_or_unbounded(&start_text, &end_text);
-        let mut stmt = self.conn.prepare(
-            "SELECT date(timestamp, 'localtime') AS day,
-                    MAX(value), MIN(value), AVG(value), COUNT(*)
-             FROM metric_samples
-             WHERE metric = 'heart_rate'
-               AND timestamp >= ?3 AND timestamp < ?4
-               AND date(timestamp, 'localtime') BETWEEN ?1 AND ?2
-             GROUP BY day
-             ORDER BY day",
+        let buckets = LocalDayBuckets::new(start, end);
+        let mut days: Vec<DayAccumulator> = Vec::new();
+        days.resize_with(buckets.len(), DayAccumulator::default);
+        let mut stmt = self.conn.prepare_cached(
+            "SELECT timestamp, value FROM metric_samples
+             WHERE metric = 'heart_rate' AND timestamp >= ?1 AND timestamp < ?2
+             ORDER BY timestamp",
         )?;
-        let rows = stmt.query_map([start_text, end_text, utc_lower, utc_upper], |row| {
-            Ok(DailyHeartRateExtreme {
-                date: row.get(0)?,
-                max: row.get::<_, f64>(1)?.round() as i32,
-                min: row.get::<_, f64>(2)?.round() as i32,
-                average: row.get::<_, f64>(3)?.round() as i32,
-                samples: row.get(4)?,
+        let mut rows = stmt.query([utc_lower, utc_upper])?;
+        let mut cursor = 0;
+        while let Some(row) = rows.next()? {
+            // 不是文本的时刻 date() 会折成 NULL、被筛掉：这里同样不计。
+            let Some(day) = row
+                .get_ref(0)?
+                .as_str()
+                .ok()
+                .and_then(|timestamp| buckets.day_of(timestamp, &mut cursor))
+            else {
+                continue;
+            };
+            days[day].add(row.get::<_, f64>(1)?);
+        }
+        // 日期字符串每天只排一次版：逐行排版比整条查询还贵。
+        Ok(days
+            .into_iter()
+            .enumerate()
+            .filter(|(_, day)| day.count > 0)
+            .map(|(index, day)| DailyHeartRateExtreme {
+                date: buckets.date(index),
+                max: day.max.round() as i32,
+                min: day.min.round() as i32,
+                average: (day.sum / day.count as f64).round() as i32,
+                samples: day.count,
             })
-        })?;
-        rows.collect::<std::result::Result<Vec<_>, _>>()
-            .map_err(Into::into)
+            .collect())
     }
 
     /// Read meal details from retained food payloads without a migration or replay.
@@ -503,4 +523,115 @@ impl Database {
             .map(|value| value.map(|value| value.round() as i32))
             .map_err(Into::into)
     }
+}
+
+/// 一天里心率样本的最高、最低、和与个数。
+struct DayAccumulator {
+    max: f64,
+    min: f64,
+    sum: f64,
+    count: i64,
+}
+
+impl Default for DayAccumulator {
+    fn default() -> Self {
+        Self {
+            max: f64::NEG_INFINITY,
+            min: f64::INFINITY,
+            sum: 0.0,
+            count: 0,
+        }
+    }
+}
+
+impl DayAccumulator {
+    fn add(&mut self, value: f64) {
+        self.max = self.max.max(value);
+        self.min = self.min.min(value);
+        self.sum += value;
+        self.count += 1;
+    }
+}
+
+/// 样本时刻的规范格式：UTC、到秒、`+00:00` 结尾（长 25）。只有这种格式按字符串比等于按时刻比。
+const CANONICAL_UTC_FORMAT: &str = "%Y-%m-%dT%H:%M:%S+00:00";
+
+fn canonical_utc(value: &str) -> bool {
+    value.len() == 25 && value.ends_with("+00:00") && value.as_bytes()[10] == b'T'
+}
+
+/// 窗口里每个本地日从哪个 UTC 时刻开始，写成样本时刻的同一种字符串格式。
+///
+/// `starts[i]` 是第 i 天（从 `first` 起）的开头，最后多一个：窗口结束后那一天的开头。
+pub(super) struct LocalDayBuckets {
+    first: NaiveDate,
+    starts: Vec<String>,
+}
+
+impl LocalDayBuckets {
+    pub(super) fn new(first: NaiveDate, last: NaiveDate) -> Self {
+        let days = (last - first).num_days().max(0) + 2;
+        let starts = (0..days)
+            .map(|offset| {
+                local_day_start_utc(first + Duration::days(offset))
+                    .format(CANONICAL_UTC_FORMAT)
+                    .to_string()
+            })
+            .collect();
+        Self { first, starts }
+    }
+
+    /// 窗口里有几天。
+    pub(super) fn len(&self) -> usize {
+        self.starts.len() - 1
+    }
+
+    /// 第 `index` 天的日期（`YYYY-MM-DD`）。
+    pub(super) fn date(&self, index: usize) -> String {
+        (self.first + Duration::days(index as i64))
+            .format("%Y-%m-%d")
+            .to_string()
+    }
+
+    /// 这个时刻落在窗口里第几天；不在窗口里、或者认不出就是 None。
+    /// `cursor` 是上一行落在第几天：行按时刻升序来，指针只往前走。
+    pub(super) fn day_of(&self, timestamp: &str, cursor: &mut usize) -> Option<usize> {
+        let days = self.len();
+        if !canonical_utc(timestamp) {
+            let day = super::ai_export::local_day_of_stored(timestamp)?;
+            let date = NaiveDate::parse_from_str(&day, "%Y-%m-%d").ok()?;
+            let index = usize::try_from((date - self.first).num_days()).ok()?;
+            return (index < days).then_some(index);
+        }
+        if timestamp < self.starts[0].as_str() || timestamp >= self.starts[days].as_str() {
+            return None;
+        }
+        while *cursor + 1 < days && timestamp >= self.starts[*cursor + 1].as_str() {
+            *cursor += 1;
+        }
+        // 万一行不是升序（不该发生）：指针不倒退，退回二分查找。
+        Some(if timestamp >= self.starts[*cursor].as_str() {
+            *cursor
+        } else {
+            self.starts
+                .partition_point(|start| start.as_str() <= timestamp)
+                - 1
+        })
+    }
+}
+
+/// 本地日 `day` 的第一个时刻（UTC）。零点在夏令时跳过的那一段里时，取跳过之后的第一个时刻；
+/// 零点出现两次时取早的那次。
+fn local_day_start_utc(day: NaiveDate) -> DateTime<Utc> {
+    use chrono::{LocalResult, TimeZone};
+    let midnight = day.and_hms_opt(0, 0, 0).expect("零点总是合法的");
+    for minutes in 0..=24 * 60 {
+        match Local.from_local_datetime(&(midnight + Duration::minutes(minutes))) {
+            LocalResult::Single(at) | LocalResult::Ambiguous(at, _) => {
+                return at.with_timezone(&Utc)
+            }
+            LocalResult::None => continue,
+        }
+    }
+    midnight.and_utc()
 }

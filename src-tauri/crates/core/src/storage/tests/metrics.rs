@@ -587,6 +587,61 @@ fn daily_heart_rate_extremes_keeps_local_day_semantics_with_utc_bounds() {
     assert_eq!(extremes[0].max, 70);
 }
 
+/// 分日在 Rust 里做（不再逐行调 `date(x, 'localtime')`）：本地午夜前后一分钟的样本分进
+/// 两天，平均是那一天全部样本的和除以个数；不是规范 UTC 写法的时刻逐条换算，也落对日子。
+#[test]
+fn daily_heart_rate_extremes_splits_at_local_midnight_and_reads_offset_timestamps() {
+    let db = Database::in_memory().unwrap();
+    let today = Local::now().date_naive();
+    let yesterday = today - Duration::days(1);
+    let local_at = |day: NaiveDate, hour: u32, minute: u32| {
+        Local
+            .from_local_datetime(&day.and_hms_opt(hour, minute, 0).unwrap())
+            .single()
+            .unwrap()
+    };
+    for (when, value) in [
+        (local_at(yesterday, 23, 59), 50.0),
+        (local_at(yesterday, 12, 0), 61.0),
+        (local_at(today, 0, 1), 80.0),
+    ] {
+        db.insert_metric_sample(&MetricSample {
+            metric: "heart_rate".into(),
+            timestamp: when.with_timezone(&Utc),
+            value,
+            unit: "bpm".into(),
+            source_scope: SourceScope::Device,
+            device_id: None,
+        })
+        .unwrap();
+    }
+    // 带本地偏移写的时刻（规范写法是 +00:00）：按它真正的时刻算本地日。
+    db.conn
+        .execute(
+            "INSERT INTO metric_samples(metric, timestamp, value, unit, source_scope)
+             VALUES ('heart_rate', ?1, 90, 'bpm', 'device')",
+            [local_at(today, 0, 2).to_rfc3339()],
+        )
+        .unwrap();
+    let extremes = db.daily_heart_rate_extremes(7).unwrap();
+    let by_day = |day: NaiveDate| {
+        extremes
+            .iter()
+            .find(|row| row.date == day.format("%Y-%m-%d").to_string())
+            .cloned()
+    };
+    let before = by_day(yesterday).expect("昨天有两个样本");
+    assert_eq!(
+        (before.samples, before.max, before.min, before.average),
+        (2, 61, 50, 56)
+    );
+    let after = by_day(today).expect("今天有两个样本");
+    assert_eq!(
+        (after.samples, after.max, after.min, after.average),
+        (2, 90, 80, 85)
+    );
+}
+
 /// 写得进库，就得画得出来。
 ///
 /// `metric_series` 对不认识的指标名是**静默跳过**（那个 `continue`），所以
