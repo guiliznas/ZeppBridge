@@ -318,6 +318,7 @@ impl Database {
         let cutoff_date = (today - Duration::days(days))
             .format("%Y-%m-%d")
             .to_string();
+        let changes_before = self.conn.total_changes();
         self.conn.execute_batch("BEGIN IMMEDIATE;")?;
         let deleted = (|| -> Result<()> {
             self.conn.execute(
@@ -396,6 +397,9 @@ impl Database {
                     ));
                 }
                 self.conn.execute_batch("COMMIT;")?;
+                if self.conn.total_changes() != changes_before {
+                    note_content_change();
+                }
             }
             Err(error) => {
                 if !self.conn.is_autocommit() {

@@ -141,8 +141,9 @@ export const runSync = (
       settleReady(report, wasFirstSync && mode === 'incremental');
       // 只有真的写了数据才让各页重查。以前 no_new_data / failed / cancelled 也 bump：
       // 每 15 分钟一次自动同步（哪怕离线、一条没写）都让八九个查询排到同一把库锁
-      // 后面，图表整张重画——用户看到的是定时的一卡。
-      if (report.total_records > 0) dataRevision.value += 1;
+      // 后面，图表整张重画——用户看到的是定时的一卡。条数不可靠：原样再拉一遍的报文
+      // 照样报上次写入的条数，所以先看后端说的「内容到底变没变」（性能审计 06）。
+      if (report.content_changed ?? report.total_records > 0) dataRevision.value += 1;
       // 云端还没有新数据：用户自己点的同步才弹提示（教他去手机上下拉一下）；定时同步不打扰。
       if (report.outcome === 'cloud_stale' && waited && !opts?.quick) cloudStaleTip.value = { latestAt: report.cloud_latest_at ?? null };
       if (report.outcome === 'deferred') scheduleDeferredRetry(mode, days, opts?.quick);

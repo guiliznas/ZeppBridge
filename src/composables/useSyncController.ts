@@ -13,7 +13,7 @@ import {
 } from './sync/run';
 import {
   appStatus, applyLoginStatus, autoSyncEnabled, cloudStaleTip, autoSyncInterval, compacting, compactingEvent, compactionPending,
-  compactionSaved, copy, dataReady, dataRevision, loginStatus, notice, refreshStatus, streamUpdate,
+  compactionSaved, copy, dataReady, dataRevision, loginStatus, notice, refreshStatus, streamRevisions, streamUpdate,
   syncProgress, syncReport, syncState,
 } from './sync/state';
 
@@ -121,7 +121,10 @@ const initialize = async () => {
       backend.getLoginStatus().catch(() => null),
       safeListen<SyncProgress>('sync://progress', (payload) => {
         if (payload.completed) {
+          // 原样再拉一遍的流也会发完成事件：后端说这一段没改库（changed: false）就不让各页重查（性能审计 06）。
+          if (payload.changed === false) return;
           streamUpdate.value = { stream: payload.stream, revision: streamUpdate.value.revision + 1 };
+          streamRevisions.value = { ...streamRevisions.value, [payload.stream]: (streamRevisions.value[payload.stream] ?? 0) + 1 };
           return;
         }
         // 设置页的历史补拉也走 sync://progress。顶栏只认控制器自己发起的同步，

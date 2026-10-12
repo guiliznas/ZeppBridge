@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { dataRevision } from '../../composables/sync/state';
+import { dataRevision, streamRevisions, streamUpdate } from '../../composables/sync/state';
 import { cached, forgetReads, peek, peekAll, resetReadCache } from '../readCache';
 
 const query = <T>(key: string, value: T) => ({ key, fetch: vi.fn(() => Promise.resolve(value)) });
@@ -8,6 +8,27 @@ describe('detail-page read cache (preloaded data must be the data the page shows
   afterEach(() => {
     resetReadCache();
     dataRevision.value = 0;
+    streamRevisions.value = {};
+    streamUpdate.value = { stream: '', revision: 0 };
+  });
+
+  it('a stream landing mid-sync only makes the queries that read it stale; a finished sync or a local write makes all stale', async () => {
+    const sleep = { ...query('sleep_detail:1', 'night'), deps: ['sleep'] as const };
+    const heart = query('heart', 60);
+    await cached(sleep);
+    await cached(heart);
+    // 心率流落了新数据
+    streamUpdate.value = { stream: 'heart_rate', revision: 1 };
+    streamRevisions.value = { heart_rate: 1 };
+    expect(peek(sleep)?.fresh).toBe(true);
+    expect(peek(heart)?.fresh).toBe(false);
+    // 睡眠流也落了
+    streamRevisions.value = { heart_rate: 1, sleep: 1 };
+    expect(peek(sleep)?.fresh).toBe(false);
+    await cached(sleep);
+    expect(sleep.fetch).toHaveBeenCalledTimes(2);
+    dataRevision.value += 1;
+    expect(peek(sleep)?.fresh).toBe(false);
   });
 
   it('reads once per data revision and hands the settled value to the next page mount', async () => {

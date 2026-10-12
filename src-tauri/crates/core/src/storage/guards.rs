@@ -44,6 +44,22 @@ impl Drop for CompactionGuard {
     }
 }
 
+/// 本进程里「库里的健康数据真的变了」的次数：重写了派生行（归一化落库）、清理删掉了行、
+/// 训练日覆盖证据变了，都往前走一格；同一份报文原样再拉一遍（`touch_unchanged_raw`）不走。
+///
+/// 同步命令在开头和每条流完成时各看一眼，告诉界面「这条流 / 这一轮内容有没有变」：
+/// 没变就不必让各页的读缓存作废、整页重查（性能审计 06）。只会多报、不会少报——
+/// 归一化失败回滚了也算变过一次。
+static CONTENT_EPOCH: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+pub fn content_epoch() -> u64 {
+    CONTENT_EPOCH.load(std::sync::atomic::Ordering::SeqCst)
+}
+
+pub(crate) fn note_content_change() {
+    CONTENT_EPOCH.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+}
+
 pub(super) static REPLAY_IN_PROGRESS: std::sync::atomic::AtomicUsize =
     std::sync::atomic::AtomicUsize::new(0);
 

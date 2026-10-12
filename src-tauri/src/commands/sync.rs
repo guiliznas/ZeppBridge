@@ -11,7 +11,7 @@ use crate::sync::{
     SyncReport,
 };
 use std::collections::BTreeMap;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use zeppbridge_core::official::OfficialStore;
@@ -165,6 +165,7 @@ pub async fn start_history_backfill(
         return Err(deferred_app_error(kind));
     }
     let manager = require_manager(&state).await?;
+    begin_progress_epoch();
     match manager
         .history_backfill(from, to, max_chunks.unwrap_or(24), |progress| {
             emit_sync_progress(&app, progress)
@@ -347,6 +348,8 @@ async fn run_sync(
         }
     }
     let started_at = Utc::now().to_rfc3339();
+    let epoch_at_start = crate::storage::content_epoch();
+    begin_progress_epoch();
     let on_progress = |progress| emit_sync_progress(app, progress);
     let report_result = match &manager {
         Some(manager) => match window {
@@ -445,13 +448,15 @@ async fn run_sync(
         super::training_plan::roll_after_sync(state).await;
     }
 
-    Ok(ui_sync_report(
+    let mut ui_report = ui_sync_report(
         report,
         started_at,
         finished_at,
         outcome.to_string(),
         &freshness,
-    ))
+    );
+    ui_report.content_changed = Some(crate::storage::content_epoch() != epoch_at_start);
+    Ok(ui_report)
 }
 
 /// 把一次同步归成界面上的一个词。
@@ -502,8 +507,30 @@ fn samples_advanced(
         })
 }
 
+/// 上一个「流完成」事件时的内容版本。初值取不可能的值：没对齐过就一律报「变了」。
+static PROGRESS_EPOCH: AtomicU64 = AtomicU64::new(u64::MAX);
+
+/// 一轮同步 / 补拉开始：之后第一个完成事件只算这一轮里的改动。
+fn begin_progress_epoch() {
+    PROGRESS_EPOCH.store(crate::storage::content_epoch(), Ordering::SeqCst);
+}
+
+/// 发给界面的进度：完成事件多带一个 `changed`——这一段到底有没有改库。
+/// 原样再拉一遍的流照样会发完成事件，界面不该为它把各页的缓存作废、重查一遍（性能审计 06）。
+#[derive(Clone, serde::Serialize)]
+struct UiSyncProgress {
+    #[serde(flatten)]
+    progress: SyncProgress,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    changed: Option<bool>,
+}
+
 fn emit_sync_progress(app: &AppHandle, progress: SyncProgress) {
-    let _ = app.emit("sync://progress", progress);
+    let changed = progress.completed.then(|| {
+        let now = crate::storage::content_epoch();
+        PROGRESS_EPOCH.swap(now, Ordering::SeqCst) != now
+    });
+    let _ = app.emit("sync://progress", UiSyncProgress { progress, changed });
 }
 
 /// 记下这一轮的同步时间和结论。

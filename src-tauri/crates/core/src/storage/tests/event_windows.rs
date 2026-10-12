@@ -100,7 +100,11 @@ fn refetching_a_day_replaces_it_in_place_and_an_identical_refetch_keeps_counts_a
     );
 
     let changed = raw(key, json!({"items": [charge("2026-09-26", 72)]}));
+    let epoch = content_epoch();
     let (changed_id, _) = db.persist_fetched_record(&changed).unwrap();
+    // 界面靠它决定要不要作废读缓存：内容变了却不往前走，各页就一直显示旧值。
+    // （别的测试线程也会推它，所以只断言「变了必前进」，不断言「原样不前进」。）
+    assert!(content_epoch() > epoch, "内容变了，内容版本必须前进");
     assert_eq!(changed_id, id, "同一天覆盖，不是新增");
     assert_eq!(db.count_raw_records().unwrap(), 1);
     assert!(charge_rows(&db).contains(&("2026-09-26".into(), "hybrid_charge".into(), 72.0)));

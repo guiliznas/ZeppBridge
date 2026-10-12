@@ -125,17 +125,21 @@ impl Database {
     ) -> Result<()> {
         for item in evidence {
             // Also catches failed writes and locally retained workouts omitted by cloud.
+            let key = format!("{PREFIX}{}", item.day);
             if self.workout_ids_on_day(&item.day)? == item.ids {
-                self.set_app_meta(
-                    &format!("{PREFIX}{}", item.day),
-                    &serde_json::to_string(item)
-                        .map_err(|e| ZeppBridgeError::ParseError(e.to_string()))?,
-                )?;
-            } else {
-                self.conn.execute(
-                    "DELETE FROM app_meta WHERE key = ?1",
-                    [format!("{PREFIX}{}", item.day)],
-                )?;
+                let value = serde_json::to_string(item)
+                    .map_err(|e| ZeppBridgeError::ParseError(e.to_string()))?;
+                // 每轮同步都会把同样的证据再记一遍：原样的不算「数据变了」。
+                if self.get_app_meta(&key)?.as_deref() != Some(value.as_str()) {
+                    self.set_app_meta(&key, &value)?;
+                    note_content_change();
+                }
+            } else if self
+                .conn
+                .execute("DELETE FROM app_meta WHERE key = ?1", [key])?
+                > 0
+            {
+                note_content_change();
             }
         }
         Ok(())

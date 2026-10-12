@@ -29,6 +29,12 @@ const decodeImage = async (src: string): Promise<void> => {
   await image.decode().catch(() => undefined);
 };
 
+/* 查询依赖的同步流（readCache 的 deps）。只给只读这几条流写的表的查询：睡眠段只由 sleep 流写
+   （旧通道和官方同名），运动和它的采样 / 轨迹只由 workouts、workout_detail 写。心率、日指标之类
+   wellness 也会写，别给 deps。 */
+const SLEEP_STREAMS = ['sleep'] as const;
+const WORKOUT_STREAMS = ['workouts', 'workout_detail'] as const;
+
 export const pageQuery = {
   metricSeries: (metrics: readonly string[], days = SERIES_FETCH_DAYS): Query<MetricSeries[]> => ({
     key: `metric_series:${days}:${metrics.join(',')}`,
@@ -53,18 +59,22 @@ export const pageQuery = {
   sleepDetail: (sleepId: string): Query<SleepSession | null> => ({
     key: `sleep_detail:${sleepId}`,
     fetch: () => backend.getSleepDetail(sleepId),
+    deps: SLEEP_STREAMS,
   }),
   recentSleep: (limit: number): Query<SleepSession[]> => ({
     key: `recent_sleep:${limit}`,
     fetch: () => backend.getRecentSleep(limit),
+    deps: SLEEP_STREAMS,
   }),
   recentWorkouts: (limit: number): Query<Workout[]> => ({
     key: `recent_workouts:${limit}`,
     fetch: () => backend.getRecentWorkouts(limit),
+    deps: WORKOUT_STREAMS,
   }),
   workoutDetail: (workoutId: string): Query<Workout | null> => ({
     key: `workout_detail:${workoutId}`,
     fetch: () => backend.getWorkoutDetail(workoutId),
+    deps: WORKOUT_STREAMS,
   }),
   /* 设备档案连同表的图片一起备好（图片解码完才算读好）。按设备共享：同一块表的几十条运动只读一次、
      图片只解一次（性能审计 02）。指认型号后由 useDevices 用 forgetReads 作废。 */
@@ -89,14 +99,17 @@ export const pageQuery = {
   workoutSeries: (workoutId: string): Query<WorkoutSeries> => ({
     key: `workout_series:${workoutId}`,
     fetch: () => backend.getWorkoutSeries(workoutId),
+    deps: WORKOUT_STREAMS,
   }),
   sleepPage: (limit: number): Query<Page<SleepSession>> => ({
     key: `sleep_page:${limit}:0`,
     fetch: () => backend.getSleepPage(limit, 0),
+    deps: SLEEP_STREAMS,
   }),
   workoutPage: (limit: number): Query<Page<Workout>> => ({
     key: `workout_page:${limit}:0`,
     fetch: () => backend.getWorkoutPage(limit, 0),
+    deps: WORKOUT_STREAMS,
   }),
   heartRateZones: (days: number): Query<HeartRateZoneOptions> => ({
     key: `heart_rate_zones:${days}`,

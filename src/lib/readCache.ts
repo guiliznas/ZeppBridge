@@ -1,4 +1,4 @@
-import { dataRevision, streamUpdate } from '../composables/sync/state';
+import { dataRevision, streamRevisions, streamUpdate } from '../composables/sync/state';
 
 /**
  * 详情页首屏数据的小缓存——手机厂商「点下去之前就把下一页备好」的那一半（另一半是代码块预取，
@@ -21,6 +21,12 @@ import { dataRevision, streamUpdate } from '../composables/sync/state';
 export interface Query<T> {
   key: string;
   fetch: () => Promise<T>;
+  /**
+   * 结果只取决于哪几条同步流（`sync://progress` 的 stream 名）。给了的话，同步途中别的流落了新数据不算它旧了；
+   * 不给就是「任何一条流都算」。只给确实只读那几条流写的表的查询——拿不准就别给。
+   * 整轮同步结束、本机写入（dataRevision）照旧让所有查询都算旧。
+   */
+  deps?: readonly string[];
 }
 
 const FRESH_MS = 5 * 60_000;
@@ -30,6 +36,7 @@ const MAX_ENTRIES = 48;
 type Entry = {
   /** 这次读取发起时的数据版本。 */
   stamp: string;
+  deps?: readonly string[];
   at: number;
   promise: Promise<unknown>;
   /** 最近一次读成功的结果（重读期间仍是上一次的）。 */
@@ -56,9 +63,14 @@ const evict = () => {
   }
 };
 
-const stamp = () => `${dataRevision.value}:${streamUpdate.value.revision}`;
+const stamp = (deps?: readonly string[]) => {
+  const streams = deps
+    ? deps.map((stream) => streamRevisions.value[stream] ?? 0).join('.')
+    : streamUpdate.value.revision;
+  return `${dataRevision.value}:${streams}`;
+};
 const fresh = (entry: Entry | undefined): boolean =>
-  Boolean(entry && entry.stamp === stamp() && Date.now() - entry.at < FRESH_MS);
+  Boolean(entry && entry.stamp === stamp(entry.deps) && Date.now() - entry.at < FRESH_MS);
 
 /** 读一份：数据版本没变、没过期就复用（正在读的也一样）；否则重读，重读期间 `peek` 仍给上一次的。 */
 export const cached = <T>(query: Query<T>): Promise<T> => {
@@ -68,7 +80,8 @@ export const cached = <T>(query: Query<T>): Promise<T> => {
     return previous.promise as Promise<T>;
   }
   const entry: Entry = {
-    stamp: stamp(),
+    stamp: stamp(query.deps),
+    deps: query.deps,
     at: Date.now(),
     promise: Promise.resolve(),
     value: previous?.value,

@@ -147,6 +147,11 @@ pub struct UiSyncReport {
     /// 结论是 `cloud_stale`（同步前探云端，1E）时：云端最新一条数据的时刻。界面写「云端最新 08:12」。
     #[serde(default)]
     pub cloud_latest_at: Option<String>,
+    /// 这一轮有没有真的改了库里的健康数据（`storage::content_epoch` 动没动）。
+    /// `total_records` 不能拿来判断：原样再拉一遍的报文照样报上次写入的条数。
+    /// 界面据此决定要不要让各页的读缓存作废；没给（取消、让路、云端没新数据）时界面按条数兜底。
+    #[serde(default)]
+    pub content_changed: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -207,6 +212,7 @@ pub fn ui_sync_report(
         message_code: None,
         notice_code,
         cloud_latest_at: None,
+        content_changed: None,
     }
 }
 

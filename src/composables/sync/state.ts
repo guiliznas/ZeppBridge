@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue';
+import { computed, ref, shallowRef } from 'vue';
 import { backend, isDesktop, toUserMessage } from '../../lib/bridge';
 import { readAutoSyncSettings } from '../../lib/autoSync';
 import type { AppStatus, LoginStatus, SyncOutcome, SyncProgress, SyncReport } from '../../types';
@@ -64,6 +64,8 @@ export const syncProgress = ref<SyncProgress | null>(null);
 export const loginStatus = ref<LoginStatus>({ state: 'idle', message: '', page_url: '' });
 export const dataRevision = ref(0);
 export const streamUpdate = ref({ stream: '', revision: 0 });
+/** 每条流各自的「有新数据」次数：读缓存按查询依赖的流判断新旧（lib/readCache.ts），心率落了新数据不作废睡眠详情。 */
+export const streamRevisions = shallowRef<Readonly<Record<string, number>>>({});
 /* 装完新版本第一次启动时，后台会把存量原始报文压掉（默认开启）。
    这期间界面要说一句「正在压缩」，压完自己消失——不然用户只会觉得
    「刚装完怎么有点卡」。 */

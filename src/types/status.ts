@@ -140,6 +140,8 @@ export interface SyncProgress {
   code?: string;
   /** 补拉时这一块是哪个月（`YYYY-MM`）。 */
   detail?: string | null;
+  /** 只在完成事件上：这一段有没有真的改库。原样再拉一遍的流是 false；没给按「变了」处理。 */
+  changed?: boolean;
 }
 
 export type LoginState = 'idle' | 'waiting' | 'extracting' | 'verifying' | 'connected' | 'failed';
@@ -208,6 +210,8 @@ export interface SyncReport {
   notice_code?: string | null;
   /** 结论是 `cloud_stale` 时：云端最新一条数据的时刻。 */
   cloud_latest_at?: string | null;
+  /** 这一轮有没有真的改了库里的健康数据。`total_records` 不能拿来判断（原样重拉也报上次的条数）；没给时按条数兜底。 */
+  content_changed?: boolean | null;
 }
 
 export interface LocalApiStatus {
