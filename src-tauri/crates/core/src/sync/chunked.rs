@@ -60,6 +60,12 @@ impl SyncManager {
                 }
                 Err(error) if error.is_cancelled() || error.needs_reauth() => return Err(error),
                 Err(error) => {
+                    reasons.insert(format!(
+                        "{stream} ({}..{}): {}",
+                        chunk.start_day(),
+                        chunk.end_day(),
+                        error.user_message()
+                    ));
                     let stop =
                         on_error == OnChunkError::StopUnlessUnavailable && !error.is_unavailable();
                     // 别让后面一块的 404 把前面真正的请求失败降级成「不可用」。

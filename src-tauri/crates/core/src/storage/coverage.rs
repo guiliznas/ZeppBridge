@@ -184,10 +184,27 @@ pub fn to_utc(date: NaiveDate) -> DateTime<Utc> {
 impl Database {
     /// 排入一次补拉计划。
     ///
-    /// 已经有结论的块（已写入 / 云端确认为空）原样保留，所以重复请求同一段
-    /// 历史不会把它们打回待办再拉一遍。
+    /// 已完成的块通常原样保留。新增采集接口时只重新检查受影响的流一次，
+    /// 之后重复请求同一段历史仍然跳过已完成的块。
     pub fn plan_backfill(&self, from: NaiveDate, to: NaiveDate) -> Result<i64> {
+        // A completed legacy wellness month did not include blood pressure.
+        // Parser replay cannot fetch a response that was never requested.
+        // Re-check those months once when the user next requests backfill;
+        // retain all raw/canonical data and other streams' conclusions.
+        const FETCH_REVISION: &str = "blood-pressure-date-v1";
+        const REVISION_KEY: &str = "wellness_backfill_fetch_revision";
         let now = Utc::now().to_rfc3339();
+        if self.get_app_meta(REVISION_KEY)?.as_deref() != Some(FETCH_REVISION) {
+            self.conn.execute(
+                "UPDATE coverage_ledger SET status = 'pending', attempts = 0,
+                    error = NULL, error_code = NULL, updated_at = ?1
+                 WHERE stream = 'wellness' AND status IN ('persisted', 'empty_from_cloud')",
+                [&now],
+            )?;
+            // Write the marker after the idempotent update: interruption can
+            // repeat requests, but cannot leave old completed chunks skipped.
+            self.set_app_meta(REVISION_KEY, FETCH_REVISION)?;
+        }
         let mut planned = 0i64;
         for stream in BACKFILL_STREAMS {
             for (start, end) in month_chunks(from, to) {

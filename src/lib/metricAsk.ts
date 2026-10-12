@@ -5,7 +5,7 @@ import type { AiTaskCategory } from './bridge/types';
 
 const BY_PREFIX: Array<[RegExp, AiTaskCategory]> = [
   [/^sleep|^deep_|^rem_|^light_|^awake_|^nap/, 'sleep'],
-  [/^(weight|bmi|body_|muscle|bone|visceral|bmr|protein|fat_|calorie_intake|food)/, 'body'],
+  [/^(blood_pressure|weight|bmi|body_|muscle|bone|visceral|bmr|protein|fat_|calorie_intake|food)/, 'body'],
   [/^(training_load|vo2max|lactate|pai|steps|distance|active_|floors)/, 'training'],
   [/^(heart_rate|hr_|max_hr|min_hr)/, 'heart_rate'],
   [/^(resting_hr|readiness|physical_readiness|stress|respiratory|hrv|sleep_hrv|spo2|charge|skin_temp|body_temp)/, 'recovery'],

@@ -21,7 +21,9 @@ impl Normalizer {
     /// than sniffed from the payload, because several of these share an
     /// envelope shape while meaning entirely different things.
     ///
-    /// Only shapes verified against a real response are parsed here. Stress
+    /// Established shapes are parsed here; blood pressure additionally accepts
+    /// explicit numeric aliases from public clients, marked experimental.
+    /// Stress
     /// (`Charge/stress_data`) is deliberately absent: its payload is a
     /// protobuf whose float fields do not match the ranges the Zepp app shows,
     /// so mapping it would be a guess. The raw response is retained, and
@@ -32,17 +34,18 @@ impl Normalizer {
         let mut out = WellnessNormalizedData::default();
         // Match the envelopes counted by endpoint diagnostics. The connector
         // preserves the response, so `data.items` is not unwrapped upstream.
-        let Some(items) = raw
-            .get("items")
-            .and_then(Value::as_array)
-            .or_else(|| raw.get("data").and_then(Value::as_array))
-            .or_else(|| raw.get("data")?.get("items")?.as_array())
-        else {
+        let Some(items) = raw.as_array().or_else(|| {
+            raw.get("items")
+                .and_then(Value::as_array)
+                .or_else(|| raw.get("data").and_then(Value::as_array))
+                .or_else(|| raw.get("data")?.get("items")?.as_array())
+        }) else {
             out.diagnostics
                 .push(format!("{label}: 报文没有 items 数组"));
             return out;
         };
         match label {
+            "blood_pressure" => blood_pressure_samples(items, &mut out),
             "lactate_threshold" => lactate_threshold_metrics(items, &mut out),
             "respiratory_rate" => respiratory_rate_metrics(items, &mut out),
             "hrv_rmssd" => hrv_rmssd_samples(items, &mut out),

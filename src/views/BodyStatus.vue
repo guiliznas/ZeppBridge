@@ -211,6 +211,8 @@ const groups = computed(() => ({
               :unit="card.unit"
               :decimals="card.decimals ?? 0"
               :show-spread="card.showSpread ?? false"
+              :chart="card.chart ?? 'line'"
+              :calendar-axis="card.calendarAxis ?? false"
               :empty-text="card.emptyText"
             />
           </div>

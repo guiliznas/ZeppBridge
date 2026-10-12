@@ -4,8 +4,9 @@ use super::*;
 
 /// The optional wellness streams, as `(label, surface, eventType, subType)`.
 ///
-/// Every entry here answered a live capability probe on a real account, so
-/// these are fetched rather than guessed at. They are deliberately kept in one
+/// Existing entries answered live probes. Blood pressure is experimental:
+/// the date-parameter endpoint responds on a live account but has no readings
+/// there; its numeric mapping still needs a measuring account. Kept in one
 /// raw stream: their payload shapes are not yet verified field by field, and
 /// the architecture's rule is to retain the raw response and normalize only
 /// what is recognised rather than invent a mapping.
@@ -38,7 +39,26 @@ pub(super) type WellnessStream = (
     Option<i64>,
 );
 
-pub(super) const WELLNESS_STREAMS: [WellnessStream; 10] = [
+pub(super) const WELLNESS_STREAMS: [WellnessStream; 12] = [
+    // Candidate formats: retain raw on every surface; parse explicit paired
+    // readings only. Three days of five-minute measurements fit below 1000.
+    // Date-parameter requests include whole dates, so two timestamp days can
+    // span three calendar dates. The from/to candidate returned HTTP 400 on
+    // 2026-10-12; it remains diagnostic-only rather than retried every sync.
+    (
+        "blood_pressure",
+        ProbeSurface::V2Events,
+        "blood_pressure",
+        Some("real_data"),
+        Some(3),
+    ),
+    (
+        "blood_pressure",
+        ProbeSurface::BloodPressureDays,
+        "bloodPressure",
+        None,
+        Some(2),
+    ),
     // The per-minute `Charge/stress_data` payload is a protobuf whose float
     // fields match none of the ranges the app displays, so the daily roll-up is
     // read from `all_day_stress` instead. Both are fetched: retaining the raw
@@ -242,6 +262,20 @@ impl DataFetcher {
                             )
                             .await
                     }
+                    ProbeSurface::BloodPressureDays => {
+                        self.connector
+                            .fetch_blood_pressure_days(
+                                ((slice.end_utc - Duration::nanoseconds(1)).date_naive()
+                                    - slice.start_utc.date_naive())
+                                .num_days()
+                                    + 1,
+                                &slice.end_day(),
+                            )
+                            .await
+                    }
+                    ProbeSurface::BloodPressureRange => {
+                        self.connector.fetch_blood_pressure_range(from, to).await
+                    }
                 };
                 match outcome {
                     Ok(payload) => records.push(fetched_wellness_record(
@@ -263,7 +297,15 @@ impl DataFetcher {
                         // missing just one optional stream (e.g. no
                         // lactate-threshold readings) never finishes
                         // backfilling any wellness stream.
-                        if !error.is_unavailable() {
+                        let candidate_contract_rejected = label == "blood_pressure"
+                            && matches!(
+                                error,
+                                ZeppBridgeError::HttpStatus {
+                                    status: 400 | 422,
+                                    ..
+                                }
+                            );
+                        if !error.is_unavailable() && !candidate_contract_rejected {
                             last_error = Some(error);
                         }
                     }
@@ -337,6 +379,9 @@ pub(super) fn wellness_page_hits_cap(payload: &Value, limit: i64) -> bool {
 }
 
 pub(super) fn payload_items(payload: &Value) -> Vec<Value> {
+    if let Some(items) = payload.as_array() {
+        return items.clone();
+    }
     if let Some(items) = payload.get("items").and_then(Value::as_array) {
         return items.clone();
     }

@@ -15,6 +15,9 @@ export type MetricTone = Exclude<keyof ZeppSemanticColors, 'sleep'> | 'sleepDeep
 const TONES: Record<string, MetricTone> = {
   // 睡眠与恢复
   resting_hr: 'heart',
+  blood_pressure_systolic: 'heart',
+  blood_pressure_diastolic: 'sleepLight',
+  blood_pressure_pulse: 'stride',
   hrv: 'stride',
   hrv_rmssd: 'sleepLight',
   sleep_score: 'sleepRem',

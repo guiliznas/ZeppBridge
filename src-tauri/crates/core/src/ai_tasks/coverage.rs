@@ -288,6 +288,9 @@ pub(crate) fn category_metric_specs(category: AiTaskCategory) -> Vec<CategoryMet
             "active_minutes",
         ],
         AiTaskCategory::Body => &[
+            "blood_pressure_systolic",
+            "blood_pressure_diastolic",
+            "blood_pressure_pulse",
             "weight",
             "bmi",
             "height",

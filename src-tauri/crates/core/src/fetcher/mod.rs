@@ -386,62 +386,26 @@ impl DataFetcher {
         &self,
         window: FetchWindow,
     ) -> Result<Vec<FetchedRecord>> {
-        let mut records = Vec::new();
-        let mut last_error = None;
-        // 整 UTC 日取、按日存：见 `event_days` 顶部的说明。
         let (from, to) =
             crate::event_days::utc_day_aligned_millis(window.start_utc, window.end_utc, Utc::now());
-        let event = self
-            .connector
-            .fetch_events("DailyHealth", Some("summary"), from, to, 2000, true)
-            .await?;
-        records.extend(event_day_records("DailyHealth", "summary", from, to, event));
-        for (event_type, sub_type) in [("Charge", "real_data"), ("readiness", "watch_score")] {
-            match self
-                .connector
-                .fetch_events(event_type, Some(sub_type), from, to, 2000, true)
-                .await
-            {
-                Ok(payload) => {
-                    records.extend(event_day_records(event_type, sub_type, from, to, payload))
-                }
-                Err(error) if is_abort_error(&error) => return Err(error),
-                Err(error) if error.is_unavailable() => {}
-                Err(error) => last_error = Some(error),
+        fetch_daily_statistics_slice_with(window, |event_type, sub_type| async move {
+            if event_type == "WatchSportStatistics" {
+                self.connector
+                    .fetch_watch_statistics(
+                        sub_type,
+                        &window.start_day(),
+                        &window.end_day_local_padded(),
+                        900,
+                        true,
+                    )
+                    .await
+            } else {
+                self.connector
+                    .fetch_events(event_type, Some(sub_type), from, to, 2000, true)
+                    .await
             }
-        }
-        for statistic in ["SPORT_LOAD", "VO2_MAX"] {
-            match self
-                .connector
-                .fetch_watch_statistics(
-                    statistic,
-                    &window.start_day(),
-                    &window.end_day_local_padded(),
-                    900,
-                    true,
-                )
-                .await
-            {
-                Ok(payload) => records.push(FetchedRecord::from_raw(RawRecord {
-                    stream: "daily_summary".into(),
-                    source_key: format!(
-                        "WatchSportStatistics:{statistic}:{}:{}",
-                        window.start_day(),
-                        window.end_day()
-                    ),
-                    source_scope: SourceScope::UserFused,
-                    device_id: None,
-                    start_utc: window.start_utc,
-                    end_utc: Some(window.end_utc),
-                    payload,
-                    capability: CapabilityStatus::Verified,
-                })),
-                Err(error) if is_abort_error(&error) => return Err(error),
-                Err(error) if error.is_unavailable() => {}
-                Err(error) => last_error = Some(error),
-            }
-        }
-        conclude_slices(records, last_error, "每日概览窗口没有可识别记录")
+        })
+        .await
     }
 }
 

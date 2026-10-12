@@ -126,6 +126,7 @@ impl Database {
             };
 
             let values: Vec<f64> = points.iter().map(|point| point.value).collect();
+            let (minimum, maximum) = metric_series_extrema(name, &points);
             result.push(MetricSeries {
                 metric: name.to_string(),
                 unit: unit.to_string(),
@@ -136,8 +137,8 @@ impl Database {
                 },
                 latest: points.last().cloned(),
                 average: average_finite(values.iter().copied()).map(round1),
-                minimum: values.iter().copied().reduce(f64::min),
-                maximum: values.iter().copied().reduce(f64::max),
+                minimum,
+                maximum,
                 days_with_data: points.len() as i64,
                 window_days,
                 points,

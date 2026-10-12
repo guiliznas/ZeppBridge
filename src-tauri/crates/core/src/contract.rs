@@ -59,7 +59,22 @@ pub struct MetricContract {
 ///
 /// 单位一律用机器可读的短串（`bpm`、`ml/kg/min`），中文说明单独放在
 /// `description`，这样 MCP schema 里的单位不会因为语言而变。
-pub const METRICS: [MetricContract; 38] = [
+pub const METRICS: [MetricContract; 41] = [
+    MetricContract {
+        metric: "blood_pressure_systolic",
+        unit: "mmHg",
+        description: "收缩压，候选接口的明确数值字段；实际测量账号尚待核对",
+    },
+    MetricContract {
+        metric: "blood_pressure_diastolic",
+        unit: "mmHg",
+        description: "舒张压，与收缩压成对保存，保留测量时间",
+    },
+    MetricContract {
+        metric: "blood_pressure_pulse",
+        unit: "bpm",
+        description: "血压测量时的脉搏；缺失则不写，不混入全天心率",
+    },
     // 体重与体成分。来自 `/users/{id}/members/-1/weightRecords`，
     // 不是事件面——见 `ZeppConnector::fetch_weight_records`。
     MetricContract {

@@ -14,6 +14,8 @@ const surfaceLabels: Record<string, string> = {
   user_events: '/users/{id}/events',
   user_events_day: '/users/{id}/events/dateString',
   file_info_events: '/users/me/fileInfo/events',
+  blood_pressure_days: '/users/me/bloodPressure (days/toDate)',
+  blood_pressure_range: '/users/me/bloodPressure (from/to)',
 };
 
 /* ── 设备能力总览 ─────────────────────────
@@ -46,7 +48,7 @@ export const useCapabilityBoard = () => {
       return item.stream === 'food' ? t.value.capabilityFoodHistoryHint : t.value.capabilityNotIngested;
     }
     if (item.status === 'unsupported') return t.value.capabilityUnsupported;
-    if (item.status === 'unknown') return t.value.capabilityNotProbed;
+    if (item.status === 'unknown') return item.source === 'probed' ? t.value.capabilityUnconfirmed : t.value.capabilityNotProbed;
     if (item.status === 'no_records') {
       return item.source === 'probed'
         ? t.value.capabilityNoneProbed(windowDays)
@@ -71,10 +73,8 @@ export const useCapabilityBoard = () => {
 
   /* 三分，不是两分。
    *
-   * 「云端有」和「本机有」是两件事：血压和体重目前只做探测，不做归一化——
-   * 缺少可核对的报文样本，贸然解析只会产出没人能验证的数字。把它们和真正
-   * 收录了的数据流并排放在「可提供给 AI」里，会让人以为 ZeppBridge 已经
-   * 存着他的血压，那是这个产品最不该给出的错觉。 */
+   * 「云端有」和「本机有」是两件事：候选接口可能有记录，但其格式尚未
+   * 被解析器识别。只有本机确实收录了的读数才能放进「可提供给 AI」。 */
   const capabilityAvailable = computed(() =>
     (capabilityOverview.value?.items ?? [])
       .filter((item) => item.status === 'available' && item.ingested !== false)
@@ -137,8 +137,10 @@ export const useCapabilityBoard = () => {
             ? t.value.probeEmpty
             : probe.status === 'unavailable'
               ? t.value.probeRefused
-              : t.value.probeFailed;
-      return `${name} @ ${surface} — ${result}`;
+              : probe.status === 'unrecognized'
+                ? t.value.probeUnrecognized
+                : t.value.probeFailed;
+      return `${name} @ ${surface} — ${result}${probe.failure ? ` (${probe.failure})` : ''} · ${t.value.probeWindow(probe.windowDays)}${probe.fields.length ? ` · ${probe.fields.join(', ')}` : ''}`;
     });
   });
 

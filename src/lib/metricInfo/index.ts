@@ -1,4 +1,5 @@
 import { vitalsInfo, VITALS_METRICS } from './vitals';
+import { bloodPressureInfo, BLOOD_PRESSURE_METRICS } from './bloodPressure';
 import { bodyInfo, BODY_METRICS } from './body';
 import { activityInfo, ACTIVITY_METRICS } from './activity';
 import { heartInfo, HEART_METRICS } from './heart';
@@ -24,6 +25,7 @@ export interface MetricInfo {
 }
 
 const LOOKUPS: ((metric: string) => MetricInfo | null)[] = [
+  bloodPressureInfo,
   vitalsInfo,
   bodyInfo,
   activityInfo,
@@ -43,6 +45,7 @@ export const metricInfo = (metric: string): MetricInfo | null => {
 
 /** 注册表里全部指标 id（测试用：页面上用到的 id 必须都在这里）。 */
 export const METRIC_INFO_IDS: string[] = [
+  ...BLOOD_PRESSURE_METRICS,
   ...VITALS_METRICS,
   ...BODY_METRICS,
   ...ACTIVITY_METRICS,

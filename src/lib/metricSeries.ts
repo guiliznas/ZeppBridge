@@ -76,6 +76,14 @@ export const windowStartDate = (days: number, today = currentToday()): string =>
 /** 和后端 storage/util.rs 的 round1 一致（值都是非负的健康读数，四舍五入方向不影响）。 */
 const round1 = (value: number) => Math.round(value * 10) / 10;
 
+/** BP extrema retain the measured range behind each daily average. */
+export const metricExtrema = (metric: string, points: MetricSeriesPoint[]) => {
+  const measured = metric.startsWith('blood_pressure_');
+  const lows = points.map(p => measured ? (p.min ?? p.value) : p.value).filter(Number.isFinite);
+  const highs = points.map(p => measured ? (p.max ?? p.value) : p.value).filter(Number.isFinite);
+  return { minimum: lows.length ? Math.min(...lows) : null, maximum: highs.length ? Math.max(...highs) : null };
+};
+
 /**
  * 从一份长窗口序列的尾部切出最近 `days` 天，重算这一段的最新 / 平均 / 最低 / 最高 / 覆盖。
  *
@@ -93,8 +101,7 @@ export const sliceSeries = (series: MetricSeries, days: number, today = currentT
     points,
     latest: points[points.length - 1] ?? null,
     average: values.length ? round1(values.reduce((sum, value) => sum + value, 0) / values.length) : null,
-    minimum: values.length ? Math.min(...values) : null,
-    maximum: values.length ? Math.max(...values) : null,
+    ...metricExtrema(series.metric, points),
     days_with_data: points.length,
     window_days: Math.max(1, Math.round(days)),
   };

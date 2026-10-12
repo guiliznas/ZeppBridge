@@ -80,6 +80,69 @@ pub(super) fn is_abort_error(error: &ZeppBridgeError) -> bool {
 /// A year of daily events can exceed the response limit or contain one bad
 /// historical slice. Keep every successful response and leave failed slices
 /// marked incomplete so backfill can retry them.
+pub(super) async fn fetch_daily_statistics_slice_with<F, Fut>(
+    window: FetchWindow,
+    mut fetch: F,
+) -> Result<Vec<FetchedRecord>>
+where
+    F: FnMut(&'static str, &'static str) -> Fut,
+    Fut: std::future::Future<Output = Result<Value>>,
+{
+    let mut records = Vec::new();
+    let mut last_error = None;
+    let mut failures = Vec::new();
+    let (from, to) =
+        crate::event_days::utc_day_aligned_millis(window.start_utc, window.end_utc, Utc::now());
+    for (event_type, sub_type) in [
+        ("DailyHealth", "summary"),
+        ("Charge", "real_data"),
+        ("readiness", "watch_score"),
+        ("WatchSportStatistics", "SPORT_LOAD"),
+        ("WatchSportStatistics", "VO2_MAX"),
+    ] {
+        match fetch(event_type, sub_type).await {
+            Ok(payload) if event_type == "WatchSportStatistics" => {
+                records.push(FetchedRecord::from_raw(RawRecord {
+                    stream: "daily_summary".into(),
+                    source_key: format!(
+                        "WatchSportStatistics:{sub_type}:{}:{}",
+                        window.start_day(),
+                        window.end_day()
+                    ),
+                    source_scope: SourceScope::UserFused,
+                    device_id: None,
+                    start_utc: window.start_utc,
+                    end_utc: Some(window.end_utc),
+                    payload,
+                    capability: CapabilityStatus::Verified,
+                }))
+            }
+            Ok(payload) => {
+                records.extend(event_day_records(event_type, sub_type, from, to, payload))
+            }
+            Err(error) if is_abort_error(&error) => return Err(error),
+            Err(error) if event_type != "DailyHealth" && error.is_unavailable() => {}
+            Err(error) => {
+                failures.push(format!(
+                    "{event_type}/{sub_type} ({}..{}): {}",
+                    window.start_day(),
+                    window.end_day(),
+                    error.user_message()
+                ));
+                last_error = Some(error);
+            }
+        }
+    }
+    let mut records = conclude_slices(records, last_error, "每日概览窗口没有可识别记录")?;
+    if !failures.is_empty() {
+        let reason = failures.join("; ");
+        for record in &mut records {
+            record.incomplete_reason = Some(reason.clone());
+        }
+    }
+    Ok(records)
+}
+
 pub(super) async fn fetch_daily_summary_slices_with<F, Fut>(
     window: FetchWindow,
     mut fetch: F,
@@ -90,18 +153,36 @@ where
 {
     let mut records = Vec::new();
     let mut last_error = None;
+    let mut failures = Vec::new();
     for chunk in window.chunks(30) {
         match fetch(chunk).await {
             Ok(slice) => records.extend(slice),
             Err(error) if is_abort_error(&error) => return Err(error),
             Err(error) => {
+                failures.push(format!(
+                    "daily_summary ({}..{}): {}",
+                    chunk.start_day(),
+                    chunk.end_day(),
+                    error.user_message()
+                ));
                 if !error.is_unavailable() || last_error.is_none() {
                     last_error = Some(error);
                 }
             }
         }
     }
-    conclude_slices(records, last_error, "每日概览窗口没有可识别记录")
+    let mut records = conclude_slices(records, last_error, "每日概览窗口没有可识别记录")?;
+    if !failures.is_empty() {
+        let reason = failures.join("; ");
+        for record in &mut records {
+            let reason = match record.incomplete_reason.take() {
+                Some(existing) => format!("{existing}; {reason}"),
+                None => reason.clone(),
+            };
+            record.incomplete_reason = Some(reason);
+        }
+    }
+    Ok(records)
 }
 
 /// A failed historical slice must not discard other nights or prevent the

@@ -6,6 +6,7 @@
  * 因为 ZeppBridge 的特点之一就是「没测到就是没测到」，演示里也要看得见。
  */
 import { at, clamp, dayKey, iso, makeRng, round, type Rng } from './rng';
+import { metricExtrema } from '../lib/metricSeries';
 import type { MetricSeries, MetricSeriesPoint, SleepSession, SleepStageSlice, Workout } from '../types';
 
 export const DEMO_DEVICE_ID = 'DEMO0000BAND01';
@@ -30,6 +31,7 @@ export interface DemoData {
 const MISSED_NIGHTS = new Set([3, 9, 31, 47, 62, 80]);
 
 const METRIC_UNITS: Record<string, string> = {
+  blood_pressure_systolic: 'mmHg', blood_pressure_diastolic: 'mmHg', blood_pressure_pulse: 'bpm',
   readiness: 'score', stress: 'score', spo2: '%', vo2max: 'ml/kg/min', training_load: 'load', resting_hr: 'bpm',
   hrv: 'ms', hrv_rmssd: 'ms', steps: '步', sleep_score: 'score', respiratory_rate: '次/分',
   weight: 'kg', bmi: 'kg/m²', body_fat_rate: '%', body_water_rate: '%', muscle_mass: 'kg',
@@ -184,6 +186,13 @@ const buildMetrics = (now: Date, rng: Rng, sleeps: SleepSession[], workouts: Wor
     const week = Math.sin((back / 7) * Math.PI * 2);
     const ran = loadByDay.has(date);
     const push = (name: string, point: Omit<MetricSeriesPoint, 'date'>) => out[name].push({ date, ...point });
+    // Sparse mock readings for the experimental BP cards, deliberately with
+    // missing days. These are synthetic and never enter a user's database.
+    if (back < 28 && back % 3 === 0) {
+      push('blood_pressure_systolic', { value: 111 + (back % 5), min: 106, max: 126 });
+      push('blood_pressure_diastolic', { value: 74 + (back % 3), min: 71, max: 82 });
+      if (back % 2 === 0) push('blood_pressure_pulse', { value: 53 + (back % 4) });
+    }
     if (!rng.chance(0.04)) push('readiness', { value: Math.round(clamp(76 + 8 * week + rng.between(-6, 6), 54, 95)) });
     push('stress', { value: Math.round(rng.between(29, 46)), min: rng.int(3, 14), max: rng.int(62, 84) });
     if (!rng.chance(0.08)) push('spo2', { value: Math.round(rng.between(95, 98)) });
@@ -294,12 +303,11 @@ export const metricSeries = (data: DemoData, days: number, names?: string[] | nu
       return {
         metric: name,
         unit: METRIC_UNITS[name],
-        source: 'daily_metrics',
+        source: name.startsWith('blood_pressure_') ? 'metric_samples' : 'daily_metrics',
         points,
         latest: points.length ? points[points.length - 1] : null,
         average: values.length ? round(values.reduce((sum, v) => sum + v, 0) / values.length, 1) : null,
-        minimum: values.length ? Math.min(...values) : null,
-        maximum: values.length ? Math.max(...values) : null,
+        ...metricExtrema(name, points),
         days_with_data: points.length,
         window_days: days,
       };

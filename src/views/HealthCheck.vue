@@ -141,6 +141,9 @@ const sourceLabel = (source: string): string => lookup(t.value.source, source) ?
 
 /** 来源未知的数据不静默并进设备数据里；这里如实分开列。 */
 const sourceSummary = (stream: StreamHealth): string => {
+  if (stream.stream === 'heart_rate' && stream.parse.error_kind === 'not_available') {
+    return stream.canonical_records > 0 ? t.value.heartRateAlternate : t.value.heartRateEndpointEmpty;
+  }
   if (!stream.sources.length) return t.value.noRecordsYet;
   return stream.sources
     .map((entry) => `${sourceLabel(entry.source)} ${entry.records}`)
@@ -197,7 +200,7 @@ const occasional = computed(() => health.value?.occasional_metrics ?? []);
 
 /* 首屏一张总结卡：几条数据流正常、几条要处理；细节五块在下面逐块摊开。 */
 const streamOk = (stream: StreamHealth) => [stream.fetch, stream.parse, stream.write].every((stage) => stage.state === 'ok');
-const streamFailed = (stream: StreamHealth) => [stream.fetch, stream.parse, stream.write].some((stage) => stage.state === 'failed');
+const streamFailed = (stream: StreamHealth) => [stream.fetch, stream.parse, stream.write].some((stage) => stage.state === 'failed' && stage.error_kind !== 'not_available');
 const summary = computed(() => {
   const streams = allStreams.value;
   const ok = streams.filter(streamOk).length;

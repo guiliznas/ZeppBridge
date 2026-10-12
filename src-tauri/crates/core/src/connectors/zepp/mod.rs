@@ -368,6 +368,33 @@ impl ZeppConnector {
         .await
     }
 
+    /// Candidate blood-pressure surface, with the date parameters used by
+    /// m4ary/zepp-health-cli. Still unverified on a blood-pressure account.
+    pub async fn fetch_blood_pressure_days(&self, days: i64, to_date: &str) -> Result<Value> {
+        self.get_json(
+            "/users/me/bloodPressure",
+            vec![
+                ("days", days.clamp(1, 365).to_string()),
+                ("toDate", to_date.to_owned()),
+                (
+                    "sourceArrayStr",
+                    "com.huami.midong.associated,com.huami.midong".into(),
+                ),
+            ],
+        )
+        .await
+    }
+
+    /// Alternative parameter contract used by Thejuampi/icu. Keep this
+    /// separate: an empty response to one contract does not validate the other.
+    pub async fn fetch_blood_pressure_range(&self, from_ms: i64, to_ms: i64) -> Result<Value> {
+        self.get_json(
+            "/users/me/bloodPressure",
+            vec![("from", from_ms.to_string()), ("to", to_ms.to_string())],
+        )
+        .await
+    }
+
     /// Weight and body composition: `/users/{id}/members/{member}/weightRecords`.
     ///
     /// **A different surface, not another event type.** ZeppBridge probed

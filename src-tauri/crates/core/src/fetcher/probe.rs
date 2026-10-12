@@ -25,6 +25,8 @@ pub(super) enum ProbeSurface {
     WeightRecords,
     /// `/users/me/fileInfo/events` — an index of stored measurement files.
     FileInfoEvents,
+    BloodPressureDays,
+    BloodPressureRange,
 }
 
 impl ProbeSurface {
@@ -35,6 +37,8 @@ impl ProbeSurface {
             ProbeSurface::UserEventsDay => "user_events_day",
             ProbeSurface::WeightRecords => "weight_records",
             ProbeSurface::FileInfoEvents => "file_info_events",
+            ProbeSurface::BloodPressureDays => "blood_pressure_days",
+            ProbeSurface::BloodPressureRange => "blood_pressure_range",
         }
     }
 }
@@ -89,7 +93,21 @@ pub const SCALE_ACCOUNT_MEMBER: &str = "-1";
 /// year of one person weighing themselves. 300 covers weighing in twice a day.
 pub(super) const WEIGHT_RECORD_LIMIT: i64 = 300;
 
-pub(super) const CAPABILITY_PROBES: [(&str, ProbeSurface, &str, Option<&str>, ProbeCadence); 20] = [
+pub(super) const CAPABILITY_PROBES: [(&str, ProbeSurface, &str, Option<&str>, ProbeCadence); 22] = [
+    (
+        "blood_pressure",
+        ProbeSurface::BloodPressureDays,
+        "bloodPressure",
+        None,
+        ProbeCadence::Episodic,
+    ),
+    (
+        "blood_pressure",
+        ProbeSurface::BloodPressureRange,
+        "bloodPressure",
+        None,
+        ProbeCadence::Episodic,
+    ),
     // Controls. The positive one proves the probe itself works; the negative
     // one tells us whether an empty answer carries any information at all.
     (
@@ -285,17 +303,17 @@ pub(super) fn probe_field_names(items: &[Value]) -> Vec<String> {
             names.insert(key.clone());
             // Event payloads nest the interesting schema one or two levels
             // down, under `value` and then `samples[]`.
-            if key == "value" {
+            if key == "value" || key == "summary" {
                 if let Some(nested) = value.as_object() {
                     for (nested_key, nested_value) in nested {
-                        names.insert(format!("value.{nested_key}"));
+                        names.insert(format!("{key}.{nested_key}"));
                         if nested_key == "samples" {
                             if let Some(sample) =
                                 nested_value.as_array().and_then(|list| list.first())
                             {
                                 if let Some(sample) = sample.as_object() {
                                     for sample_key in sample.keys() {
-                                        names.insert(format!("value.samples[].{sample_key}"));
+                                        names.insert(format!("{key}.samples[].{sample_key}"));
                                     }
                                 }
                             }
@@ -320,9 +338,16 @@ pub(super) fn probe_latest_date(items: &[Value]) -> Option<String> {
         let Some(object) = item.as_object() else {
             continue;
         };
-        let moment = ["timestamp", "time", "startTime", "date", "dateString"]
-            .iter()
-            .find_map(|key| object.get(*key).and_then(probe_moment));
+        let moment = [
+            "timestamp",
+            "time",
+            "startTime",
+            "generatedTime",
+            "date",
+            "dateString",
+        ]
+        .iter()
+        .find_map(|key| object.get(*key).and_then(probe_moment));
         if let Some(moment) = moment {
             newest = Some(newest.map_or(moment, |best: DateTime<Utc>| best.max(moment)));
         }
@@ -388,8 +413,14 @@ impl DataFetcher {
                     continue;
                 }
             }
-            let Some(start) = (day - Duration::days(cadence.days() - 1)).and_hms_opt(0, 0, 0)
-            else {
+            // Dedicated candidates are unverified; start with the clients'
+            // small default window rather than treating a year-long rejection
+            // as evidence about account support.
+            let window_days = match surface {
+                ProbeSurface::BloodPressureDays | ProbeSurface::BloodPressureRange => 7,
+                _ => cadence.days(),
+            };
+            let Some(start) = (day - Duration::days(window_days - 1)).and_hms_opt(0, 0, 0) else {
                 continue;
             };
             let Some(end) = day.and_hms_opt(23, 59, 59) else {
@@ -438,44 +469,89 @@ impl DataFetcher {
                         )
                         .await
                 }
+                ProbeSurface::BloodPressureDays => {
+                    self.connector
+                        .fetch_blood_pressure_days(window_days, &day.to_string())
+                        .await
+                }
+                ProbeSurface::BloodPressureRange => {
+                    self.connector.fetch_blood_pressure_range(from, to).await
+                }
             };
 
             let mut probe = CapabilityProbe {
                 stream: stream.to_string(),
                 surface: surface.as_str().to_string(),
                 cadence: cadence.as_str().to_string(),
-                window_days: cadence.days(),
+                window_days,
                 event_type: event_type.to_string(),
                 sub_type: sub_type.unwrap_or_default().to_string(),
                 status: "error".to_string(),
                 records: 0,
                 latest_date: None,
                 fields: Vec::new(),
+                failure: None,
             };
             match outcome {
                 Ok(payload) => {
                     let items = payload_items(&payload);
-                    probe.status = if items.is_empty() {
-                        "empty".to_string()
-                    } else {
-                        "available".to_string()
-                    };
+                    probe.status = probe_payload_status(&payload).to_string();
                     probe.records = items.len();
                     probe.latest_date = probe_latest_date(&items);
                     probe.fields = probe_field_names(&items);
+                    if probe.status == "unrecognized" {
+                        probe.fields = payload
+                            .as_object()
+                            .map(|object| object.keys().take(MAX_PROBE_FIELDS).cloned().collect())
+                            .unwrap_or_default();
+                    }
                 }
                 Err(error) if is_abort_error(&error) => {
                     // 取消 / 需要重新登录不是这条流的能力事实。半截 7 天
                     // 窗口不能当成一次完整探测写进库。
                     return Vec::new();
                 }
-                Err(error) if error.is_unavailable() => probe.status = "unavailable".to_string(),
+                Err(error) if error.is_unavailable() => {
+                    probe.status = "unavailable".to_string();
+                    probe.failure = Some(probe_failure(&error));
+                }
                 // The server's error body can echo request context, so only the
                 // fact of the failure is kept.
-                Err(_) => {}
+                Err(error) => probe.failure = Some(probe_failure(&error)),
             }
             results.push(probe);
         }
         results
+    }
+}
+
+pub(super) fn probe_failure(error: &ZeppBridgeError) -> String {
+    match error {
+        ZeppBridgeError::HttpStatus { status, .. }
+        | ZeppBridgeError::RetryExhausted { status, .. } => {
+            format!("{}: HTTP {status}", error.code())
+        }
+        ZeppBridgeError::CloudRejected { code, .. } => {
+            format!("{}: cloud code {code}", error.code())
+        }
+        _ => error.code().to_string(),
+    }
+}
+
+pub(super) fn probe_payload_status(payload: &Value) -> &'static str {
+    if !payload_items(payload).is_empty() {
+        return "available";
+    }
+    let recognized = payload.is_array()
+        || payload.get("items").is_some_and(Value::is_array)
+        || payload.get("data").is_some_and(Value::is_array)
+        || payload
+            .get("data")
+            .and_then(|data| data.get("items"))
+            .is_some_and(Value::is_array);
+    if recognized {
+        "empty"
+    } else {
+        "unrecognized"
     }
 }

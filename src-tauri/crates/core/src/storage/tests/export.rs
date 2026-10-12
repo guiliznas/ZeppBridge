@@ -1,6 +1,114 @@
 use super::*;
 
 #[test]
+fn mock_blood_pressure_reaches_storage_series_export_and_capabilities() {
+    let db = Database::in_memory().unwrap();
+    let at = DateTime::<Utc>::from_naive_utc_and_offset(
+        (Utc::now() - Duration::days(1))
+            .date_naive()
+            .and_hms_opt(12, 0, 0)
+            .unwrap(),
+        Utc,
+    );
+    let raw = RawRecord {
+        stream: "wellness".into(),
+        source_key: "wellness:blood_pressure:mock:1".into(),
+        source_scope: SourceScope::UserFused,
+        device_id: None,
+        start_utc: at,
+        end_utc: None,
+        capability: CapabilityStatus::Unverified,
+        payload: serde_json::json!({"items":[
+            {"timestamp":at.timestamp_millis(),"systolic":115,"diastolic":77,"pulse":53},
+            {"timestamp":(at + Duration::minutes(5)).timestamp_millis(),"systolic":114,"diastolic":76}
+        ]}),
+    };
+    db.persist_fetched_record(&raw).unwrap();
+    db.persist_fetched_record(&raw).unwrap();
+    let health = db.data_health(30, 0).unwrap();
+    assert_eq!(
+        health
+            .streams
+            .iter()
+            .find(|s| s.stream == "wellness")
+            .unwrap()
+            .canonical_records,
+        5
+    );
+    assert_eq!(
+        health
+            .streams
+            .iter()
+            .find(|s| s.stream == "daily_summary")
+            .unwrap()
+            .canonical_records,
+        0
+    );
+    let series = db
+        .metric_series(
+            &[
+                "blood_pressure_systolic".into(),
+                "blood_pressure_diastolic".into(),
+                "blood_pressure_pulse".into(),
+            ],
+            7,
+        )
+        .unwrap();
+    assert_eq!(series.len(), 3);
+    assert_eq!(series[0].points.len(), 1);
+    assert_eq!(series[0].points[0].value, 114.5);
+    assert_eq!(series[0].minimum, Some(114.0));
+    assert_eq!(series[0].maximum, Some(115.0));
+    let item = db
+        .capability_overview(Local::now().date_naive())
+        .unwrap()
+        .items
+        .into_iter()
+        .find(|i| i.stream == "blood_pressure")
+        .unwrap();
+    assert!(item.ingested);
+    assert_eq!(item.records, 2);
+    let date = at.with_timezone(&Local).date_naive();
+    let export = db
+        .build_ai_export(&ExportSelection {
+            scope: Some(ExportScope::date_range(date.to_string(), date.to_string())),
+            start_date: None,
+            end_date: None,
+            data_types: vec!["blood_pressure".into()],
+            detail: ExportDetail::Full,
+        })
+        .unwrap();
+    let export: serde_json::Value = serde_json::from_str(&export.0).unwrap();
+    let samples = export["data"]["metric_samples"].as_array().unwrap();
+    assert_eq!(
+        samples.len(),
+        5,
+        "no duplicate readings and no made-up pulse"
+    );
+    assert!(samples
+        .iter()
+        .any(|s| s["timestamp"].as_str().unwrap() == at.to_rfc3339()));
+    assert_eq!(
+        export["capabilities"]["blood_pressure"]["status"],
+        "available"
+    );
+    let unknown = RawRecord {
+        source_key: "wellness:blood_pressure:mock:unknown".into(),
+        payload: serde_json::json!({"items":[{"opaque":"encoded"}]}),
+        ..raw
+    };
+    assert!(db.persist_fetched_record(&unknown).is_err());
+    assert_eq!(
+        db.conn
+            .query_row("SELECT COUNT(*) FROM raw_records", [], |row| row
+                .get::<_, i64>(0))
+            .unwrap(),
+        2,
+        "unknown raw survives for replay"
+    );
+}
+
+#[test]
 fn metric_sample_types_export_without_an_unrelated_selection() {
     let db = Database::in_memory().unwrap();
     for (metric, value, unit) in [

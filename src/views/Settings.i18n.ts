@@ -96,6 +96,7 @@ export const settingsMessages = defineMessages(
     probeEmpty: '无数据',
     probeRefused: '接口拒绝',
     probeFailed: '请求失败',
+    probeUnrecognized: '返回结构尚未识别',
 
     // ── 未识别运动编号 ──
     codesUnnamed: (count: number) => `${count} 个还没有名字`,
@@ -330,7 +331,7 @@ export const settingsMessages = defineMessages(
       vo2max: 'VO₂max',
       lactate_threshold: '乳酸阈值',
       pai: 'PAI 活力指数',
-      blood_pressure: '血压',
+      blood_pressure: '血压（实验性）',
       weight: '体重',
       emotion: '情绪',
       food: '饮食记录（卡路里与三大营养素）',
@@ -343,7 +344,9 @@ export const settingsMessages = defineMessages(
     capabilityNotIngested: '云端有记录，但本机尚无可用数据。先同步或补拉；仍未收录的话可能要补充报文格式支持。',
     capabilityFoodHistoryHint: '云端有饮食记录，但本机尚未收录。若记录早于最近一次增量同步，运行覆盖该日期的历史同步；仍未出现再反馈报文格式。',
     capabilityUnsupported: '你的账号或设备不提供这项数据',
-    capabilityNoneProbed: (days: number) => `过去 ${days} 天没有测量记录`,
+    capabilityNoneProbed: (days: number) => `已查询的候选接口在最近 ${days} 天未返回记录，尚不能判断设备有没有测量。`,
+    capabilityUnconfirmed: '候选接口未能确认这项数据；不代表账号或设备不支持。',
+    probeWindow: (days: number) => `查询范围 ${days} 天`,
     capabilityNotProbed: '尚未检测',
     capabilityLocal: (records: number, unit: string, latest: string) =>
       `${records} ${unit}${latest ? ` · 至 ${latest}` : ''}`,
@@ -445,6 +448,7 @@ export const settingsMessages = defineMessages(
     probeEmpty: 'no data',
     probeRefused: 'endpoint refused',
     probeFailed: 'request failed',
+    probeUnrecognized: 'unrecognized response shape',
 
     // ── Unknown workout codes ──
     codesUnnamed: (count: number) => `${count} still unnamed`,
@@ -679,7 +683,7 @@ If you need anything from me (which client I use, where the file lives), just as
       vo2max: 'VO₂max',
       lactate_threshold: 'Lactate threshold',
       pai: 'PAI',
-      blood_pressure: 'Blood pressure',
+      blood_pressure: 'Blood pressure (experimental)',
       weight: 'Weight',
       emotion: 'Mood',
       food: 'Food log (calories and macros)',
@@ -692,7 +696,9 @@ If you need anything from me (which client I use, where the file lives), just as
     capabilityNotIngested: 'The cloud has records but nothing usable is stored locally. Sync or backfill; if still missing, the payload format may need support.',
     capabilityFoodHistoryHint: 'Food records exist in the cloud but are not stored locally. If they predate the incremental sync window, run a history sync over those dates; if still missing, report the payload format.',
     capabilityUnsupported: 'Your account or device does not provide this',
-    capabilityNoneProbed: (days: number) => `No measurement in the last ${days} days`,
+    capabilityNoneProbed: (days: number) => `Queried candidates returned no records within ${days} days; this does not establish whether the device measured anything.`,
+    capabilityUnconfirmed: 'Candidate endpoints could not confirm this data. Account or device support remains unknown.',
+    probeWindow: (days: number) => `${days}-day query window`,
     capabilityNotProbed: 'Not probed yet',
     capabilityLocal: (records: number, unit: string, latest: string) =>
       `${records} ${unit}${latest ? ` · through ${latest}` : ''}`,
@@ -794,6 +800,7 @@ If you need anything from me (which client I use, where the file lives), just as
     probeEmpty: 'sin datos',
     probeRefused: 'endpoint rechazado',
     probeFailed: 'la solicitud falló',
+    probeUnrecognized: 'estructura de respuesta no reconocida',
 
     // ── Unknown workout codes ──
     codesUnnamed: (count: number) => `${count} aún sin nombre`,
@@ -1028,7 +1035,7 @@ Si necesitas algo de mí (qué cliente uso, dónde está el archivo), pregúntam
       vo2max: 'VO₂máx',
       lactate_threshold: 'Umbral de lactato',
       pai: 'PAI',
-      blood_pressure: 'Presión arterial',
+      blood_pressure: 'Presión arterial (experimental)',
       weight: 'Peso',
       emotion: 'Estado de ánimo',
       food: 'Registro de comidas (calorías y macronutrientes)',
@@ -1041,7 +1048,9 @@ Si necesitas algo de mí (qué cliente uso, dónde está el archivo), pregúntam
     capabilityNotIngested: 'La nube tiene registros pero aquí no hay datos usables. Sincroniza o recupera el historial; si sigue sin entrar, puede faltar soporte del formato.',
     capabilityFoodHistoryHint: 'Hay registros de comidas en la nube que aún no están en este equipo. Si son de antes de la última sincronización incremental, corre una de historial que cubra esas fechas; si aún no salen, reporta el formato.',
     capabilityUnsupported: 'Tu cuenta o dispositivo no ofrece esto',
-    capabilityNoneProbed: (days: number) => `Sin mediciones en los últimos ${days} días`,
+    capabilityNoneProbed: (days: number) => `Los candidatos consultados no devolvieron registros en ${days} días; no confirma si el dispositivo midió.`,
+    capabilityUnconfirmed: 'Los candidatos no confirmaron estos datos. El soporte de la cuenta o del dispositivo sigue sin confirmarse.',
+    probeWindow: (days: number) => `Intervalo consultado: ${days} días`,
     capabilityNotProbed: 'Aún sin probar',
     capabilityLocal: (records: number, unit: string, latest: string) =>
       `${records} ${unit}${latest ? ` · hasta ${latest}` : ''}`,

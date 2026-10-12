@@ -362,10 +362,21 @@ impl Database {
                 Ok((count, sources, observed))
             }
             "daily_summary" | "wellness" => {
-                let count = self.scalar_i64("SELECT COUNT(*) FROM daily_metrics")?;
-                let sources = self.source_breakdown("daily_metrics", "")?;
+                // Only rows owned by this stream establish its coverage.
+                // Food/stress must not make a failed daily-summary day look complete.
+                let filter = format!(
+                    "WHERE raw_record_id IN (SELECT id FROM raw_records WHERE stream = '{stream}')"
+                );
+                let rows = if stream == "wellness" {
+                    format!("(SELECT date, source_scope FROM daily_metrics {filter}
+                        UNION ALL SELECT date(timestamp, 'localtime') AS date, source_scope FROM metric_samples {filter})")
+                } else {
+                    format!("(SELECT date, source_scope FROM daily_metrics {filter})")
+                };
+                let count = self.scalar_i64(&format!("SELECT COUNT(*) FROM {rows}"))?;
+                let sources = self.source_breakdown(&rows, "")?;
                 let observed = self.observed_days_for(
-                    "SELECT DISTINCT date FROM daily_metrics WHERE date >= ?1",
+                    &format!("SELECT DISTINCT date FROM {rows} WHERE date >= ?1"),
                     &cutoff,
                 )?;
                 Ok((count, sources, observed))

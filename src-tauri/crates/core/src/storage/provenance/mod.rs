@@ -124,8 +124,8 @@ impl StageErrorKind {
     /// 把内部错误映射成稳定的阶段失败类别。
     ///
     /// 这里做的是「用户下一步该干什么」的分类，不是错误文本的转写：
-    /// `auth` 要去重新连接，`network` 值得重试，`not_available` 是这个账号
-    /// 本来就没有这条流，重试多少次都没用。
+    /// `auth` 要去重新连接，`network` 值得重试，`not_available` 只说明这个
+    /// 接口没给可用数据，不能判断设备有没有测量或其他接口是否有数据。
     pub fn classify(error: &crate::models::ZeppBridgeError) -> Self {
         use crate::models::error::HeadlessProblem;
         use crate::models::ZeppBridgeError as E;

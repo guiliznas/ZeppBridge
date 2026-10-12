@@ -10,6 +10,7 @@ use std::collections::BTreeMap;
 
 mod band;
 mod band_items;
+mod blood_pressure;
 mod device;
 mod food;
 mod metrics;
@@ -20,6 +21,7 @@ mod tests;
 mod wellness;
 
 use band_items::*;
+use blood_pressure::*;
 use device::*;
 use food::*;
 use metrics::*;

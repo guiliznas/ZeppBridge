@@ -1,6 +1,7 @@
 /* 导出、交给 AI 与本地重解析。从 types/index.ts 按领域拆出，形状不变。 */
 
 export type ExportDataType =
+  | 'blood_pressure'
   | 'life_events'
   | 'heart_rate'
   | 'sleep'

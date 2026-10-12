@@ -8,6 +8,39 @@ fn date(text: &str) -> NaiveDate {
     NaiveDate::parse_from_str(text, "%Y-%m-%d").unwrap()
 }
 
+#[test]
+fn new_wellness_fetch_contract_rechecks_legacy_months_once() {
+    let db = db();
+    let from = date("2026-08-01");
+    let to = date("2026-08-31");
+    db.plan_backfill(from, to).unwrap();
+    for stream in ["wellness", "daily_summary"] {
+        db.record_backfill_chunk(stream, "2026-08-01", ChunkStatus::Persisted, 12, None, None)
+            .unwrap();
+    }
+    db.set_app_meta("wellness_backfill_fetch_revision", "legacy")
+        .unwrap();
+    db.plan_backfill(from, to).unwrap();
+    let queue = db.pending_backfill_chunks(100).unwrap();
+    assert!(queue.iter().any(|c| c.stream == "wellness"));
+    assert!(!queue.iter().any(|c| c.stream == "daily_summary"));
+    db.record_backfill_chunk(
+        "wellness",
+        "2026-08-01",
+        ChunkStatus::Persisted,
+        14,
+        None,
+        None,
+    )
+    .unwrap();
+    db.plan_backfill(from, to).unwrap();
+    assert!(!db
+        .pending_backfill_chunks(100)
+        .unwrap()
+        .iter()
+        .any(|c| c.stream == "wellness"));
+}
+
 /// issue #10 的回归门。
 ///
 /// 旧实现每轮取 `pending_backfill_chunks(1)`，失败块写回 `failed` 之后仍

@@ -78,9 +78,10 @@ export interface CapabilityProbe {
   windowDays: number;
   eventType: string;
   subType: string;
-  status: 'available' | 'empty' | 'unavailable' | 'error';
+  status: 'available' | 'empty' | 'unavailable' | 'error' | 'unrecognized';
   records: number;
   /** Newest item's calendar date — the answer for episodic metrics. */
   latestDate?: string | null;
   fields: string[];
+  failure?: string | null;
 }

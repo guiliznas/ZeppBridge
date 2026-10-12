@@ -35,6 +35,9 @@ export interface BodyCard {
  * any name it does not have a unit for.
  */
 const VITALS_METRICS = [
+  'blood_pressure_systolic',
+  'blood_pressure_diastolic',
+  'blood_pressure_pulse',
   'readiness',
   'stress',
   'spo2',
@@ -85,6 +88,9 @@ export const groupOf = (metric: string): CardGroup => {
 };
 
 export const buildBodyCards = (t: BodyStatusText): BodyCard[] => [
+  { metric: 'blood_pressure_systolic', label: t.systolicLabel, color: metricColor('blood_pressure_systolic'), unit: 'mmHg', showSpread: true, chart: 'bar', calendarAxis: true },
+  { metric: 'blood_pressure_diastolic', label: t.diastolicLabel, color: metricColor('blood_pressure_diastolic'), unit: 'mmHg', showSpread: true, chart: 'bar', calendarAxis: true },
+  { metric: 'blood_pressure_pulse', label: t.bloodPressurePulseLabel, color: metricColor('blood_pressure_pulse'), unit: 'bpm', showSpread: true, chart: 'bar', calendarAxis: true },
   {
     metric: 'readiness',
     label: t.readinessLabel,

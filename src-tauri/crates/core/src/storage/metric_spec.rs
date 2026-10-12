@@ -7,7 +7,10 @@
 /// `metric_samples` metrics are aggregated to one point per local day; the
 /// spread of that day's samples becomes `min` / `max`, which is real rather
 /// than derived.
-pub(super) const SERIES_METRICS: [(&str, MetricSource, &str); 57] = [
+pub(super) const SERIES_METRICS: [(&str, MetricSource, &str); 60] = [
+    ("blood_pressure_systolic", MetricSource::Samples, "mmHg"),
+    ("blood_pressure_diastolic", MetricSource::Samples, "mmHg"),
+    ("blood_pressure_pulse", MetricSource::Samples, "bpm"),
     ("sleep_score", MetricSource::SleepScores, "score"),
     ("readiness", MetricSource::Daily(None), "score"),
     ("physical_readiness", MetricSource::Daily(None), "score"),

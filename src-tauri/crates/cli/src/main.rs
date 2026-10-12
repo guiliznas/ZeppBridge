@@ -38,6 +38,7 @@ use zeppbridge_core::sync::{SyncManager, SyncReport};
 
 mod args;
 mod cmd_export;
+mod cmd_probe;
 mod cmd_reprocess;
 mod cmd_status;
 mod cmd_sync;
@@ -47,6 +48,7 @@ mod tests;
 
 use args::*;
 use cmd_export::*;
+use cmd_probe::*;
 use cmd_reprocess::*;
 use cmd_status::*;
 use cmd_sync::*;
@@ -109,6 +111,7 @@ Usage:
 Commands:
   status              Print local database and account status (no network)
   sync                Sync from the Zepp cloud into the local SQLite database
+  probe               Check candidate health endpoints without importing data
   reprocess           Replay stored payloads with the current parser (no network)
   export              Export local data as JSON / CSV / GPX / FIT
   contract            Print the read contract (units, time zone, source, missing values)
@@ -125,6 +128,11 @@ reprocess options:
   --all                     Replay every payload, not only what a parser upgrade owes
   --json                    Emit a machine-readable replay report
 
+probe options:
+  --streams <a,b,c>          Default: blood_pressure; also heart_rate,daily_summary
+  --days <N>                Heart rate / daily summary window; 1-365 (default 7)
+  --json                    Emit counts, field names and errors only; no readings
+
 export options:
   --format <json|csv|gpx|fit>  Default: json; fit needs --out to point at a directory
                                (csv, gpx and fit always export full detail)
@@ -135,7 +143,7 @@ export options:
                             Allowed: heart_rate, hrv, hrv_rmssd, respiratory_rate,
                             pai, lactate_threshold, daily_activity, sleep, workouts,
                             recovery, steps, spo2, stress, training_load, vo2max,
-                            weight, food
+                            weight, food, blood_pressure
   --detail <summary|full>   Default: summary
   --out <path>              Default: write to stdout
 
@@ -189,6 +197,7 @@ fn run(args: &[String]) -> u8 {
         }
         "status" => cmd_status(rest),
         "sync" => cmd_sync(rest),
+        "probe" => cmd_probe(rest),
         "reprocess" => cmd_reprocess(rest),
         "export" => cmd_export(rest),
         other => {

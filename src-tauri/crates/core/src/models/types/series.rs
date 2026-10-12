@@ -38,6 +38,39 @@ pub struct MetricSeries {
     pub window_days: i64,
 }
 
+/// BP trends average readings by day, but their extrema must still describe
+/// the measured readings, not the extrema of those daily averages.
+pub fn metric_series_extrema(
+    metric: &str,
+    points: &[MetricSeriesPoint],
+) -> (Option<f64>, Option<f64>) {
+    let measured = metric.starts_with("blood_pressure_");
+    (
+        points
+            .iter()
+            .map(|point| {
+                if measured {
+                    point.min.unwrap_or(point.value)
+                } else {
+                    point.value
+                }
+            })
+            .filter(|v| v.is_finite())
+            .reduce(f64::min),
+        points
+            .iter()
+            .map(|point| {
+                if measured {
+                    point.max.unwrap_or(point.value)
+                } else {
+                    point.value
+                }
+            })
+            .filter(|v| v.is_finite())
+            .reduce(f64::max),
+    )
+}
+
 /// One day of acute/chronic training load.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TrainingBalancePoint {

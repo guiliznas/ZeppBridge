@@ -97,6 +97,7 @@ impl Database {
             || selected.contains("spo2")
             || selected.contains("stress")
             || selected.contains("weight")
+            || selected.contains("blood_pressure")
             // 官方的每小时步数（steps_hourly）跟着 steps 走。
             || selected.contains("steps")
         {
@@ -585,7 +586,15 @@ impl Database {
                         RAW_PENDING_STREAMS
                             .iter()
                             .find(|(name, _)| *name == selected_type.as_str())
-                            .and_then(|(_, labels)| self.count_wellness_raw(labels).ok())
+                            .and_then(|(_, labels)| {
+                                if selected_type == "blood_pressure" {
+                                    self.conn.query_row(
+                                        "SELECT COUNT(*) FROM raw_records r JOIN raw_quarantine q ON q.raw_record_id = r.id
+                                         WHERE r.stream = 'wellness' AND r.source_key LIKE 'wellness:blood_pressure:%'",
+                                        [], |row| row.get::<_, i64>(0),
+                                    ).ok()
+                                } else { self.count_wellness_raw(labels).ok() }
+                            })
                             .filter(|found| *found > 0)
                     })
                     .flatten();
@@ -611,11 +620,15 @@ impl Database {
                     // In summary detail a stream is backed by far more readings
                     // than it emits rows; say both, so nobody has to reconcile
                     // "22517 records" against 423 lines of JSON.
-                    serde_json::json!({
+                    let mut available = serde_json::json!({
                         "status": "available",
                         "source_records": count,
                         "rows_in_export": rows,
-                    })
+                    });
+                    if selected_type == "blood_pressure" {
+                        available["verification"] = serde_json::json!("experimental_mapping");
+                    }
+                    available
                 };
                 (selected_type.clone(), entry)
             })

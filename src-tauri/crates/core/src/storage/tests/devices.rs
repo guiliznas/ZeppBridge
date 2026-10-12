@@ -139,6 +139,7 @@ fn a_stream_the_cloud_has_but_we_never_read_is_not_reported_as_available_data() 
         records: 42,
         latest_date: Some("2026-08-01".into()),
         fields: Vec::new(),
+        failure: None,
     }])
     .unwrap();
 
@@ -187,6 +188,7 @@ fn food_probe_is_cloud_evidence_until_sync_or_replay_imports_it() {
         records: 50,
         latest_date: Some("2026-09-18".into()),
         fields: Vec::new(),
+        failure: None,
     };
     db.save_capability_probe(&[probe.clone()]).unwrap();
     let row = food();
@@ -277,6 +279,7 @@ fn partial_capability_refresh_keeps_food_evidence_and_failures_do_not_erase_it()
         records: 12,
         latest_date: Some("2026-09-02".into()),
         fields: vec!["value.foodName".into()],
+        failure: None,
     };
     db.save_capability_probe(std::slice::from_ref(&food))
         .unwrap();
@@ -479,7 +482,7 @@ fn capability_window_is_inclusive_local_calendar_days() {
 }
 
 #[test]
-fn only_an_outright_rejection_licenses_unsupported() {
+fn candidate_rejection_does_not_establish_device_support() {
     let db = Database::in_memory().unwrap();
     let probe = |status: &str| CapabilityProbe {
         stream: "blood_pressure".into(),
@@ -492,6 +495,7 @@ fn only_an_outright_rejection_licenses_unsupported() {
         records: 0,
         latest_date: None,
         fields: Vec::new(),
+        failure: None,
     };
 
     db.save_capability_probe(&[probe("empty")]).unwrap();
@@ -510,7 +514,62 @@ fn only_an_outright_rejection_licenses_unsupported() {
         .iter()
         .find(|item| item.stream == "blood_pressure")
         .unwrap();
-    assert_eq!(item.status, "unsupported", "a rejection is evidence");
+    assert_eq!(
+        item.status, "unknown",
+        "one candidate cannot establish device support"
+    );
+}
+
+#[test]
+fn capability_candidates_are_saved_separately_and_positive_evidence_wins() {
+    let db = Database::in_memory().unwrap();
+    let mut positive = CapabilityProbe {
+        stream: "blood_pressure".into(),
+        surface: "blood_pressure_days".into(),
+        cadence: "episodic".into(),
+        window_days: 7,
+        event_type: "bloodPressure".into(),
+        sub_type: String::new(),
+        status: "available".into(),
+        records: 2,
+        latest_date: Some("2026-10-11".into()),
+        fields: vec!["systolic".into()],
+        failure: None,
+    };
+    let mut empty = positive.clone();
+    empty.surface = "v2_events".into();
+    empty.status = "empty".into();
+    empty.records = 0;
+    for probes in [
+        vec![positive.clone(), empty.clone()],
+        vec![empty, positive.clone()],
+    ] {
+        db.save_capability_probe(&probes).unwrap();
+        let item = db
+            .capability_overview(Local::now().date_naive())
+            .unwrap()
+            .items
+            .into_iter()
+            .find(|i| i.stream == "blood_pressure")
+            .unwrap();
+        assert_eq!(item.status, "available");
+        assert_eq!(item.window_days, 7);
+        assert_eq!(item.records, 2);
+        assert!(!item.ingested);
+    }
+    positive.stream = "emotion".into();
+    positive.status = "error".into();
+    positive.records = 0;
+    db.save_capability_probe(&[positive]).unwrap();
+    let item = db
+        .capability_overview(Local::now().date_naive())
+        .unwrap()
+        .items
+        .into_iter()
+        .find(|i| i.stream == "emotion")
+        .unwrap();
+    assert_eq!(item.status, "unknown");
+    assert!(!item.note.unwrap().contains("没有测量"));
 }
 
 #[test]

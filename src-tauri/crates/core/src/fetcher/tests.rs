@@ -1,4 +1,21 @@
 use super::*;
+
+#[test]
+fn probe_does_not_confuse_unknown_envelopes_with_empty_data() {
+    assert_eq!(probe_payload_status(&json!({"items":[]})), "empty");
+    assert_eq!(
+        probe_payload_status(&json!({"data":{"items":[{"timestamp":1}]}})),
+        "available"
+    );
+    assert_eq!(
+        probe_payload_status(&json!({"encoded":"opaque"})),
+        "unrecognized"
+    );
+    assert_eq!(
+        probe_field_names(&[json!({"summary":{"systolic":115,"diastolic":77}})]),
+        vec!["summary", "summary.diastolic", "summary.systolic"]
+    );
+}
 use serde_json::json;
 
 #[tokio::test]
@@ -311,6 +328,50 @@ async fn daily_summary_history_keeps_good_months_and_marks_bad_month_for_retry()
         .as_deref()
         .unwrap()
         .contains("bad historical response")));
+}
+
+#[tokio::test]
+async fn daily_summary_primary_failure_still_fetches_other_endpoints_with_date_context() {
+    let window = FetchWindow::days(30).unwrap();
+    let mut called = Vec::new();
+    let records = fetch_daily_statistics_slice_with(window, |event, subtype| {
+        called.push((event, subtype));
+        std::future::ready(if event == "DailyHealth" {
+            Err(ZeppBridgeError::HttpStatus {
+                status: 500,
+                message: "test failure".into(),
+            })
+        } else {
+            Ok(json!({"items": []}))
+        })
+    })
+    .await
+    .unwrap();
+    assert_eq!(
+        called.len(),
+        5,
+        "a failed primary endpoint must not skip independent data"
+    );
+    assert_eq!(records.len(), 4);
+    for record in records {
+        assert!(record.incomplete);
+        let reason = record.incomplete_reason.unwrap();
+        assert!(reason.contains("DailyHealth/summary"));
+        assert!(reason.contains(&window.start_day()));
+        assert!(reason.contains(&window.end_day()));
+    }
+}
+
+#[tokio::test]
+async fn daily_summary_slice_stops_immediately_on_expired_auth() {
+    let mut calls = 0;
+    let result = fetch_daily_statistics_slice_with(FetchWindow::days(30).unwrap(), |_, _| {
+        calls += 1;
+        std::future::ready(Err(ZeppBridgeError::NeedsReauth("test".into())))
+    })
+    .await;
+    assert!(result.unwrap_err().needs_reauth());
+    assert_eq!(calls, 1);
 }
 
 #[tokio::test]

@@ -116,7 +116,9 @@ export const demoCapabilities = (data: DemoData) => {
     ...['food'].map((stream) => ({
       stream, status: 'no_records', ingested: true, source: 'derived', windowDays: 365, records: 0, recordsUnit: '条', recordsUnitCode: 'records', latestDate: null, note: null,
     })),
-    ...['blood_pressure', 'emotion'].map((stream) => ({
+    { stream: 'blood_pressure', status: 'available', ingested: true, source: 'derived', windowDays: 365,
+      records: data.metrics.blood_pressure_systolic.length, recordsUnit: '条', recordsUnitCode: 'records', latestDate: data.metrics.blood_pressure_systolic[data.metrics.blood_pressure_systolic.length - 1]?.date ?? null, note: null },
+    ...['emotion'].map((stream) => ({
       stream, status: 'no_records', ingested: false, source: 'probed', windowDays: 365, records: 0, recordsUnit: '条', recordsUnitCode: 'records', latestDate: null, note: null,
     })),
   ],

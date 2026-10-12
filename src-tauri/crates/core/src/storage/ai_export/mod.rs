@@ -14,7 +14,8 @@ pub(in crate::storage) const HOURLY_AGGREGATED_METRICS: [&str; 3] =
 /// 日级导出类型：一条运动没有「昨晚睡了多久」「当天走了几步」这种字段，
 /// 单条运动范围下这些类型不该出现。`build_ai_export` / `estimate_ai_export`
 /// 与样本指标名展开共用同一张表——曾在函数里各写一份的版本会长歪。
-pub(in crate::storage) const EXPORT_DAY_LEVEL_TYPES: [&str; 10] = [
+pub(in crate::storage) const EXPORT_DAY_LEVEL_TYPES: [&str; 11] = [
+    "blood_pressure",
     "sleep",
     "steps",
     "daily_activity",
@@ -35,7 +36,8 @@ pub(in crate::storage) const EXPORT_DAY_LEVEL_TYPES: [&str; 10] = [
 /// the data is on disk as a retained raw response, only the parse is pending.
 /// Each entry maps an export type to the `wellness` source-key labels that
 /// carry its raw payloads.
-pub(in crate::storage) const RAW_PENDING_STREAMS: [(&str, &[&str]); 6] = [
+pub(in crate::storage) const RAW_PENDING_STREAMS: [(&str, &[&str]); 7] = [
+    ("blood_pressure", &["blood_pressure"]),
     ("spo2", &["spo2", "spo2_auto", "spo2_odi"]),
     ("stress", &["stress"]),
     ("respiratory_rate", &["respiratory_rate"]),
@@ -272,6 +274,13 @@ pub(in crate::storage) fn export_sample_matched_type(
         Some("steps".to_string())
     } else if selected.contains("weight") && BODY_COMPOSITION_METRICS.contains(&metric) {
         Some("weight".to_string())
+    } else if selected.contains("blood_pressure")
+        && matches!(
+            metric,
+            "blood_pressure_systolic" | "blood_pressure_diastolic" | "blood_pressure_pulse"
+        )
+    {
+        Some("blood_pressure".to_string())
     } else {
         None
     }

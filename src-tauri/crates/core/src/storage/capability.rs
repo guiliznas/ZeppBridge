@@ -89,13 +89,12 @@ pub const BODY_COMPOSITION_METRICS: [&str; 11] = [
     "body_balance_score",
 ];
 
-/// Streams with no local trace at all. Only these cost a request.
-///
-/// `weight` 和 `food` 都已经不在里面了：两条现在都真的入库，证据是库里的行
-/// 而不是一句探针结论。留下的是仍然只能靠探针回答的那两条。
+/// Capabilities that still get periodic network probes. Blood pressure uses
+/// local samples when present; empty libraries still need candidate probes so
+/// newly available cloud data can be discovered.
 pub const PROBE_ONLY_CAPABILITIES: [&str; 2] = ["blood_pressure", "emotion"];
 
-/// 探测覆盖多久。和探测本身用的范围一致，界面拿它写「过去 N 天没有测量记录」。
+/// 本地血压证据的观察范围。候选接口各自的请求范围由 probe.window_days 给出。
 pub(super) const PROBE_WINDOW_DAYS: i64 = 365;
 
 pub(super) const CAPABILITY_PROBE_RESULT_KEY: &str = "capability_probe_result";
@@ -106,13 +105,17 @@ impl Database {
     /// Build the capability overview: read what the library already proves,
     /// then fold in the stored result of the last probe for the rest.
     pub fn capability_overview(&self, today: NaiveDate) -> Result<CapabilityOverview> {
-        let probed: BTreeMap<String, CapabilityProbe> = self
+        let saved: Vec<CapabilityProbe> = self
             .get_app_meta(CAPABILITY_PROBE_RESULT_KEY)?
             .and_then(|raw| serde_json::from_str::<Vec<CapabilityProbe>>(&raw).ok())
-            .unwrap_or_default()
-            .into_iter()
-            .map(|probe| (probe.stream.clone(), probe))
-            .collect();
+            .unwrap_or_default();
+        let mut probed: BTreeMap<String, &CapabilityProbe> = BTreeMap::new();
+        for probe in &saved {
+            let current = probed.entry(probe.stream.clone()).or_insert(probe);
+            if probe_rank(probe) > probe_rank(current) {
+                *current = probe;
+            }
+        }
         let mut items = Vec::new();
         for (stream, evidence, window_days) in CAPABILITY_ROWS {
             // Inclusive local calendar window of exactly `window_days`:
@@ -211,6 +214,35 @@ impl Database {
         // Streams that leave no local trace: report the last probe, or say
         // plainly that they have not been checked yet.
         for stream in PROBE_ONLY_CAPABILITIES {
+            if stream == "blood_pressure" {
+                let (records, latest): (i64, Option<String>) = self.conn.query_row(
+                    "SELECT COUNT(*), MAX(date(timestamp, 'localtime')) FROM metric_samples
+                     WHERE metric = 'blood_pressure_systolic'
+                     AND date(timestamp, 'localtime') BETWEEN ?1 AND ?2",
+                    params![
+                        (today - Duration::days(PROBE_WINDOW_DAYS - 1)).to_string(),
+                        today.to_string()
+                    ],
+                    |row| Ok((row.get(0)?, row.get(1)?)),
+                )?;
+                if records > 0 {
+                    items.push(CapabilityItem {
+                        stream: stream.into(),
+                        status: "available".into(),
+                        records,
+                        records_unit: "条".into(),
+                        records_unit_code: "records".into(),
+                        window_days: PROBE_WINDOW_DAYS,
+                        latest_date: latest,
+                        note: Some(
+                            "已收录可识别的血压读数；候选接口仍需在实际测量账号上核对。".into(),
+                        ),
+                        source: "derived".into(),
+                        ingested: true,
+                    });
+                    continue;
+                }
+            }
             let item = match probed.get(stream) {
                 Some(probe) if probe.status == "available" => CapabilityItem {
                     stream: stream.to_string(),
@@ -218,40 +250,46 @@ impl Database {
                     records: probe.records as i64,
                     records_unit: "条".to_string(),
                     records_unit_code: "records".to_string(),
-                    window_days: PROBE_WINDOW_DAYS,
+                    window_days: probe.window_days,
                     latest_date: probe.latest_date.clone(),
                     // 说清楚这是云端的数量，不是本机的。
                     note: Some(
-                        "云端有记录，但 ZeppBridge 还没有收录这条流：缺少可核对的报文样本，贸然归一化只会产出没人能验证的数字。"
+                        "探测接口返回了记录，但本机尚无可用数据。请同步或补拉；未知报文会保留，等待补充格式支持。"
                             .to_string(),
                     ),
                     source: "probed".to_string(),
                     ingested: false,
                 },
-                // Only an outright rejection licenses "your device does not
-                // provide this"; an empty answer does not, because this API
-                // answers that way for names that cannot exist.
+                // Even a rejection is about this candidate's request contract,
+                // not the device: the bloodPressure from/to variant returns
+                // 400 while days/toDate succeeds on the same account.
                 Some(probe) if probe.status == "unavailable" => CapabilityItem {
                     stream: stream.to_string(),
-                    status: "unsupported".to_string(),
+                    status: "unknown".to_string(),
                     records: 0,
                     records_unit: "条".to_string(),
                     records_unit_code: "records".to_string(),
-                    window_days: PROBE_WINDOW_DAYS,
+                    window_days: probe.window_days,
                     latest_date: None,
-                    note: Some("你的账号或设备不提供这项数据".to_string()),
+                    note: Some("已查询的候选接口不可用，尚不能判定账号或设备是否支持。".to_string()),
                     source: "probed".to_string(),
                     ingested: false,
                 },
-                Some(_) => CapabilityItem {
+                Some(probe) => CapabilityItem {
                     stream: stream.to_string(),
-                    status: "no_records".to_string(),
+                    status: if probe.status == "empty" { "no_records" } else { "unknown" }.to_string(),
                     records: 0,
                     records_unit: "条".to_string(),
                     records_unit_code: "records".to_string(),
-                    window_days: PROBE_WINDOW_DAYS,
+                    window_days: probe.window_days,
                     latest_date: None,
-                    note: Some("过去一年没有测量记录".to_string()),
+                    note: Some(if probe.status == "empty" {
+                        format!("已查询的候选接口在最近 {} 天未返回记录；不能据此判断设备没有测量。", probe.window_days)
+                    } else if probe.status == "unrecognized" {
+                        "接口返回了尚未识别的结构，不能将其判定为没有记录。".into()
+                    } else {
+                        "最近一次探测请求失败，数据能力尚未确认。".into()
+                    }),
                     source: "probed".to_string(),
                     ingested: false,
                 },
@@ -281,25 +319,26 @@ impl Database {
         // The scheduled sync probes only request-only streams, while the
         // diagnostics button probes every stream. Replacing the whole list
         // here used to erase a positive Food result on the next sync.
-        let mut merged: BTreeMap<String, CapabilityProbe> = self
+        let mut merged: BTreeMap<(String, String, String, String), CapabilityProbe> = self
             .get_app_meta(CAPABILITY_PROBE_RESULT_KEY)?
             .and_then(|raw| serde_json::from_str::<Vec<CapabilityProbe>>(&raw).ok())
             .unwrap_or_default()
             .into_iter()
-            .map(|probe| (probe.stream.clone(), probe))
+            .map(|probe| (probe_key(&probe), probe))
             .collect();
         let mut updated = false;
         for probe in probes {
-            // A transient request failure does not refute an earlier result.
-            if probe.status != "error" {
-                let mut saved = probe.clone();
-                // Field names are useful in the immediate diagnostic result,
-                // but the board needs only the count and date. Do not retain
-                // schema from a user's health response unnecessarily.
-                saved.fields.clear();
-                merged.insert(probe.stream.clone(), saved);
-                updated = true;
+            // A failed request does not erase previously observed data on
+            // the same surface. A first-ever failure remains unknown.
+            if probe.status == "error" && merged.contains_key(&probe_key(probe)) {
+                continue;
             }
+            let mut saved = probe.clone();
+            // Field names are useful in the immediate diagnostic result,
+            // but the board needs only the count and date.
+            saved.fields.clear();
+            merged.insert(probe_key(probe), saved);
+            updated = true;
         }
         if !updated {
             return Ok(());
@@ -322,5 +361,23 @@ impl Database {
             return Ok(true);
         };
         Ok((Utc::now() - probed_at.with_timezone(&Utc)).num_days() >= max_age_days)
+    }
+}
+
+fn probe_key(probe: &CapabilityProbe) -> (String, String, String, String) {
+    (
+        probe.stream.clone(),
+        probe.surface.clone(),
+        probe.event_type.clone(),
+        probe.sub_type.clone(),
+    )
+}
+
+fn probe_rank(probe: &CapabilityProbe) -> u8 {
+    match probe.status.as_str() {
+        "available" => 4,
+        "error" | "unrecognized" => 3,
+        "empty" => 2,
+        _ => 1,
     }
 }

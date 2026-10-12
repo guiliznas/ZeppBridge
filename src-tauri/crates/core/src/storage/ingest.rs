@@ -172,6 +172,14 @@ impl Database {
             // persist error no longer deletes the response.
             "wellness" => {
                 let batch = Normalizer::normalize_wellness(source_key, payload);
+                if source_key.starts_with("wellness:blood_pressure:")
+                    && batch.metric_samples.is_empty()
+                    && !batch.diagnostics.is_empty()
+                {
+                    return Err(ZeppBridgeError::DataUnavailable(
+                        batch.diagnostics.join("; "),
+                    ));
+                }
                 counts.primary_records =
                     (batch.daily_metrics.len() + batch.metric_samples.len()) as i64;
                 self.clear_normalized_for_raw(raw_record_id, "daily_summary")?;

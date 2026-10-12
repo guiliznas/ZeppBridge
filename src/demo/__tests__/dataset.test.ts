@@ -10,6 +10,18 @@ import { newTaskDraft } from '../../lib/aiTask/draft';
 const NOW = new Date(2026, 9, 2, 12, 0, 0);
 
 describe('演示数据集', () => {
+  it('血压 mock 保持成对趋势、稀疏日期和可选脉搏', () => {
+    const data = buildDemoData(NOW);
+    const series = metricSeries(data, 30, ['blood_pressure_systolic', 'blood_pressure_diastolic', 'blood_pressure_pulse']);
+    expect(series).toHaveLength(3);
+    expect(series[0].points.map(p => p.date)).toEqual(series[1].points.map(p => p.date));
+    expect(series[0].days_with_data).toBeLessThan(30);
+    expect(series[2].days_with_data).toBeLessThan(series[0].days_with_data);
+    expect(series.every(s => s.source === 'metric_samples')).toBe(true);
+    expect(series[0].minimum).toBe(106);
+    expect(series[0].maximum).toBe(126);
+    expect(demoCapabilities(data).items.find(i => i.stream === 'blood_pressure')?.ingested).toBe(true);
+  });
   const data = buildDemoData(NOW);
 
   it('同一个"今天"永远生成同一份数据（落地页每次打开、每次截图都一样）', () => {

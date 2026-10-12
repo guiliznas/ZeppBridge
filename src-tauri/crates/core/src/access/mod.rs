@@ -552,6 +552,9 @@ pub fn metric_category(metric: &str) -> Option<AccessCategory> {
         | "intake_calories" | "intake_protein_g" | "intake_fat_g" | "intake_carbs_g" => {
             AccessCategory::Body
         }
+        "blood_pressure_systolic" | "blood_pressure_diastolic" | "blood_pressure_pulse" => {
+            AccessCategory::Body
+        }
         _ => return None,
     })
 }
@@ -583,8 +586,8 @@ pub fn clip_metric_series(series: Vec<MetricSeries>, permit: &Permit) -> Vec<Met
             let values: Vec<f64> = series.points.iter().map(|point| point.value).collect();
             series.latest = series.points.last().cloned();
             series.average = mean(&values).map(round1);
-            series.minimum = values.iter().copied().reduce(f64::min);
-            series.maximum = values.iter().copied().reduce(f64::max);
+            (series.minimum, series.maximum) =
+                crate::models::metric_series_extrema(&series.metric, &series.points);
             series.days_with_data = series.points.len() as i64;
             series.window_days = permit.metric_day_count(category, &metric);
             Some(series)

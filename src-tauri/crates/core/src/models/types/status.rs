@@ -169,9 +169,9 @@ pub struct CapabilityItem {
     /// Stable key the UI maps to a label.
     pub stream: String,
     /// `available` — data is on disk.
-    /// `no_records` — nothing measured in the window; cause unknown.
-    /// `unsupported` — the server rejected the request outright.
-    /// `unknown` — never checked.
+    /// `no_records` — no local rows or no records returned by a candidate.
+    /// `unsupported` — reserved for established support evidence, not guesses.
+    /// `unknown` — never checked, request failure or unrecognized response.
     pub status: String,
     /// How many rows back this up, when there are any.
     pub records: i64,
@@ -198,9 +198,8 @@ pub struct CapabilityItem {
     pub source: String,
     /// ZeppBridge 是否真的把这条流读进了本机库。
     ///
-    /// 探测说「云端有 42 条」并不等于本机有：体重和血压目前只探测、不归一化。
-    /// 不把这两件事分开，能力页会让人以为 ZeppBridge 已经存着他的血压——
-    /// 那是这个产品最不该给出的错觉。
+    /// 探测说「云端有 42 条」并不等于本机有。候选接口可能返回尚未识别的
+    /// 格式；只有本机实际存在可用读数时，才把这项设为 true。
     #[serde(default)]
     pub ingested: bool,
 }
@@ -233,10 +232,13 @@ pub struct CapabilityProbe {
     pub window_days: i64,
     pub event_type: String,
     pub sub_type: String,
-    /// `available` | `empty` | `unavailable` | `error`
+    /// `available` | `empty` | `unavailable` | `error` | `unrecognized`
     pub status: String,
     pub records: usize,
     /// Calendar date of the newest item, for streams measured occasionally.
     pub latest_date: Option<String>,
     pub fields: Vec<String>,
+    /// Sanitized machine/numeric failure only; never a server response body.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub failure: Option<String>,
 }
