@@ -329,3 +329,4 @@ lib/workoutNames.wall_ball
 lib/workoutNames.weiqi
 lib/workoutNames.yoga
 lib/workoutNames.zumba
+components/ai/stage/stage.facePlan
