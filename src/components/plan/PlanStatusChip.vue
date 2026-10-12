@@ -11,6 +11,7 @@ import { computed, ref } from 'vue';
 import GlassPopover from '../GlassPopover.vue';
 import Icon from '../Icon.vue';
 import { useWidthMorph } from '../../composables/useWidthMorph';
+import { paced } from '../../lib/motion/timing';
 import { formatWhen } from '../../lib/format';
 import { planStatus, statusTone } from '../../lib/trainingPlan/status';
 import { displayDateTimeFormatter, parseDisplayDate } from '../../lib/dateTime';
@@ -66,7 +67,7 @@ const act = async (which: 'undo' | 'clear' | 'discard') => {
 };
 /** 状态胶囊闪一下（接回定稿落定、发送结果回来时由父组件调用）。 */
 const flash = () => {
-  const curve = { duration: 520, easing: 'cubic-bezier(.4, .6, .2, 1)' };
+  const curve = { duration: paced(520), easing: 'cubic-bezier(.4, .6, .2, 1)' };
   anchor.value?.animate([{ scale: 1 }, { scale: 1.08, offset: 0.35 }, { scale: 1 }], curve);
   anchor.value?.querySelector('.plan-chip-watch')?.animate([{ scale: 1 }, { scale: 1.35, offset: 0.35 }, { scale: 1 }], curve);
 };

@@ -3,7 +3,7 @@
 
 /* 一格一列：日期 → 形状 → 名字 → 时长，谁都不压谁。 */
 .future-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; touch-action: pan-y; }
-.future-days.flipped { animation: week-in 420ms cubic-bezier(.4, .6, .2, 1) both; }
+.future-days.flipped { animation: week-in 550ms cubic-bezier(.4, .6, .2, 1) both; }
 .future-day { position: relative; display: flex; flex-direction: column; align-items: stretch; gap: 8px; min-width: 0; min-height: 214px; padding: 12px 10px 12px;
   border: 1px solid transparent; border-radius: 16px; background: color-mix(in srgb, var(--ink) 3%, transparent); color: var(--ink); font: inherit;
   text-align: left; text-decoration: none; cursor: pointer; transition: background var(--dur-base) ease, border-color var(--dur-base) ease, scale var(--dur-base) var(--ease-spring); }

@@ -10,26 +10,26 @@ varying vec4 v_color;
 void main() {
   float age = (u_now - a_time.x) / a_time.y;
   if (age < 0.0 || age > 1.0) { gl_Position = vec4(2.0, 2.0, 0.0, 1.0); gl_PointSize = 0.0; v_color = vec4(0.0); return; }
-  // 像风吹过（10-12，用户：「要优雅得像风吹过，而不是闪一下」）：起步轻、被风慢慢带走再越飘越远——
-  // 缓入缓出（smoothstep）代替以前起手就猛冲的三次方缓出；以前头几帧颗粒一下子炸开，和字原地叠成一团亮的。
-  float gust = age * age * (3.0 - 2.0 * age);
-  // 顺着涟漪往外吹（离开语言轮的方向），两侧散开一点；灰轻，往上飘一点。
+  // 三次方缓出：起飞快、越飘越慢，收尾几乎停住（2026-10-06：「漂得更慢、更远，收尾减速」）。
+  // 10-12 下午试过缓入缓出（smoothstep）+ 提前淡出，用户看了说「太快了」，要回这一版的节奏：保留的只有颜色和颗粒大小那两处修正。
+  float rest = 1.0 - age;
+  float out_ = 1.0 - rest * rest * rest;
+  // 顺着涟漪往外吹（离开语言轮的方向），两侧散开一点；灰轻，往上飘一点；再叠一点打旋。
   vec2 dir = a_pos - u_origin;
   float len = length(dir);
   dir = len > 1.0 ? dir / len : vec2(-0.7, 0.7);
   vec2 side = vec2(-dir.y, dir.x);
-  vec2 drift = dir * (110.0 + 250.0 * a_seed.x) * gust + side * (a_seed.y - 0.5) * 120.0 * gust;
-  drift.y -= (24.0 + 56.0 * a_seed.y) * gust * age;
-  // 气流的扰动：一开始几乎没有，越往后越明显（颗粒离开字形以后才开始打旋）。
-  vec2 swirl = vec2(sin(age * 4.0 + a_seed.y * 31.0), cos(age * 3.6 + a_seed.x * 29.0)) * (2.0 + 9.0 * a_seed.y) * age;
+  vec2 drift = dir * (120.0 + 260.0 * a_seed.x) * out_ + side * (a_seed.y - 0.5) * 130.0 * out_;
+  drift.y -= (20.0 + 60.0 * a_seed.y) * out_ * age;
+  vec2 swirl = vec2(sin(age * 5.0 + a_seed.y * 31.0), cos(age * 4.5 + a_seed.x * 29.0)) * (3.0 + 10.0 * a_seed.y) * out_;
   vec2 p = a_pos + drift + swirl;
   gl_Position = vec4(p.x / u_view.x * 2.0 - 1.0, 1.0 - p.y / u_view.y * 2.0, 0.0, 1.0);
   // 颗粒细一点：以前最大到 1.7 倍字形像素，几粒叠起来比原来的字还粗还亮（录屏里的「白光」「白痕」）。
   gl_PointSize = max(1.0, mix(u_size * (0.75 + 0.45 * a_seed.x), 0.6, age));
-  // 从字色褪成灰：浅字褪成中灰、深字褪成浅灰，不再往白里走；不透明度从一开始就略低于字，尾巴拉长。
+  // 从字色褪成灰：浅字褪成中灰、深字褪成浅灰，不再往白里走（10-12「白光」）。淡出照 10-06 那版：前四分之一不淡。
   float grey = dot(a_color.rgb, vec3(0.3, 0.59, 0.11));
-  vec3 ash = mix(a_color.rgb, vec3(grey * 0.62 + 0.14), smoothstep(0.0, 0.5, age));
-  v_color = vec4(ash, a_color.a * 0.82 * (1.0 - smoothstep(0.08, 1.0, age)));
+  vec3 ash = mix(a_color.rgb, vec3(grey * 0.62 + 0.14), smoothstep(0.05, 0.6, age));
+  v_color = vec4(ash, a_color.a * 0.9 * (1.0 - smoothstep(0.25, 1.0, age)));
 }`;
 const GRAIN_FS = `
 precision mediump float;

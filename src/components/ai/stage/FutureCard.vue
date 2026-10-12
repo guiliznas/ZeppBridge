@@ -17,6 +17,7 @@ import Icon from '../../Icon.vue';
 import ReceiptFace from './ReceiptFace.vue';
 import PlanFace from './PlanFace.vue';
 import { flipCard, reducedMotion } from '../../../lib/motion/cards';
+import { paced } from '../../../lib/motion/timing';
 import type { AiTaskIssue, AiTaskPrepareResult, AiTaskTemplate } from '../../../lib/bridge/types';
 import type { DayRow } from '../../../lib/trainingPlan/week';
 import type { TrainingPlanState } from '../../../types/trainingPlan';
@@ -104,16 +105,16 @@ const askFace = ref<'question' | 'receipt'>(props.face === 'receipt' ? 'receipt'
 watch(() => props.face, (face) => { if (face !== 'plan') askFace.value = face; });
 const pickSide = (value: string) => { void turn(value === 'plan' ? 'plan' : askFace.value); };
 
-/** 提问 ⇄ 计划：旧内容淡出（120ms）→ 换内容 → 牌高由 ResizeObserver 平滑过渡（360ms）→ 新内容晚 140ms 淡入。 */
+/** 提问 ⇄ 计划：旧内容淡出 → 换内容 → 牌高由 ResizeObserver 平滑过渡 → 新内容稍晚淡入（时长都按全局节奏 paced 放慢）。 */
 const crossfade = async (next: FutureFace) => {
   const el = body.value!;
-  const out = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'cubic-bezier(.4, 0, 1, 1)', fill: 'forwards' });
+  const out = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: paced(140), easing: 'cubic-bezier(.4, 0, 1, 1)', fill: 'forwards' });
   await out.finished.catch(() => undefined);
   // 换内容的那一帧先把牌高钉住：新高度由下面的 ResizeObserver 从这里平滑过去，不会先闪一帧终点高度。
   pin();
   emit('update:face', next);
   await nextTick();
-  const fadeIn = el.animate([{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { duration: 260, delay: 140, easing: EASE, fill: 'backwards' });
+  const fadeIn = el.animate([{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { duration: paced(300), delay: paced(160), easing: EASE, fill: 'backwards' });
   out.cancel();
   await fadeIn.finished.catch(() => undefined);
   unpin();
@@ -152,7 +153,7 @@ onMounted(() => {
     shown = next;
     unpin();
     if (reducedMotion()) return;
-    grow = card.animate([{ height: `${from}px` }, { height: `${next}px` }], { duration: 360, easing: EASE });
+    grow = card.animate([{ height: `${from}px` }, { height: `${next}px` }], { duration: paced(400), easing: EASE });
   });
   observer.observe(inner);
 });
@@ -195,7 +196,9 @@ defineExpose({ front, turn });
 .fcard { position: absolute; top: 50%; right: 0; left: 0; display: flex; flex-direction: column; gap: 12px; padding: 12px 18px 16px; overflow: hidden;
   border: 1px solid var(--mat-line); border-radius: 24px; background: var(--mat-card); box-shadow: var(--mat-rim), var(--mat-shadow); color: var(--ink); translate: 0 -50%; }
 .face-switch { align-self: center; }
-.face-body { min-height: 0; }
+/* 不许被牌压扁（10-12）：牌高在动画里时，内容若跟着缩，ResizeObserver 就量到「缩过的高度」当新目标，
+   再从当前高度补间到它——自己追自己，计划切回提问时牌一直慢慢缩 / 涨、停不下来。内容按自己的高度量，牌只负责裁。 */
+.face-body { flex-shrink: 0; min-height: 0; }
 .body-question { display: grid; grid-template-rows: minmax(0, 1fr) auto auto; gap: 12px; }
 .body-receipt { display: grid; }
 /* 模板：问题牌底边一只玻璃滚轮，宽度就是牌里的宽度；下面一行是选中项的全称。 */

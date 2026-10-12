@@ -20,6 +20,7 @@ import { CHART_THEME, VChart } from '../lib/echartsSetup';
 import { SMOOTH_CHART_UPDATE } from '../lib/metricSeries';
 import { chartSwapIntent } from '../lib/chartSwap';
 import { currentSweep, sweepDelay, type AshSweep } from '../lib/motion/ashReveal';
+import { paced } from '../lib/motion/timing';
 
 defineOptions({ inheritAttrs: false });
 
@@ -39,7 +40,7 @@ const onAxisPointer = (payload: unknown) => {
   emit('axis', typeof x?.value === 'number' ? x.value : null);
 };
 
-const FADE_MS = 400;
+const FADE_MS = paced(400);
 const EASE = 'cubic-bezier(.2, .8, .2, 1)';
 /** 缩放的幅度：只是个方向感，大了坐标轴上的字会被明显拉宽。 */
 const SQUASH = 0.04;

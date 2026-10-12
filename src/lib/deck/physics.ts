@@ -5,6 +5,7 @@
  * min(110px, 宽度 18%) 或者快速一甩（松手前 100ms 内速度 > 0.5px/ms 且移动 > 25px）
  * 才翻页，否则弹回。被拖的卡始终清晰——模糊的是它身后那一层，不是手里这张。
  */
+import { paced } from '../motion/timing';
 
 export interface DeckDrag {
   dx: number;
@@ -100,5 +101,5 @@ export function slideInFrames(direction: -1 | 1, width: number, vertical = false
   ];
 }
 /** 滑进来的曲线和时长（和页面展开同一族：先快后慢、不回弹）。 */
-export const SLIDE_IN_MS = 460;
+export const SLIDE_IN_MS = paced(460);
 export const SLIDE_IN_EASE = 'cubic-bezier(.22, .88, .26, 1)';

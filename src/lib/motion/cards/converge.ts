@@ -9,16 +9,16 @@
  * 减少动效时不飞：直接 resolve，回执牌淡入。
  */
 import type { Pt } from '../../aiTask/threads';
-import { CLOSE_EASE, OPEN_EASE } from '../timing';
+import { CLOSE_EASE, OPEN_EASE, paced } from '../timing';
 import { animateFromNow } from './reversible';
 import { lidClose, lidOpen } from './box';
 import { reducedMotion, settled, SPRINGS, springCurve } from './spring';
 
 const SHAKE_MS = 240;
 const SHAKE_STAGGER = 40;
-const FLY_MS = 640;
+const FLY_MS = paced(640);
 const FLY_STAGGER = 55;
-const BACK_MS = 440;
+const BACK_MS = paced(440);
 
 export interface Convergence {
   /** 抖、飞进锁。被 `scatter` 打断时提前结束。 */

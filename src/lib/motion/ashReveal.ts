@@ -1,5 +1,4 @@
-import { drawVisibleText, timeAt, type AshOrigin } from './ashGlyphs';
-import { LOCALE_REVEAL_MS } from './timing';
+import { drawVisibleText, sweepAt, type AshOrigin } from './ashGlyphs';
 
 /**
  * 换语言涟漪里「新的那一边」怎么出现（lib/motion/ashSwitch.ts）。两件事，都只动合成属性：
@@ -73,7 +72,7 @@ export const settleNewText = (
       canvases.forEach((canvas) => {
         const ring = Number(canvas.dataset.ring);
         // 圆的边走到这一环中线的时刻。
-        const at = LOCALE_REVEAL_MS * timeAt((ring + 0.5) / RINGS);
+        const at = sweepAt((reach * (ring + 0.5)) / RINGS, reach);
         const fade = canvas.animate([{ opacity: 1 }, { opacity: 0 }], {
           duration: SETTLE_FADE, delay: at + SETTLE_HOLD, easing: 'cubic-bezier(.4, .6, .2, 1)', fill: 'both',
         });
@@ -107,7 +106,7 @@ export const breatheCharts = (
     const distance = Math.hypot(r.left + r.width / 2 - origin.x, r.top + r.height / 2 - origin.y);
     chart.animate(
       [{ filter: 'blur(0px)' }, { filter: 'blur(1.6px)', offset: 0.35 }, { filter: 'blur(0px)' }],
-      { duration: 320, delay: LOCALE_REVEAL_MS * timeAt(Math.min(1, distance / reach)), easing: 'ease-in-out' },
+      { duration: 320, delay: sweepAt(distance, reach), easing: 'ease-in-out' },
     );
   }
 };
@@ -139,5 +138,5 @@ export const currentSweep = (): AshSweep | null => sweep;
 /** 圆扫到这块矩形中心的时刻，相对涟漪开跑（ms）。 */
 export const sweepDelay = (active: AshSweep, rect: DOMRect): number => {
   const distance = Math.hypot(rect.left + rect.width / 2 - active.origin.x, rect.top + rect.height / 2 - active.origin.y);
-  return LOCALE_REVEAL_MS * timeAt(Math.min(1, distance / active.reach));
+  return sweepAt(distance, active.reach);
 };

@@ -23,7 +23,7 @@ import { useCardTableDrag } from '../../composables/useCardTableDrag';
 import {
   animateFromNow, dealCards, fanBack, receive, recedeLayer, reducedMotion, relay, returnStack, stackCards, type Landing, type Receded,
 } from '../../lib/motion/cards';
-import { CLOSE_EASE, OPEN_EASE } from '../../lib/motion/timing';
+import { CLOSE_EASE, OPEN_EASE, paced } from '../../lib/motion/timing';
 import { onMotionEscape } from '../../lib/motion/interrupt';
 import { cardIdOf, expandGroup, focusWindow, groupSummary, pickableDates, rangeStart, rootLevel, type DeckDay, type DeckGroup, type DeckLevel, type DeckRange } from '../../lib/cards/deck';
 import { deckToday, type DeckSource } from '../../lib/cards/sources';
@@ -34,7 +34,7 @@ const props = withDefaults(defineProps<{ source: DeckSource; range: DeckRange; o
 const emit = defineEmits<{ close: [] }>();
 const t = useCardsText();
 const box = useCardCollection();
-const RETURN_MS = 440;
+const RETURN_MS = paced(440);
 
 interface Entry { id: string; level: DeckLevel; title: string; receded: (Receded & { ready: Promise<void> }) | null; pending: boolean }
 const range = ref<DeckRange>(props.focus ? 7 : props.range);

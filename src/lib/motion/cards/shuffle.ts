@@ -7,9 +7,10 @@
  * 不会把它们拽回原点。减少动效时什么都不放。
  */
 import { reducedMotion, settled } from './spring';
+import { paced } from '../timing';
 
-const SHUFFLE_MS = 420;
-const CUT_MS = 480;
+const SHUFFLE_MS = paced(420);
+const CUT_MS = paced(480);
 
 export const shuffleCards = async (cards: HTMLElement[]): Promise<void> => {
   if (!cards.length || reducedMotion()) return;

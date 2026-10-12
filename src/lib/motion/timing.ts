@@ -7,13 +7,22 @@
  * 200ms 走八成，后半程长长地减速落定，不回弹（像 iOS）。
  * 慢一点也给预加载和第一帧留出了时间。
  */
-export const OPEN_MS = 500;
-export const CLOSE_MS = 440;
+/**
+ * 全局节奏（2026-10-12 第三次：「动画速度太快了，希望能真的调慢一点」）：所有「过场」——卡 ↔ 页、弹窗、抽屉、牌的飞行、
+ * 计划牌换面、步骤展开——的时长都乘这个数。悬停、按下、长按门槛、Esc 快速撤回这类即时反馈不乘；
+ * 换语言的涟漪（LOCALE_REVEAL_MS）也不乘：用户要的是回到之前那几版的速率。
+ * 只拉长时长、不换曲线：曲线是 10-03 用户认可过的。CSS 那边对应 tokens.css 的 --dur-std / --dur-back / --dur-slow。
+ */
+export const PACE = 1.3;
+export const paced = (ms: number) => Math.round(ms * PACE);
+
+export const OPEN_MS = paced(500);
+export const CLOSE_MS = paced(440);
 export const OPEN_EASE = 'cubic-bezier(.4, .6, .2, 1)';
 export const CLOSE_EASE = 'cubic-bezier(.4, .6, .2, 1)';
 
 /** 整屏从一个按钮处扩散开（换主题）：和卡片展开同一条曲线，整屏的圆比卡大得多，再慢一点。 */
-export const REVEAL_MS = 640;
+export const REVEAL_MS = paced(640);
 
 /** 换语言的灰烬涟漪（2026-10-06 精修：「放慢到约 1 秒、更柔」）。比换主题慢：字要碎、要飘、新字要落定。
     material.css 里 ash-nav 那一层的时长写死了同一个数，改这里要一起改。 */

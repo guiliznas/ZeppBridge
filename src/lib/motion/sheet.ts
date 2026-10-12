@@ -8,9 +8,9 @@
  *
  * 开好以后 clip-path 要撤掉，不然大卡的投影被裁掉；最后一小段把裁切框放到卡外（同心圆角），投影是一点点亮出来的，不在动画结束时「啪」地出现。
  */
-import { CLOSE_EASE } from './timing';
+import { CLOSE_EASE, paced } from './timing';
 
-const CLOSE_MS = 380;
+const CLOSE_MS = paced(380);
 const BLEED = 90;
 
 export interface SheetOrigin { rect: DOMRect; radius: number }

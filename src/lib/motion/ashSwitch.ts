@@ -1,7 +1,7 @@
 import { nextTick } from 'vue';
 import { ensureLocalePack, locale, setLocale, type Locale } from '../../i18n';
 import { dustLayer } from './ashDust';
-import { drawVisibleText, grainsOf, TEXT_INK, type AshOrigin } from './ashGlyphs';
+import { drawVisibleText, featherOf, grainsOf, TEXT_INK, type AshOrigin } from './ashGlyphs';
 import { breatheCharts, closeSweep, openSweep, settleNewText, startSweep } from './ashReveal';
 import { localeTarget } from './localeTarget';
 import { whenFramesSteady } from './steady';
@@ -24,8 +24,8 @@ import { LOCALE_REVEAL_MS, OPEN_EASE } from './timing';
  * 做法（不碰页面代码，所有页面自动生效）：
  * 1. **取字形**：换之前扫一遍可视区里看得见的文字（TreeWalker + Range 量每行 / 每个字的位置），按它们的字体、
  *    字号、颜色画到一张看不见的 2D 画布上，读出像素——灰烬就是旧文字真实的笔画，不是方块。图表画布直接 drawImage。
- * 2. **换场**：View Transitions 给新旧整页各拍一张（新的那张是活的），新快照套一个从语言轮处长大的圆形 clip-path，
- *    只动 clip-path，合成器上跑。
+ * 2. **换场**：View Transitions 给新旧整页各拍一张（新的那张是活的），新快照套一个从语言轮处长大的圆形遮罩。
+ *    10-12 起是柔边（ashGlyphs.ts 的 featherOf）：硬圆边两侧排版高低不同时，错开的卡沿像一根斜条飞过去。
  * 3. **吹散**：每个像素是一粒灰，交给 WebGL 一次画完。每粒的「起飞时刻」= 圆扫到它的时刻，位置、透明度、大小全在
  *    顶点着色器里按时间算，CPU 每帧只更新一个时间。灰的画布带 view-transition-name，换场期间是独立的一层；
  *    连拨时几圈的灰画在同一张画布上，上一圈没飘完的灰不会被下一次换场冻住。
@@ -72,6 +72,12 @@ const ripple = async (value: Locale, origin: AshOrigin) => {
   const batch = layer && grains ? layer.add(grains, origin) : null;
 
   const root = document.documentElement;
+  // 柔边圆（material.css 的 ::view-transition-new(root) 遮罩）：圆心、柔边宽写在根上，半径 --ash-r 由下面的动画推。
+  const feather = featherOf(reach);
+  root.style.setProperty('--ash-x', `${Math.round(origin.x)}px`);
+  root.style.setProperty('--ash-y', `${Math.round(origin.y)}px`);
+  root.style.setProperty('--ash-f', `${feather}px`);
+  const unmask = () => { for (const name of ['--ash-x', '--ash-y', '--ash-f']) root.style.removeProperty(name); };
   root.dataset.ashMorph = '';
   openSweep(origin, reach);
   const transition = doc.startViewTransition!(async () => {
@@ -89,11 +95,11 @@ const ripple = async (value: Locale, origin: AshOrigin) => {
     settle?.dispose();
     closeSweep();
     delete root.dataset.ashMorph;
+    unmask();
     return;
   }
-  const at = `at ${Math.round(origin.x)}px ${Math.round(origin.y)}px`;
   const grow = root.animate(
-    { clipPath: [`circle(2px ${at})`, `circle(${reach}px ${at})`] },
+    { '--ash-r': ['2px', `${reach + feather}px`] } as PropertyIndexedKeyframes,
     { duration: LOCALE_REVEAL_MS, easing: OPEN_EASE, fill: 'both', pseudoElement: '::view-transition-new(root)' },
   );
   // 导航胶囊那一层（material.css 的 ash-nav）和圆同一刻开跑。
@@ -111,6 +117,7 @@ const ripple = async (value: Locale, origin: AshOrigin) => {
   await transition.finished.catch(() => undefined);
   closeSweep();
   delete root.dataset.ashMorph;
+  unmask();
 };
 
 let busy = false;

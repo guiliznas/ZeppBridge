@@ -12,20 +12,20 @@
  *   `pile`：落进被点的那一叠，最后一帧与它的位置、大小、角度完全重合，再淡掉露出底下那一叠（交叉淡化，不是凭空消失）。
  * 每一段都从此刻的计算样式起放（半路被打断也是原路），只动 transform / opacity；减少动效时退化成短淡入淡出。
  */
-import { CLOSE_EASE } from '../timing';
+import { CLOSE_EASE, paced } from '../timing';
 import { animateFromNow } from './reversible';
 import { centroid, poseTransform, restOf, stackPose, type Point, type Rest } from './pose';
 import { reducedMotion, settled, SPRINGS, springCurve } from './spring';
 
-const STAGGER_MS = 34;
-const DRAW_MS = 120;
-const STACK_STAGGER_MS = 26;
+const STAGGER_MS = paced(34);
+const DRAW_MS = paced(120);
+const STACK_STAGGER_MS = paced(26);
 /** 理牌：~360ms 利落叠齐。弹簧的尾巴太长（叠好了还要再等三四百毫秒才算放完），这里用一条前快后稳的曲线。 */
-const STACK_MS = 320;
+const STACK_MS = paced(320);
 const STACK_EASE = 'cubic-bezier(.25, .8, .25, 1)';
-const RETURN_MS = 440;
-const CROSSFADE_MS = 100;
-const FADE_MS = 160;
+const RETURN_MS = paced(440);
+const CROSSFADE_MS = paced(100);
+const FADE_MS = paced(160);
 
 /** 来处：被点的按钮 / 格子（`button`），或者一叠牌（`pile`，带它的角度和布局宽度）。 */
 export interface Landing {

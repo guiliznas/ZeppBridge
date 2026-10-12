@@ -212,6 +212,12 @@ html[data-theme-morph]::view-transition-new(root) { animation: none; mix-blend-m
 html[data-ash-morph]::view-transition { pointer-events: none; }
 html[data-ash-morph]::view-transition-old(root),
 html[data-ash-morph]::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+/* 新语言从一圈柔边里露出来（10-12，替代硬 clip-path 圆）：圆心 / 柔边宽由 ashSwitch.ts 写在根上，半径 --ash-r 被动画推。 */
+@property --ash-r { syntax: '<length>'; inherits: true; initial-value: 0px; }
+html[data-ash-morph]::view-transition-new(root) {
+  -webkit-mask-image: radial-gradient(circle at var(--ash-x, 50%) var(--ash-y, 0px), #000 calc(var(--ash-r) - var(--ash-f, 160px)), transparent var(--ash-r));
+  mask-image: radial-gradient(circle at var(--ash-x, 50%) var(--ash-y, 0px), #000 calc(var(--ash-r) - var(--ash-f, 160px)), transparent var(--ash-r));
+}
 ::view-transition-group(ash-dust), ::view-transition-new(ash-dust) { animation: none; mix-blend-mode: normal; }
 ::view-transition-old(ash-dust) { display: none; }
 html[data-ash-morph] .pill-nav { view-transition-name: ash-nav; }

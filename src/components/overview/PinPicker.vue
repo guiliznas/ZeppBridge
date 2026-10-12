@@ -21,6 +21,7 @@ import ModalDialog from '../ModalDialog.vue';
 import { MAX_PINS, PINNABLE_METRICS, type PinGroup } from '../../lib/pinnedMetrics';
 import { useMessages } from '../../i18n';
 import { pinnedMetricsMessages } from './PinnedMetrics.i18n';
+import { paced } from '../../lib/motion/timing';
 
 const props = defineProps<{ pins: string[]; label: (id: string) => string }>();
 const emit = defineEmits<{ close: []; done: [pins: string[]] }>();
@@ -38,10 +39,10 @@ const busy = ref(false);
 const slotList = ref<HTMLElement | null>(null);
 
 /** 槽里的颜色漫满 / 退掉的时长，和 CSS 里 .pp-fill 的过渡一致。 */
-const FILL_MS = 340;
+const FILL_MS = paced(340);
 /** 中间那一槽的名字淡掉、后面的名字滑过去的时长。 */
-const FADE_MS = 160;
-const SLIDE_MS = 360;
+const FADE_MS = paced(160);
+const SLIDE_MS = paced(360);
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 const wait = (ms: number) => new Promise<void>((resolve) => { window.setTimeout(resolve, reducedMotion() ? 0 : ms); });
 

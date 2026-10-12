@@ -17,6 +17,7 @@ import SegmentTrack from '../SegmentTrack.vue';
 import PlanStrip from './PlanStrip.vue';
 import StepEditor from './StepEditor.vue';
 import { useAiHub } from '../../composables/ai/useAiHub';
+import { paced } from '../../lib/motion/timing';
 import { workoutProfile, type ProfileSegment, type StepRow } from '../../lib/trainingPlan/profile';
 import { INTENSITY_COLOR } from '../../lib/trainingPlan/intensity';
 import { SPORT_VARIANTS, retypeWorkout } from '../../lib/trainingPlan/reshape';
@@ -134,12 +135,12 @@ const reduced = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').ma
 const grow = (el: Element, done: () => void) => {
   if (reduced()) { done(); return; }
   const h = (el as HTMLElement).scrollHeight;
-  el.animate([{ height: '0px', opacity: 0 }, { height: `${h}px`, opacity: 1 }], { duration: 360, easing: EASE }).finished.then(done, done);
+  el.animate([{ height: '0px', opacity: 0 }, { height: `${h}px`, opacity: 1 }], { duration: paced(360), easing: EASE }).finished.then(done, done);
 };
 const shrink = (el: Element, done: () => void) => {
   if (reduced()) { done(); return; }
   const h = (el as HTMLElement).offsetHeight;
-  el.animate([{ height: `${h}px`, opacity: 1 }, { height: '0px', opacity: 0 }], { duration: 300, easing: EASE }).finished.then(done, done);
+  el.animate([{ height: `${h}px`, opacity: 1 }, { height: '0px', opacity: 0 }], { duration: paced(300), easing: EASE }).finished.then(done, done);
 };
 </script>
 

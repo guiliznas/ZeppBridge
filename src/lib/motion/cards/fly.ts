@@ -9,13 +9,13 @@
  * `receive`：来处（「挑日子」按钮、「你的过去」的那一格）接住收回来的一叠——先张开一下，落定时顶一下、亮一圈强调色。
  * 只动 transform / opacity / scale；减少动效时不飞，直接算数。
  */
-import { CLOSE_EASE } from '../timing';
+import { CLOSE_EASE, paced } from '../timing';
 import { catchCard, lidClose, lidOpen } from './box';
 import { restOf, toLocal } from './pose';
 import { reducedMotion, settled, SPRINGS, springCurve } from './spring';
 
-const FLY_MS = 560;
-const BACK_MS = 480;
+const FLY_MS = paced(560);
+const BACK_MS = paced(480);
 const PULSE_MS = 620;
 
 /** 轻轻一顶：用独立的 `scale` 属性，不冲掉元素自己的 transform（收集箱在 /ai 上是抬高的）。 */

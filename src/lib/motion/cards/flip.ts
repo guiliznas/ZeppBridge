@@ -5,8 +5,9 @@
  * （2026-10 卡片动效的教训）。2D 的 scaleX 看上去一样是「翻过去」，字始终清楚。
  */
 import { reducedMotion, SPRINGS, springCurve } from './spring';
+import { paced } from '../timing';
 
-const HALF_MS = 120;
+const HALF_MS = paced(120);
 
 /** 翻面：`swap` 在牌压成一条线时调用（改数据、等 DOM 更新都在里面做完）。 */
 export const flipCard = async (card: HTMLElement, swap: () => void | Promise<void>): Promise<void> => {

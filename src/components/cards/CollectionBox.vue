@@ -23,7 +23,7 @@ import { useCardCollection } from '../../composables/useCardCollection';
 import { useAiTaskDraft } from '../../composables/useAiTaskDraft';
 import { useHandGestures } from '../../composables/useHandGestures';
 import { animateFromNow, lidClose, lidOpen, reducedMotion, relay, settled, SPRINGS, springCurve } from '../../lib/motion/cards';
-import { CLOSE_EASE, OPEN_EASE } from '../../lib/motion/timing';
+import { CLOSE_EASE, OPEN_EASE, paced } from '../../lib/motion/timing';
 import { onMotionEscape } from '../../lib/motion/interrupt';
 import { handLayout } from '../../lib/cards/hand';
 import { labelOfPick, tintOfGroup } from '../../lib/cards/handTint';
@@ -48,8 +48,8 @@ const viewport = ref({ width: window.innerWidth, height: window.innerHeight });
 /** 点开摊成周排的月牌。收起铺开层时清空。 */
 const expanded = ref<ReadonlySet<string>>(new Set());
 const seq = relay();
-const SLIDE_MS = 420;
-const CHROME_MS = 160;
+const SLIDE_MS = paced(420);
+const CHROME_MS = paced(160);
 
 const md = (date: string) => displayDateTimeFormatter({ month: 'numeric', day: 'numeric' }).format(parseDisplayDate(date));
 const weekday = (date: string) => displayDateTimeFormatter({ weekday: 'short' }).format(parseDisplayDate(date));

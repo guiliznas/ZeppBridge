@@ -8,12 +8,12 @@
  *   3. 落地：成功整叠缩小飞进目标、淡掉；失败按原路发回各自的位置，真卡再露出来。
  * 减少动效时什么都不放，直接返回。
  */
-import { CLOSE_EASE, OPEN_EASE } from '../timing';
+import { CLOSE_EASE, OPEN_EASE, paced } from '../timing';
 
-const GATHER_MS = 460;
-const STAGGER_MS = 45;
-const FLY_MS = 520;
-const RETURN_MS = 440;
+const GATHER_MS = paced(460);
+const STAGGER_MS = paced(45);
+const FLY_MS = paced(520);
+const RETURN_MS = paced(440);
 
 export interface CardFlight {
   /** 成功：整叠飞进目标。 */

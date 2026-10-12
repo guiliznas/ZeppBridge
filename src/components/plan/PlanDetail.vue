@@ -16,6 +16,7 @@ import { computed } from 'vue';
 import SegmentTrack, { type SegmentItem } from '../SegmentTrack.vue';
 import { SPORT_VARIANTS } from '../../lib/trainingPlan/reshape';
 import PlanStrip from './PlanStrip.vue';
+import RestFigure from './RestFigure.vue';
 import type { DayRow } from '../../lib/trainingPlan/week';
 import { issueStepPath } from '../../lib/trainingPlan/week';
 import { workoutProfile, type StepRow } from '../../lib/trainingPlan/profile';
@@ -65,6 +66,9 @@ const sportItems = computed<SegmentItem<PlanSport>[]>(() => ([
   { value: 'cycling', label: sport('cycling'), icon: 'bike' },
   { value: 'pool_swim', label: sport('pool_swim'), icon: 'swim' },
 ]));
+/* 休息日（10-12）：以前是空板上一行灰字配一枚小月亮，和周格、右牌里躺着的小人对不上。
+   现在整块就是那个小人放大，名字在下面，和周格同一个顺序（小人 → 「休息」），点进来像是同一张格子长大了。 */
+const restDay = computed(() => props.showWorkout && !workout.value && !held.value.length);
 const legend = computed(() => (profile.value ? usedIntensities(profile.value.segments) : []));
 
 const issueLines = computed(() => props.issues.map((issue) => {
@@ -84,7 +88,7 @@ const stepTarget = (row: StepRow) => target(row.target);
 <template>
   <section class="detail" :aria-label="dateLine">
     <template v-if="row">
-      <header v-if="showWorkout || showDate" class="head">
+      <header v-if="showDate || (showWorkout && !restDay)" class="head">
         <p v-if="showDate" class="date">{{ dateLine }}</p>
         <h3 v-if="showWorkout">{{ workout?.name ?? held[0]?.name ?? t.rest }}</h3>
         <p v-if="showWorkout && facts.length" class="facts"><span v-for="fact in facts" :key="fact">{{ fact }}</span></p>
@@ -145,8 +149,17 @@ const stepTarget = (row: StepRow) => target(row.target);
           </ol>
         </div>
       </div>
-      <p v-else-if="showWorkout && !held.length" class="empty"><Icon name="moon" :size="16" />{{ row.before[0] ? t.wasName(row.before[0].name) : t.noPlanDay }}</p>
-      <div v-if="row.rest" class="local-rest"><Icon name="moon" :size="18"/><div><p><span v-if="restTime">{{ bridgeText.bedtime }} {{ restTime }}</span><span v-if="row.rest.sleep_target_seconds != null">{{ bridgeText.sleepTarget }} {{ minutes(Math.round(row.rest.sleep_target_seconds / 60)) }}</span></p><p v-if="row.rest.note">{{ row.rest.note }}</p></div></div>
+      <div v-else-if="restDay" class="rest-day">
+        <RestFigure class="rest-art" :size="236" drowsy />
+        <h3>{{ t.rest }}</h3>
+        <p v-if="row.before[0]" class="was">{{ t.wasName(row.before[0].name) }}</p>
+        <p v-if="row.rest && (restTime || row.rest.sleep_target_seconds != null)" class="sleep-chips">
+          <span v-if="restTime"><Icon name="moon" :size="14" />{{ bridgeText.bedtime }} <b>{{ restTime }}</b></span>
+          <span v-if="row.rest.sleep_target_seconds != null"><Icon name="moon" :size="14" />{{ bridgeText.sleepTarget }} <b>{{ minutes(Math.round(row.rest.sleep_target_seconds / 60)) }}</b></span>
+        </p>
+        <p v-if="row.rest?.note" class="rest-note">{{ row.rest.note }}</p>
+      </div>
+      <div v-if="row.rest && !restDay" class="local-rest"><Icon name="moon" :size="18"/><div><p><span v-if="restTime">{{ bridgeText.bedtime }} {{ restTime }}</span><span v-if="row.rest.sleep_target_seconds != null">{{ bridgeText.sleepTarget }} {{ minutes(Math.round(row.rest.sleep_target_seconds / 60)) }}</span></p><p v-if="row.rest.note">{{ row.rest.note }}</p></div></div>
 
       <p v-if="!row.inWindow && workout" class="note">{{ t.outsideNote }}</p>
 
@@ -195,7 +208,15 @@ h3 { margin: 0; font-size: var(--fs-2xl); line-height: 1.25; }
 .rep-head { display: inline-flex; align-items: center; gap: 6px; color: var(--accent); font-size: var(--fs-2xs); font-weight: 700; }
 .rep .step + .step { border-top-color: color-mix(in srgb, var(--line) 50%, transparent); }
 
-.empty { display: flex; align-items: center; gap: 8px; margin: 0; padding: 28px 0; color: var(--subtle); font-size: var(--fs-sm); }
+.rest-day { display: grid; justify-items: center; gap: 6px; padding: 18px 0 22px; text-align: center; }
+.rest-art { margin-bottom: 10px; }
+.rest-day h3 { font-size: var(--fs-2xl); }
+.rest-day .was { margin: 0; padding: 3px 12px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 5%, transparent); color: var(--muted); font-size: var(--fs-xs); }
+.sleep-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 8px 0 0; }
+.sleep-chips span { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: color-mix(in srgb, var(--sleep) 14%, transparent);
+  color: var(--sleep); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
+.sleep-chips b { color: var(--ink); font-weight: 700; }
+.rest-note { max-width: 46ch; margin: 4px 0 0; color: var(--muted); font-size: var(--fs-xs); line-height: 1.6; }
 
 .issues h4 { margin: 0 0 8px; color: var(--muted); font-size: var(--fs-xs); font-weight: 650; }
 .issues ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }

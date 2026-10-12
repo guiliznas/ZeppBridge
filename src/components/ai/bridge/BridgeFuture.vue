@@ -125,7 +125,7 @@ const onWheel = (event: WheelEvent) => {
           <span class="day-art">
             <PlanShape v-if="cell.profile" :profile="cell.profile" :scale-seconds="scale" :domain="domain" />
             <span v-else-if="cell.held" class="held-mark"><Icon name="steps" :size="22" /><small>{{ activity(cell.held.activity!) }}</small></span>
-            <RestFigure v-else-if="cell.rest" :size="86" />
+            <RestFigure v-else-if="cell.rest" :size="108" />
           </span>
           <span class="day-name">{{ dayName(cell.day) }}</span>
           <span v-if="cell.profile && cell.day.after[0]" class="day-foot"><b>{{ Math.round(cell.profile.seconds / 60) }}</b> {{ t.unitMin }}</span>

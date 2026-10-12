@@ -12,6 +12,7 @@
  * 样式在 styles/ai-task.css（纸片挂在 body 上，组件的 scoped 样式够不着）。
  */
 import { reducedMotion } from './cards';
+import { paced } from './timing';
 
 const EASE = 'cubic-bezier(.4, .6, .2, 1)';
 const W = 260;
@@ -69,7 +70,7 @@ export const createPaper = (button: HTMLElement): Paper => {
   const go = async (el: HTMLElement, to: Keyframe, duration: number, easing = EASE) => {
     const from = getComputedStyle(el);
     const start: Keyframe = { transform: from.transform === 'none' ? 'none' : from.transform, opacity: from.opacity };
-    const anim = el.animate([start, to], { duration: reducedMotion() ? 1 : duration, easing, fill: 'forwards' });
+    const anim = el.animate([start, to], { duration: reducedMotion() ? 1 : paced(duration), easing, fill: 'forwards' });
     await anim.finished.catch(() => undefined);
     try { anim.commitStyles(); } catch { /* 元素已经不在文档里 */ }
     anim.cancel();
@@ -127,7 +128,7 @@ export const createPaper = (button: HTMLElement): Paper => {
     // 纸片滑过去的同时上面的字淡掉：盖到日程上的是一张干净的玻璃。
     void go(text, { opacity: '0' }, 200);
     const retreat = old.map((row, i) => row.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(8px)' }],
-      { duration: 200, delay: 180 + i * 30, easing: 'cubic-bezier(.4, 0, 1, 1)', fill: 'forwards' }));
+      { duration: paced(200), delay: paced(180 + i * 30), easing: 'cubic-bezier(.4, 0, 1, 1)', fill: 'forwards' }));
     await go(wrap, { transform: pose(target), opacity: '1' }, 500);
     // 换基准尺寸：纸片就是日程这么大，后面的平移不再带缩放（圆角不被拉扁）。
     box = { w: target.w, h: target.h };
@@ -160,8 +161,8 @@ export const createPaper = (button: HTMLElement): Paper => {
     wrap.style.transform = pose(now);
     const rows = [...host.querySelectorAll<HTMLElement>('[data-paper-row]')];
     const across = rows.length > 1 && rows[1]!.getBoundingClientRect().left >= rows[0]!.getBoundingClientRect().right - 1;
-    const MOVE = reducedMotion() ? 1 : 170;
-    const SHOW = reducedMotion() ? 1 : 150;
+    const MOVE = reducedMotion() ? 1 : paced(170);
+    const SHOW = reducedMotion() ? 1 : paced(150);
     const step = MOVE + SHOW;
     // 一行一个台阶：纸先让开到这一行的边，再让这一行落下。所有动画一次排好（delay + backwards），不靠定时器。
     const edges = rows.map((row) => {

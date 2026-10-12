@@ -12,7 +12,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import Icon from '../Icon.vue';
 import { onMotionEscape } from '../../lib/motion/interrupt';
-import { OPEN_EASE } from '../../lib/motion/timing';
+import { OPEN_EASE, paced } from '../../lib/motion/timing';
 import { openSheet, sheetOrigin } from '../../lib/motion/sheet';
 import { useBridgeText } from './bridge/bridge.i18n';
 
@@ -22,7 +22,7 @@ const t = useBridgeText();
 const panel = ref<HTMLElement | null>(null);
 const veil = ref<HTMLElement | null>(null);
 const body = ref<HTMLElement | null>(null);
-const OPEN_MS = 480;
+const OPEN_MS = paced(480);
 const reduced = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 const close = () => { void router.push('/ai'); };
 

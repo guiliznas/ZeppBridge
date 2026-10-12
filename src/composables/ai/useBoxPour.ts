@@ -13,9 +13,10 @@ import { pourFromBox } from '../../lib/motion/cards';
 import type { AiTaskCategory } from '../../lib/bridge/types';
 import { useAiTaskDraft } from '../useAiTaskDraft';
 import { useCardCollection } from '../useCardCollection';
+import { paced } from '../../lib/motion/timing';
 
-const ARRIVE_MS = 700;
-const SETTLE_MS = 300;
+const ARRIVE_MS = paced(700);
+const SETTLE_MS = paced(300);
 
 export const useBoxPour = (options: {
   /** 这一类在左边的牌面；还没有就 null。 */

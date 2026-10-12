@@ -16,19 +16,19 @@
  * 摆在它正前方，拖走一张、翻一张，牌缝里就透出后面那一叠的字。现在它一边缩小一边退到牌桌左上角（来处的那一叠，
  * 像桌角放着的一副牌），不再垫在新一层后面。
  */
-import { CLOSE_EASE, OPEN_EASE } from '../timing';
+import { CLOSE_EASE, OPEN_EASE, paced } from '../timing';
 import { fanBack, stackCards, type Landing } from './deal';
 import { angleOf, centerOfRect, restOf } from './pose';
 import { animateFromNow, cancelOn } from './reversible';
 import { reducedMotion, settled } from './spring';
 
-const RECEDE_MS = 340;
-const PULL_MS = 440;
+const RECEDE_MS = paced(340);
+const PULL_MS = paced(440);
 const RECEDE_SCALE = 0.42;
 const RECEDE_OPACITY = 0.4;
 /** 退到牌桌左上角：这一叠的中心离牌桌左沿、上沿各多远（按缩小后的牌算，再留一点边）。 */
 const CORNER_PAD = 10;
-const BLUR_SWAP_MS = 220;
+const BLUR_SWAP_MS = paced(220);
 const BLUR = 'blur(5px) saturate(.9)';
 
 /** 这一层此刻的样子拷一份、加上静态模糊（opacity 0，等着淡进来）。 */

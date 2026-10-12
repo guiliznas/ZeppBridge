@@ -27,6 +27,7 @@
  */
 import { exemptFromSettle, onMotionEscape } from './interrupt';
 import { whenFramesSteady } from './steady';
+import { paced } from './timing';
 
 export interface FlightOrigin {
   /** 点开它的元素；关的时候它还在就重新量一次（页面可能滚过）。 */
@@ -34,9 +35,9 @@ export interface FlightOrigin {
   rect: DOMRect | null;
 }
 
-const OPEN_MS = 400;
-const CLOSE_MS = 280;
-const VEIL_IN_MS = 240;
+const OPEN_MS = paced(400);
+const CLOSE_MS = paced(280);
+const VEIL_IN_MS = paced(240);
 const OPEN_EASE = 'cubic-bezier(.2, .9, .25, 1)';
 const CLOSE_EASE = 'cubic-bezier(.4, 0, .7, .2)';
 /** 起点不是 0：透明度为 0 的层 Chromium 可能不合成，第一帧可见时才去光栅化，又是一跳。 */

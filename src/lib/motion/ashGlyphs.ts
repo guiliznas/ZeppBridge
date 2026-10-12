@@ -31,6 +31,19 @@ export const timeAt = (y: number) => {
 
 export type AshOrigin = { x: number; y: number };
 
+/**
+ * 涟漪的柔边（10-12）：以前是一刀切的硬圆，两种语言排版高低不同（西语卡片多折一行、下面整排往下挪一截）时，
+ * 圆边两侧的卡沿、卡底阴影错开一截，像一根斜着的条从屏幕上飞过去（用户：「断层的飞条」）。
+ * 现在新语言那张快照用一圈渐隐的遮罩露出来，柔边宽约半径的 14%（140–280px）：错开的卡沿在这一圈里慢慢交融。
+ * 圆的外沿从 0 长到 reach + 柔边宽；某一处「被扫到」按柔边中线算。
+ */
+export const featherOf = (reach: number) => Math.round(Math.min(280, Math.max(140, reach * 0.14)));
+/** 柔边中线扫到离起点 distance 处的时刻（ms，相对涟漪开跑）。 */
+export const sweepAt = (distance: number, reach: number) => {
+  const feather = featherOf(reach);
+  return LOCALE_REVEAL_MS * timeAt(Math.min(1, (distance + feather / 2) / (reach + feather)));
+};
+
 /* ── 取字形 ─────────────────────────────── */
 
 const LETTER = /\p{L}/u;
@@ -204,7 +217,7 @@ export const grainsOf = (
         out[o + 7] = Math.random();
         // 圆扫到这一点的时刻，往后错开一点：同一圈上的字不是齐刷刷一起碎；只往后不往前——圆还没到就先冒灰，
         // 会和还清清楚楚的原字叠在一起。
-        out[o + 8] = LOCALE_REVEAL_MS * timeAt(Math.hypot(x - origin.x, y - origin.y) / reach) + Math.random() * 50;
+        out[o + 8] = sweepAt(Math.hypot(x - origin.x, y - origin.y), reach) + Math.random() * 50;
         out[o + 9] = LIFE_MIN + Math.random() * LIFE_SPAN;
         n += 1;
       }

@@ -4,7 +4,7 @@ import {
 } from '../lib/deck/morph';
 import { SLIDE_IN_EASE, SLIDE_IN_MS, slideInFrames } from '../lib/deck/physics';
 import { exemptFromSettle } from '../lib/motion/interrupt';
-import { BODY_IN, BODY_OUT, CLOSE_EASE, CLOSE_MS, OPEN_EASE, OPEN_MS } from '../lib/motion/timing';
+import { BODY_IN, BODY_OUT, CLOSE_EASE, CLOSE_MS, OPEN_EASE, OPEN_MS, paced } from '../lib/motion/timing';
 
 /**
  * 设置卡组在三种形态之间的形变：coverflow ↔ 卡包（洗牌式飞出 / 收拢）、总览 ↔ 打开一张。
@@ -33,7 +33,7 @@ const COVER_FADE = 0.3;
    放到最后才淡出的话，最后一帧是一块比正面矮的板「啪」地换成正面。 */
 const COVER_OUT: Keyframe[] = [{ opacity: 1 }, { opacity: 1, offset: 0.4 }, { opacity: 0, offset: 0.85 }, { opacity: 0 }];
 /** 展开全部 / 收起：一张张飞出、收拢。 */
-const FLIGHT_MS = 520;
+const FLIGHT_MS = paced(520);
 const FLIGHT_STAGGER_MS = 8;
 const FLIGHT_EASE = 'cubic-bezier(.3, .7, .2, 1)';
 
@@ -163,7 +163,7 @@ export const useDeckMorph = ({ overview, card, reducedMotion }: DeckMorphRefs) =
         { opacity: 0, transform: 'translateY(14px)' },
         { opacity: 1, transform: 'none' },
       ],
-      { duration: 280, easing: OPEN_EASE },
+      { duration: paced(280), easing: OPEN_EASE },
     );
   };
 
@@ -215,7 +215,7 @@ export const useDeckMorph = ({ overview, card, reducedMotion }: DeckMorphRefs) =
     const extra = Math.abs(shift) > 1 && overview.value
       ? overview.value.animate(
         [{ transform: `translateY(${r2(shift)}px)` }, { transform: 'scale(.94)' }],
-        { duration: 300, easing: OPEN_EASE },
+        { duration: paced(300), easing: OPEN_EASE },
       )
       : null;
     // 卡里的内容晚一点长高（数据回来）：形状还在走时换终点，时间轴不变。
@@ -268,7 +268,7 @@ export const useDeckMorph = ({ overview, card, reducedMotion }: DeckMorphRefs) =
         { opacity: 1, transformOrigin: origin, transform: `translate(0px, ${lift}px)` },
         { opacity: 0, transformOrigin: origin, transform: `translate(0px, ${lift + 12}px) scale(.97)` },
       ],
-      { duration: 260, easing: 'cubic-bezier(.4, 0, .2, 1)', fill: 'both' },
+      { duration: paced(260), easing: 'cubic-bezier(.4, 0, .2, 1)', fill: 'both' },
     );
     begin({ id, kind: 'close', anims: [main], main, closed, cleanup: () => main.cancel() });
   };
