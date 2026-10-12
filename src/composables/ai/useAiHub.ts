@@ -7,7 +7,7 @@
  *   方向、提示文案，总页的缩略卡和周视图、单天页读的是同一个 computed。
  * - 跨过午夜由这里推进「今天」：有 AI 页开着时每 15 秒看一眼（没有就不跑）。
  */
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, effectScope, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { backend } from '../../lib/bridge';
 import { autoTaskTitle } from '../../lib/aiTask/title';
 import { directionText, templateName } from '../../lib/aiTask/prompt';
@@ -67,11 +67,16 @@ const bootstrap = async () => {
   started = true;
   const coverage = useAiTaskPreview();
   const strips = useBridgeStrip();
-  coverage.watchDraft(ctl.draft);
-  const { dataRevision } = useSyncController();
-  watch(dataRevision, () => { void library.loadRecentWorkouts(); void coverage.loadPreview(ctl.draft.value); void plan.load(); });
-  watch(plan.revision, () => { void history.load(); void strips.load(); });
-  watch(today, (day) => { strips.end.value = day; });
+  // 这些监听属于整个应用、不属于第一个挂上的页面：bootstrap 是在那一页的 onMounted 里跑的，直接 watch 会挂在
+  // 那一页上，它一卸载（先进的是周视图 / 单天页，再回总页）监听就没了，`started` 却还是真——草稿再怎么改都不重新
+  // 预览，左边的牌一直是上一个任务的数字（10-09 截图：开着睡眠、恢复却画「—」，训练负荷挑了 1 天却写 7/7）。
+  effectScope(true).run(() => {
+    coverage.watchDraft(ctl.draft);
+    const { dataRevision } = useSyncController();
+    watch(dataRevision, () => { void library.loadRecentWorkouts(); void coverage.loadPreview(ctl.draft.value); void plan.load(); });
+    watch(plan.revision, () => { void history.load(); void strips.load(); });
+    watch(today, (day) => { strips.end.value = day; });
+  });
   void history.load(); void library.loadTemplates(); void library.loadTaskList(); void library.loadRecentWorkouts(); void plan.resume();
   try {
     const prefs = await backend.getUserPrefs();

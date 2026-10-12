@@ -9,7 +9,7 @@ import { computed } from 'vue';
 import type { IconName } from '../../components/Icon.vue';
 import { AI_TASK_CATEGORY_META, categoryLabel, categoryRangeOf } from '../../lib/aiTask/categories';
 import { emptyCategories } from '../../lib/aiTask/emptyCategories';
-import type { AiTaskCategory, AiTaskCoverage } from '../../lib/bridge/types';
+import type { AiTask, AiTaskCategory, AiTaskCoverage, AiTaskPreview } from '../../lib/bridge/types';
 import { useAiTaskDraft } from '../useAiTaskDraft';
 import { useAiTaskPreview } from '../useAiTaskPreview';
 import { useBridgeStrip } from '../useBridgeStrip';
@@ -38,9 +38,24 @@ const coverageOf = (rows: AiTaskCoverage[], category: AiTaskCategory) => {
   return mine.find((row) => row.workout_id === null) ?? mine[0] ?? null;
 };
 
+/** 决定这一类覆盖数的东西：这一类的范围（开关、天数、挑的日子）和关联的运动。 */
+const rangeKey = (task: AiTask, category: AiTaskCategory) => {
+  const range = categoryRangeOf(task.categories, category);
+  return JSON.stringify([range.enabled, range.days_before, range.include_workout_day, [...(range.picked_days ?? [])].sort(), [...task.workout_ids].sort()]);
+};
+
+/**
+ * 预览里这一类的覆盖，只有当它是按「现在这一类的范围」算出来的才作数；草稿改过、新结果还没回来（或算失败）时
+ * 返回 null，牌面画「—」，不拿上一份任务的数字冒充（10-09：挑了 1 天的训练负荷写着 7/7）。
+ */
+export const freshCoverage = (preview: AiTaskPreview | null, computedFor: AiTask | null, draft: AiTask, category: AiTaskCategory) => {
+  if (!preview || !computedFor || rangeKey(computedFor, category) !== rangeKey(draft, category)) return null;
+  return coverageOf(preview.coverage, category);
+};
+
 export const useStageCards = () => {
   const { draft } = useAiTaskDraft();
-  const { preview } = useAiTaskPreview();
+  const { preview, previewTask } = useAiTaskPreview();
   const strips = useBridgeStrip();
   const s = useStageText();
   const b = useBridgeText();
@@ -49,7 +64,7 @@ export const useStageCards = () => {
   const dataCard = (category: AiTaskCategory): StageCardModel => {
     const meta = AI_TASK_CATEGORY_META[category];
     const range = categoryRangeOf(draft.value.categories, category);
-    const row = coverageOf(preview.value?.coverage ?? [], category);
+    const row = freshCoverage(preview.value, previewTask.value, draft.value, category);
     const picked = range.picked_days?.length ?? 0;
     const extra = category === 'workout' ? draft.value.workout_ids.length : 0;
     return {

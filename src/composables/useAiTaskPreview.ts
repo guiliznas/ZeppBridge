@@ -5,7 +5,7 @@
  * 全局单例（2026-10 交给 AI 拆成子页面后）：总页的底栏、/ai/check 读同一份，切子页面不重算。
  * `watchDraft` 只装一次，给草稿变化加 600ms 去抖：打字、拖节点都会连续改草稿，没必要每一下都查库。
  */
-import { ref, watch, type Ref } from 'vue';
+import { ref, toRaw, watch, type Ref } from 'vue';
 import { backend, isDesktop, toUserMessage } from '../lib/bridge';
 import type { AiTask, AiTaskPreview } from '../lib/bridge/types';
 import { taskSnapshot } from '../lib/aiTask/draft';
@@ -22,6 +22,8 @@ const messages = defineMessages(
 const DEBOUNCE_MS = 600;
 
 const preview = ref<AiTaskPreview | null>(null);
+/** `preview` 是按哪一份草稿算的：草稿改了、新结果还没回来（或失败了）时，读的人据此判断哪些数还作数。 */
+const previewTask = ref<AiTask | null>(null);
 const previewLoading = ref(false);
 const previewError = ref<string | null>(null);
 let seq = 0;
@@ -33,7 +35,7 @@ const loadPreview = async (task: AiTask) => {
   previewError.value = null;
   try {
     const result = await backend.aiTaskPreview(task, tokenBudget.value);
-    if (mine === seq) preview.value = result;
+    if (mine === seq) { preview.value = result; previewTask.value = JSON.parse(JSON.stringify(toRaw(task))) as AiTask; }
   } catch (error) {
     if (mine === seq) previewError.value = toUserMessage(error, messagesOf(messages).previewFailed);
   } finally {
@@ -58,5 +60,5 @@ const watchDraft = (draft: Ref<AiTask>) => {
 };
 
 export function useAiTaskPreview() {
-  return { preview, previewLoading, previewError, loadPreview, watchDraft };
+  return { preview, previewTask, previewLoading, previewError, loadPreview, watchDraft };
 }
