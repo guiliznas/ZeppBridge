@@ -80,6 +80,15 @@ const armIdle = () => {
   if (pinOpen.value || !present.value) { docked.value = false; return; }
   idleTimer = window.setTimeout(() => { docked.value = true; idleTimer = 0; }, reducedMotion() ? 0 : 1600);
 };
+/* 刚从贴边状态探出来：挂一会儿 .was-docked，盖子掀一下（CollectionBox.css 的 lid-hello）。 */
+const wasDocked = ref(false);
+let helloTimer = 0;
+watch(docked, (now, before) => {
+  window.clearTimeout(helloTimer);
+  wasDocked.value = before && !now;
+  if (wasDocked.value) helloTimer = window.setTimeout(() => { wasDocked.value = false; }, 900);
+});
+onBeforeUnmount(() => window.clearTimeout(helloTimer));
 watch(pinOpen, (pinned) => {
   if (pinned) { clearIdle(); docked.value = false; }
   else if (present.value) armIdle();
@@ -290,7 +299,7 @@ onBeforeUnmount(() => {
 
 <template>
   <Teleport to="body">
-    <button v-if="present" id="card-collection-box" ref="boxButton" type="button" :class="['collection-box', { open, empty, hover: box.dropHover.value, 'is-docked': docked && !open }]"
+    <button v-if="present" id="card-collection-box" ref="boxButton" type="button" :class="['collection-box', { open, empty, hover: box.dropHover.value, 'is-docked': docked && !open, 'was-docked': wasDocked }]"
       :aria-label="t.boxAria(box.count.value)" :aria-expanded="open" @click="empty ? undefined : toggle()"
       @pointerenter="pointerInside = true" @pointerleave="pointerInside = false" @focus="focused = true" @blur="focused = false">
       <span class="jack" aria-hidden="true">

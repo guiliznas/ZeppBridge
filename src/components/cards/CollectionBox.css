@@ -1,13 +1,25 @@
 /* 收集箱（精修批次 7.3；第四轮 1B·B1：合盖的小丑盒，侧面印数量）。箱子比牌桌高一层：挑牌时能看着牌飞进去。 */
 .collection-box { position: fixed; right: 24px; bottom: 24px; z-index: 2060; display: inline-flex; align-items: center; gap: 15px; height: 54px; padding: 0 16px 0 10px;
   border: 1px solid var(--mat-glass-line); border-radius: 999px; background: var(--mat-glass-strong); -webkit-backdrop-filter: var(--mat-glass-blur); backdrop-filter: var(--mat-glass-blur);
-  box-shadow: var(--mat-glass-shadow); color: var(--ink); font: inherit; cursor: pointer; transition: translate 420ms cubic-bezier(.4, .6, .2, 1), right 420ms cubic-bezier(.4, .6, .2, 1), border-radius 420ms cubic-bezier(.4, .6, .2, 1), box-shadow 220ms ease; }
+  box-shadow: var(--mat-glass-shadow); color: var(--ink); font: inherit; cursor: pointer;
+  /* 探出来（10-12 重做）：带一点弹性冲出来再站稳。以前缩进 / 探出都动 right（布局属性，每帧重排）、
+     和平移、圆角一起线性走完、来回一个节奏，看着机械。现在只动 translate，来回各用各的曲线。 */
+  transition: translate 460ms cubic-bezier(.3, 1.22, .5, 1), border-radius 300ms cubic-bezier(.4, .6, .2, 1), box-shadow 300ms ease; }
 .collection-box:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 .collection-box.empty { cursor: default; }
-.box-copy { color: var(--muted); font-size: var(--fs-xs); font-weight: 650; white-space: nowrap; transition: color 180ms ease, opacity 180ms ease; }
-/* 空闲贴右缘，只留摇把和张数。translate 和入场动画用的是同一个属性，互不覆盖 transform。 */
-.collection-box.is-docked { right: 0; translate: calc(100% - 46px) 0; border-radius: 999px 8px 8px 999px; }
-.collection-box.is-docked .box-copy { opacity: 0; }
+/* 探出来时字等盒子快到位了才从右边滑进来；缩进时字先走。 */
+.box-copy { color: var(--muted); font-size: var(--fs-xs); font-weight: 650; white-space: nowrap;
+  transition: color 180ms ease, opacity 220ms ease 180ms, translate 320ms cubic-bezier(.2, .8, .3, 1) 160ms; }
+/* 空闲贴右缘，只露出盒子（46px）。不再改 right：位置全靠 translate（right 24px + 平移，露出的宽度不变）。
+   缩进是「慢慢贴过去」：先慢、中段走、最后轻轻停住，不回弹；盖子同时合上。 */
+.collection-box.is-docked { translate: calc(100% - 22px) 0; border-radius: 999px 10px 10px 999px; box-shadow: 0 8px 22px -12px rgba(0, 0, 0, .55);
+  transition: translate 560ms cubic-bezier(.45, 0, .2, 1) 60ms, border-radius 420ms cubic-bezier(.4, .6, .2, 1) 200ms, box-shadow 420ms ease 120ms; }
+.collection-box.is-docked .box-copy { opacity: 0; translate: 8px 0; transition: color 180ms ease, opacity 140ms ease, translate 200ms ease; }
+.collection-box.is-docked .box-lid { rotate: 0deg; translate: 0 0; }
+/* 探出来到位那一刻，盖子掀一下打个招呼（只在从贴边状态出来时：.was-docked 由组件挂一会儿）。 */
+.collection-box.was-docked:not(.is-docked) .box-lid { animation: lid-hello 520ms cubic-bezier(.3, 1.3, .5, 1) 300ms both; }
+@keyframes lid-hello { 0% { rotate: 0deg; translate: 0 0; } 45% { rotate: -24deg; translate: 0 -3px; } 100% { rotate: 0deg; translate: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .collection-box.was-docked .box-lid { animation: none; } }
 .collection-box:not(.empty) .box-copy { color: var(--ink); }
 /* 小盒：盒身（正面印着张数）+ 盖子（铰链在左下角，box.ts 只动它的 transform）。 */
 .jack { position: relative; display: block; width: 38px; height: 36px; flex: 0 0 auto; }
