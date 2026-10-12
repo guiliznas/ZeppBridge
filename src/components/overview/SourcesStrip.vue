@@ -12,6 +12,7 @@ import Icon from '../Icon.vue';
 import { deviceStateLabel, useDevices } from '../../composables/useDevices';
 import { useSyncController } from '../../composables/useSyncController';
 import { formatWhen } from '../../lib/format';
+import { dataProviderLabel } from '../../lib/labels';
 import { defineMessages, useMessages } from '../../i18n';
 
 defineOptions({ name: 'OverviewSourcesStrip' });
@@ -74,7 +75,7 @@ const chips = computed(() => [
   {
     key: 'cloud',
     kind: 'cloud' as const,
-    name: 'Zepp Cloud',
+    name: dataProviderLabel(),
     state: accountRecognized.value ? ('account' as const) : ('unknown' as const),
     to: '/settings/account',
   },

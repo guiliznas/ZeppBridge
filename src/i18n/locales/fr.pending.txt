@@ -1,23 +1,2 @@
 # 尚未覆盖的键（i18n:check --write-pending 生成；W4 翻译一行删一行）。
 # 格式：moduleId.键路径。
-# 已有译文也需更新（非缺键；按 zh/en/es 新文案同步语义）：
-# views/Settings.capabilityNoneProbed：候选接口未返回记录，不能断言没有测量。
-# views/Settings.stream.blood_pressure：标明实验性。
-# views/HealthCheck.summaryPending：接口或解析步骤尚未确认，不能断言设备不支持。
-# views/HealthCheck.errorKind.not_available：接口未返回可用数据，不能断言账号没有该数据流。
-lib/aiTask/metrics.blood_pressure_diastolic
-lib/aiTask/metrics.blood_pressure_pulse
-lib/aiTask/metrics.blood_pressure_systolic
-lib/metricInfo/bloodPressure.chart
-lib/metricInfo/bloodPressure.diastolic
-lib/metricInfo/bloodPressure.how
-lib/metricInfo/bloodPressure.pulse
-lib/metricInfo/bloodPressure.systolic
-views/BodyStatus.bloodPressurePulseLabel
-views/BodyStatus.diastolicLabel
-views/BodyStatus.systolicLabel
-views/HealthCheck.heartRateAlternate
-views/HealthCheck.heartRateEndpointEmpty
-views/Settings.capabilityUnconfirmed
-views/Settings.probeUnrecognized
-views/Settings.probeWindow

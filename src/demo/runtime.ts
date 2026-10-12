@@ -131,9 +131,9 @@ export const installDemoRuntime = (now: Date = new Date()): DemoData => {
     get_recent_workouts: (args) => data.workouts.slice(0, Number(args.limit ?? 20)),
     get_workout_page: (args) => page(data.workouts, args),
     get_workout_detail: a => data.workouts.find(w => w.workout_id === a.workoutId) ?? null,
-    get_workout_series: a => { const w = data.workouts.find(w => w.workout_id === a.workoutId); if (!w) throw new Error('Unknown sample workout'); return demoWorkoutSeries(w); },
-    get_workout_insight: a => { const w = data.workouts.find(w => w.workout_id === a.workoutId); if (!w) throw new Error('Unknown sample workout'); return demoInsight(data, w); },
-    set_workout_type_override: a => { const w = data.workouts.find(w => w.workout_id === a.workoutId); if (!w) throw new Error('Unknown sample workout'); w.user_override = a.userOverride as string | null; w.effective_type = w.user_override || w.normalized_type; return w; },
+    get_workout_series: a => { const w = data.workouts.find(w => w.workout_id === a.workoutId); if (!w) throw Object.assign(new Error('Unknown sample workout'), { code: 'err.workout.not_found' }); return demoWorkoutSeries(w); },
+    get_workout_insight: a => { const w = data.workouts.find(w => w.workout_id === a.workoutId); if (!w) throw Object.assign(new Error('Unknown sample workout'), { code: 'err.workout.not_found' }); return demoInsight(data, w); },
+    set_workout_type_override: a => { const w = data.workouts.find(w => w.workout_id === a.workoutId); if (!w) throw Object.assign(new Error('Unknown sample workout'), { code: 'err.workout.not_found' }); w.user_override = a.userOverride as string | null; w.effective_type = w.user_override || w.normalized_type; return w; },
     set_workout_code_label: () => [],
     get_weekly_report: () => demoWeeklyReport(data),
 

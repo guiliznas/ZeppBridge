@@ -16,7 +16,7 @@ const camera = ref({ x: 0, y: 0, zoom: 1 });
 const cursor = ref({ x: 640, y: 400, pressed: false, visible: false });
 const scale = computed(() => width.value / 1280);
 const show = useShowcase(root);
-const t = computed(() => reelCopy(props.locale));
+const reel = computed(() => reelCopy(props.locale));
 let resize: ResizeObserver | undefined, controller: AbortController | undefined, clock: PlaybackClock | undefined;
 let loadTimer = 0, generation = 0;
 const post = (payload: Record<string, unknown>) => frame.value?.contentWindow?.postMessage({ source: 'zeppbridge-site', ...payload }, location.origin);
@@ -89,12 +89,12 @@ onBeforeUnmount(() => { stop(); clearTimeout(loadTimer); resize?.disconnect(); w
           <i v-if="cursor.visible" class="reel-pointer" :class="{ pressed: cursor.pressed }" :style="{ transform: `translate(${cursor.x}px, ${cursor.y}px)` }" aria-hidden="true"></i>
         </div>
       </div>
-      <div v-if="!ready" class="reel-placeholder" :aria-label="t.preparing"><div></div><div></div><div></div></div>
-      <div v-if="failed" class="reel-error" role="status"><span>{{ t.failed }}</span><button type="button" @click="replay">{{ t.retry }}</button></div>
+      <div v-if="!ready" class="reel-placeholder" :aria-label="reel.preparing"><div></div><div></div><div></div></div>
+      <div v-if="failed" class="reel-error" role="status"><span>{{ reel.failed }}</span><button type="button" @click="replay">{{ reel.retry }}</button></div>
     </div>
     <figcaption class="reel-controls">
       <span class="reel-status"><i :class="{ playing: show.running.value && !finished }"></i>{{ title }}</span>
-      <div><button type="button" class="playback-toggle" :aria-pressed="show.running.value" @click="toggle">{{ finished ? t.replay : show.running.value ? t.pause : t.play }}</button><button v-if="!finished" type="button" class="playback-replay" @click="replay">{{ t.replay }}</button></div>
+      <div><button type="button" class="playback-toggle" :aria-pressed="show.running.value" @click="toggle">{{ finished ? reel.replay : show.running.value ? reel.pause : reel.play }}</button><button v-if="!finished" type="button" class="playback-replay" @click="replay">{{ reel.replay }}</button></div>
     </figcaption>
   </figure>
 </template>

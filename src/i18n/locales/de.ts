@@ -99,6 +99,7 @@ export default {
       'Wiederherstellung nicht möglich: Ein anderer Schreibvorgang läuft. Die aktuelle Datenbank bleibt unverändert; beim nächsten Start wird es erneut versucht',
     'err.backup.restore_failed':
       'Wiederherstellung nicht abgeschlossen. Die aktuelle Datenbank bleibt unverändert; beim nächsten Start wird es erneut versucht',
+    'err.backup.not_found': 'Die Sicherung existiert nicht oder wurde gelöscht',
     'err.capability.not_synced': 'Noch nicht synchronisiert',
     'err.capability.needs_reauth': 'Erneute Anmeldung nötig',
     'err.capability.unverified': 'Noch nicht verifiziert',
@@ -326,6 +327,7 @@ export default {
       probeEmpty: 'keine Daten',
       probeRefused: 'Endpunkt verweigert',
       probeFailed: 'Anfrage fehlgeschlagen',
+      probeUnrecognized: 'Unbekannte Antwortstruktur',
       codesUnnamed: (count: number) => `${count} noch ohne Namen`,
       codesIntro:
         'Manche Trainingsvorlagen von Zepp liefern nur eine Nummer ohne Namen. Statt eine Sportart zu raten, benenne den Code selbst – künftig gilt der Name für alle Einträge mit diesem Code, in den Trainingsdetails als deiner gekennzeichnet.',
@@ -600,7 +602,11 @@ Wenn du weitere Informationen von mir brauchst (welcher Client, wo die Datei lie
         'Daten sind in der Cloud, lokal noch nicht verarbeitet. Synchronisiere oder lade Historie nach; fehlen sie danach weiter, braucht das Format vermutlich noch Unterstützung.',
       capabilityFoodHistoryHint: 'In der Cloud gibt es Essenseinträge, lokal noch nicht. Liegen sie vor der letzten inkrementellen Synchronisierung, lade die Historie für diese Tage nach; fehlen sie weiter, melde das Datenformat.',
       capabilityUnsupported: 'Dein Konto oder Gerät liefert das nicht',
-      capabilityNoneProbed: (days: number) => `Keine Messung in den letzten ${days} Tagen`,
+      capabilityNoneProbed: (days: number) =>
+        `Die abgefragten Kandidaten haben in den letzten ${days} Tagen keine Einträge zurückgegeben; dies belegt nicht, ob das Gerät gemessen hat.`,
+      capabilityUnconfirmed:
+        'Kandidaten-Endpunkte konnten diese Daten nicht bestätigen. Unterstützung durch Konto oder Gerät bleibt unbestätigt.',
+      probeWindow: (days: number) => `Abfragezeitraum: ${days} Tage`,
       capabilityNotProbed: 'Noch nicht geprüft',
       capabilityLocal: (records: number, unit: string, latest: string) =>
         `${records} ${unit}${latest ? ` · bis ${latest}` : ''}`,
@@ -1782,6 +1788,9 @@ Wenn du weitere Informationen von mir brauchst (welcher Client, wo die Datei lie
       readinessLabel: 'Bereitschaft',
       respiratoryLabel: 'Atemfrequenz',
       restingLabel: 'Ruheherzfrequenz',
+      systolicLabel: 'Blutdruck · Systolisch',
+      diastolicLabel: 'Blutdruck · Diastolisch',
+      bloodPressurePulseLabel: 'Puls bei Blutdruckmessung',
       retry: 'Wiederholen',
       scaleEmpty:
         'Keine Wiegemessungen im Zeitraum – erscheinen nach der Synchronisierung.',
@@ -1980,7 +1989,11 @@ Wenn du weitere Informationen von mir brauchst (welcher Client, wo die Datei lie
       summaryFailed: (n: number) =>
         `${n} haben ein Problem – unter „Wie weit jeder Datenstrom kam" unten siehst du, wo es hakt`,
       summaryPending: (n: number) =>
-        `${n} haben noch keine Daten – meist erzeugt dieses Gerät sie schlicht nicht`,
+        `${n} Endpunkte oder Analyseschritte sind unbestätigt. Dies belegt nicht, dass das Gerät sie nicht unterstützt.`,
+      heartRateAlternate:
+        'Der separate Puls-Endpunkt hat keine Messwerte zurückgegeben. Andere synchronisierte Quellen liefern die lokalen Pulsdaten.',
+      heartRateEndpointEmpty:
+        'Der separate Puls-Endpunkt hat keine nutzbaren Messwerte zurückgegeben. Versuche Armband-Details zu synchronisieren; eine leere Antwort bedeutet nicht, dass das Gerät keinen Puls misst.',
       summaryStreams: (ok: number, total: number) => `${ok} / ${total} Datenströme in Ordnung`,
       timeUnknown: 'Zeit unbekannt',
       timingCloud: 'Zuletzt aus der Cloud abgerufen',
@@ -2627,6 +2640,9 @@ Antworte in Markdown.`,
       awake_minutes: 'Wach',
       bmi: 'BMI',
       bmr: 'Grundumsatz',
+      blood_pressure_diastolic: 'Diastolischer Blutdruck (experimentell)',
+      blood_pressure_pulse: 'Puls bei Blutdruckmessung',
+      blood_pressure_systolic: 'Systolischer Blutdruck (experimentell)',
       body_balance_score: 'Körperbalance-Score',
       body_fat_rate: 'Körperfett',
       body_water_rate: 'Körperwasser',
@@ -3451,6 +3467,14 @@ Antworte in Markdown.`,
       daily_max_hrWhat: 'Tägliche maximale Herzfrequenz, auf diesem Rechner aus den gespeicherten Rohdaten ermittelt.',
       daily_max_hrChart: 'Zwei Kurven: Tageshöchst- und Tagesdurchschnittswert; Tage mit sehr wenigen Messwerten (unter 60) werden als Hohlpunkte dargestellt – ihr Höchstwert ist lediglich das Maximum dieser wenigen Punkte.',
       daily_max_hrHow: 'ZeppBridge ermittelt die Werte pro Tag lokal aus den Rohdaten ohne die Filter der Zepp-App; Abweichungen zwischen beiden Werten sind daher normal. Messwerte sowohl aus der offiziellen Schnittstelle als auch aus „Erweiterte Daten“ fließen ein.',
+    },
+    'lib/metricInfo/bloodPressure': {
+      systolic: 'Systolischer Druck während der Kontraktion des Herzens, in mmHg.',
+      diastolic: 'Diastolischer Druck zwischen den Herzschlägen, in mmHg.',
+      pulse: 'Mit der Blutdruckmessung erfasster Puls, in bpm. Getrennt vom ganztägigen Puls gespeichert.',
+      chart:
+        'Gemessener Tagesdurchschnitt. Tage ohne Messungen bleiben leer. Datenabfragen behalten Tagesbereiche; Exporte behalten Messzeitpunkt und Messwert.',
+      how: 'Experimentelle Blutdruck-Synchronisierung: erfasst explizite Wertepaare. Kandidaten-Endpunkte müssen noch mit einem messenden Konto verifiziert werden. Messmethode und Kalibrierungsdaten bleiben in der Rohantwort erhalten.',
     },
   },
 } satisfies LocalePack;

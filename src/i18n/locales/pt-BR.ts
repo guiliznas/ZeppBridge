@@ -1017,6 +1017,9 @@ export default {
       odiLabel: 'Índice de dessaturação de oxigênio (ODI)',
       respiratoryLabel: 'Frequência respiratória',
       restingLabel: 'FC em repouso',
+      systolicLabel: 'Pressão arterial · Sistólica',
+      diastolicLabel: 'Pressão arterial · Diastólica',
+      bloodPressurePulseLabel: 'Pulso na medição de pressão arterial',
       unitScore: 'pts',
       unitPerHour: '/h',
       unitBreathsPerMinute: 'rpm',
@@ -1092,7 +1095,11 @@ export default {
       summaryFailed: (n: number) =>
         `${n} requerem atenção — verifique o status das etapas abaixo`,
       summaryPending: (n: number) =>
-        `${n} sem dados — comum se o dispositivo não suportar a métrica`,
+        `${n} endpoints ou etapas de análise não foram confirmados. Isso não comprova que o dispositivo não os suporte.`,
+      heartRateAlternate:
+        'O endpoint independente de frequência cardíaca não retornou leituras. Outras fontes sincronizadas fornecem os dados locais de frequência cardíaca.',
+      heartRateEndpointEmpty:
+        'O endpoint independente de frequência cardíaca não retornou leituras utilizáveis. Tente sincronizar os detalhes da pulseira; uma resposta vazia não comprova que o dispositivo não mede.',
       summaryAllGood: 'Tudo certo: busca, análise e gravação concluídas com sucesso',
       intro: 'Status de cada fluxo em três etapas: baixado da nuvem, analisado, gravado nesta máquina; quais datas cobre e de que origem. O que falta, falta; nunca preenchido com 0 inventado.',
       rangeAria: 'Intervalo de cobertura',
@@ -1669,6 +1676,7 @@ Regras: compare-me apenas com meu próprio histórico, não com médias populaci
       probeEmpty: 'sem dados',
       probeRefused: 'endpoint recusou',
       probeFailed: 'falha na requisição',
+      probeUnrecognized: 'Estrutura de resposta não reconhecida',
       codesUnnamed: (count: number) => `${count} sem identificação`,
       codesIntro: 'Os templates personalizados do Zepp dão só número, sem nome, e o catálogo interno também não os conhece. Em vez de chutar um nome, defina você mesmo uma vez: todo registro com esse código passa a usá-lo, marcado no detalhe do treino como "nome que você deu".',
       codeNumber: (code: number) => `Código Zepp ${code}`,
@@ -1892,7 +1900,11 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
       capabilityNotIngested: 'A nuvem possui registros, mas nenhum dado válido pôde ser extraído localmente ainda. Tente sincronizar novamente.',
       capabilityFoodHistoryHint: 'Há registros de alimentação na nuvem ainda não salvos aqui. Se forem anteriores à última sincronização incremental, sincronize o histórico dessas datas. Se não aparecerem, reporte o formato do pacote.',
       capabilityUnsupported: 'Métrica não suportada por este dispositivo ou conta',
-      capabilityNoneProbed: (days: number) => `Nenhuma medição nos últimos ${days} dias`,
+      capabilityNoneProbed: (days: number) =>
+        `Os candidatos consultados não retornaram registros nos últimos ${days} dias; isso não confirma se o dispositivo realizou medições.`,
+      capabilityUnconfirmed:
+        'Os endpoints candidatos não conseguiram confirmar estes dados. O suporte pela conta ou pelo dispositivo permanece desconhecido.',
+      probeWindow: (days: number) => `Intervalo consultado: ${days} dias`,
       capabilityNotProbed: 'Ainda não sondado',
       capabilityLocal: (records: number, unit: string, latest: string) =>
         `${records} ${unit}${latest ? ` · até ${latest}` : ''}`,
@@ -2118,6 +2130,7 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
       rhr_baseline: 'Linha de base de FC em repouso', ahi_baseline: 'Linha de base de AHI', spo2_odi: 'ODI de SpO2', spo2_night_score: 'Pontuação noturna de SpO2',
       spo2_measured_minutes: 'Tempo de medição de SpO2', hrv: 'HRV', hrv_rmssd: 'HRV (RMSSD)', spo2: 'SpO2',
       heart_rate: 'FC de todo o dia',
+      blood_pressure_systolic: 'Pressão sistólica (experimental)', blood_pressure_diastolic: 'Pressão diastólica (experimental)', blood_pressure_pulse: 'Pulso na medição de pressão arterial',
       training_load: 'Carga de treino', vo2max: 'VO₂max', lactate_threshold_hr: 'FC no limiar de lactato', lactate_threshold_pace: 'Ritmo no limiar de lactato',
       pai_daily: 'PAI diário', pai_total: 'PAI total', steps: 'Passos', active_calories: 'Calorias ativas', active_minutes: 'Minutos ativos',
       weight: 'Peso', bmi: 'IMC', height: 'Altura', body_fat_rate: 'Gordura corporal', body_water_rate: 'Água corporal', muscle_mass: 'Massa muscular',
@@ -3000,6 +3013,13 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
       daily_max_hrChart: 'Duas linhas: máxima e média do dia; dias com poucas amostras (menos de 60) são desenhados com pontos vazios — a "máxima" desses dias reflete apenas o maior desses poucos pontos.',
       daily_max_hrHow: 'O ZeppBridge calcula as estatísticas diárias com base nas amostras locais sem os filtros aplicados pelo app Zepp, sendo normal haver divergências entre os números. Amostras da autorização oficial e de "dados avançados" são incluídas.',
     },
+    'lib/metricInfo/bloodPressure': {
+      systolic: 'Pressão sistólica durante a contração do coração, em mmHg.',
+      diastolic: 'Pressão diastólica entre os batimentos cardíacos, em mmHg.',
+      pulse: 'Pulso retornado com a medição de pressão arterial, em bpm. Armazenado separadamente da frequência cardíaca de todo o dia.',
+      chart: 'Média medida por dia. Datas sem medições ficam em branco. As consultas de dados mantêm os intervalos diários; as exportações mantêm o horário e o valor de cada medição.',
+      how: 'Sincronização experimental de pressão arterial: aceita pares de leituras explícitos. Os endpoints candidatos ainda precisam de verificação em uma conta com medições ativas. O método e os dados de calibração são mantidos na resposta bruta.',
+    },
   },
   errors: {
     'err.app.starting': 'Os dados locais ainda estão sendo preparados; a tela será atualizada automaticamente em instantes',
@@ -3071,6 +3091,7 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
     'err.backfill.start_in_future': 'A data de início do histórico não pode ser futura',
     'err.backup.restore_busy': 'Restauração não executada: banco ocupado por outra operação. Os dados atuais foram preservados; nova tentativa na próxima inicialização',
     'err.backup.restore_failed': 'Falha na restauração do backup. Os dados atuais foram preservados; nova tentativa na próxima inicialização',
+    'err.backup.not_found': 'O backup não existe ou foi excluído',
     'err.capability.not_synced': 'Ainda não sincronizado',
     'err.capability.needs_reauth': 'Reautenticação necessária',
     'err.capability.unverified': 'Não verificado',

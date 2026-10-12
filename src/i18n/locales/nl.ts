@@ -1267,7 +1267,10 @@ export default {
       capabilityLocal: (records: number, unit: string, latest: string) =>
         `${records} ${unit}${latest ? ` · t/m ${latest}` : ''}`,
       capabilityNoRecords: (days: number) => `Niets vastgelegd in de afgelopen ${days} dagen`,
-      capabilityNoneProbed: (days: number) => `Geen meting in de afgelopen ${days} dagen`,
+      capabilityNoneProbed: (days: number) =>
+        `De geraadpleegde kandidaten gaven in de afgelopen ${days} dagen geen records terug; dit bevestigt niet of het apparaat heeft gemeten.`,
+      capabilityUnconfirmed:
+        'Kandidaat-eindpunten konden deze gegevens niet bevestigen. Ondersteuning door account of apparaat blijft onbekend.',
       capabilityNotIngested:
         'De cloud bevat gegevens, maar er is nog niets lokaal opgeslagen. Synchroniseer eerst; blijven gegevens uit, dan wijkt het payloadformaat mogelijk af.',
       capabilityFoodHistoryHint: 'Voedingsrecords staan in de cloud, maar zijn nog niet lokaal opgenomen. Zijn ze ouder dan de laatste incrementele synchronisatie, haal dan de historie voor die datums op. Ontbreken ze nog, meld dan het payloadformaat.',
@@ -1436,6 +1439,8 @@ Als je iets van mij nodig hebt (welke client ik gebruik, waar het bestand staat)
       probeRefused: 'endpoint geweigerd',
       probeRun: 'Nu opnieuw testen',
       probeSummary: 'Endpointdiagnostiek',
+      probeUnrecognized: 'Niet-herkende antwoordstructuur',
+      probeWindow: (days: number) => `Zoekperiode: ${days} dagen`,
       probedDaysAgo: (days: number) => `${days} dagen geleden getest`,
       probedToday: 'vandaag getest',
       probing: 'Testen…',
@@ -1619,6 +1624,9 @@ Als je iets van mij nodig hebt (welke client ik gebruik, waar het bestand staat)
       odiLabel: 'Nachtelijke SpO2-ODI',
       respiratoryLabel: 'Ademhalingsfrequentie',
       restingLabel: 'Rusthartslag',
+      systolicLabel: 'Bloeddruk · Systolisch',
+      diastolicLabel: 'Bloeddruk · Diastolisch',
+      bloodPressurePulseLabel: 'Pols bij bloeddrukmeting',
       unitScore: 'pt',
       unitPerHour: '/uur',
       unitBreathsPerMinute: 'br/min',
@@ -1705,10 +1713,11 @@ Als je iets van mij nodig hebt (welke client ik gebruik, waar het bestand staat)
           other: `${n} stromen hebben een probleem — hieronder bij ‘Hoe ver elke stroom kwam’ zie je welke stap`,
         }),
       summaryPending: (n: number) =>
-        plural(n, {
-          one: `${n} stroom heeft nog geen gegevens — meestal produceert dit apparaat die gewoon niet`,
-          other: `${n} stromen hebben nog geen gegevens — meestal produceert dit apparaat ze gewoon niet`,
-        }),
+        `${n} eindpunten of verwerkingsstappen zijn nog niet bevestigd. Dit bewijst niet dat het apparaat ze niet ondersteunt.`,
+      heartRateAlternate:
+        'Het afzonderlijke hartslageindpunt gaf geen metingen terug. Andere gesynchroniseerde bronnen leveren de lokale hartslaggegevens.',
+      heartRateEndpointEmpty:
+        'Het afzonderlijke hartslageindpunt gaf geen bruikbare metingen terug. Probeer banddetails te synchroniseren; een leeg antwoord bewijst niet dat het apparaat geen hartslag meet.',
       summaryAllGood:
         'Alles oké: ophalen, parsen en schrijven zijn afgerond',
       intro:
@@ -2436,6 +2445,9 @@ Regels: vergelijk me alleen met mijn eigen historie, niet met populatiegemiddeld
       hrv_rmssd: 'HRV – RMSSD',
       spo2: 'SpO2',
       heart_rate: 'Hartslag (hele dag)',
+      blood_pressure_diastolic: 'Diastolische bloeddruk (experimenteel)',
+      blood_pressure_pulse: 'Pols bij bloeddrukmeting',
+      blood_pressure_systolic: 'Systolische bloeddruk (experimenteel)',
       training_load: 'Trainingsbelasting',
       vo2max: 'VO₂-max',
       lactate_threshold_hr: 'Lactaatdrempelhartslag',
@@ -3241,6 +3253,13 @@ Regels: vergelijk me alleen met mijn eigen historie, niet met populatiegemiddeld
       daily_max_hrChart: 'Twee lijnen: de piek en het daggemiddelde; dagen met heel weinig monsters (minder dan 60) worden als open punten getoond — de ‘piek’ van die dag is slechts de hoogste van die weinige punten.',
       daily_max_hrHow: 'Lokaal berekend op basis van ruwe monsters op deze computer, zonder het filter dat de Zepp-app toepast, waardoor het normaal is dat beide getallen verschillen. Monsters van zowel de officiële autorisatie als geavanceerde gegevens tellen mee.',
     },
+    'lib/metricInfo/bloodPressure': {
+      systolic: 'Systolische druk tijdens het samentrekken van het hart, in mmHg.',
+      diastolic: 'Diastolische druk tussen hartslagen, in mmHg.',
+      pulse: 'Pols gemeten tijdens bloeddrukmeting, in bpm. Wordt apart opgeslagen van de daghartslag.',
+      chart: 'Gemeten daggemiddelde. Dagen zonder metingen blijven leeg. Gegevensquery\'s behouden dagbereiken; exports bewaren het tijdstip en de meetwaarde.',
+      how: 'Experimentele bloeddruksynchronisatie: accepteert expliciete meetwaardeparen. Kandidaat-eindpunten moeten nog worden gecontroleerd met een account dat meet. Methode en kalibratie blijven in het ruwe antwoord bewaard.',
+    },
   },
   errors: {
     'err.app.starting': 'Lokale gegevens worden nog klaargemaakt; dit wordt zo vanzelf vernieuwd',
@@ -3276,6 +3295,7 @@ Regels: vergelijk me alleen met mijn eigen historie, niet met populatiegemiddeld
       'Herstel niet uitgevoerd: er loopt een andere schrijfbewerking. De huidige database is ongewijzigd; bij de volgende start opnieuw proberen',
     'err.backup.restore_failed':
       'Herstel niet afgerond — de huidige database is ongewijzigd; bij de volgende start opnieuw proberen',
+    'err.backup.not_found': 'De reservekopie bestaat niet of is verwijderd',
     'err.capability.needs_reauth': 'Opnieuw aanmelden vereist',
     'err.capability.not_synced': 'Nog niet gesynchroniseerd',
     'err.capability.other': 'Status onbekend',
