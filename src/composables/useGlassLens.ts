@@ -91,6 +91,17 @@ export const useGlassLens = (target: Ref<HTMLElement | null>, kind: LensKind = '
     lens = null;
   });
 
+  /**
+   * 指针移上来 / 按下时还没挂：现在就挂（2026-10-12 第 3 批）。新挂载的胶囊要等形变放完、浏览器空下来才挂，
+   * 换运动大类时新冒出来的子类型胶囊一拖是平的、点过一下才有玻璃；挂的那一刻正在形变、被误判成隔离的，
+   * 以前也再没有机会重查。读计算样式只在指针第一次移上来时做一次。
+   */
+  const prime = () => {
+    if (lens || disposed || !when || !lensEnabled.value || !lensSupported()) return;
+    waiting = false;
+    attach();
+  };
+
   /** 有没有挂上：组件据此打开「开着折射」时的样式。 */
   const active = computed(() => filterRef.value !== null);
   /** 放进元素 `style` 的那一段；`extra` 是同一条 backdrop-filter 里要排在折射前面的滤镜（例如玻璃的模糊）。 */
@@ -100,5 +111,5 @@ export const useGlassLens = (target: Ref<HTMLElement | null>, kind: LensKind = '
     return { backdropFilter: value, WebkitBackdropFilter: value };
   };
 
-  return { active, style };
+  return { active, style, prime };
 };

@@ -17,7 +17,6 @@ import '../styles/ai-task.css';
 import Icon from '../components/Icon.vue';
 import AiTaskHeader from '../components/ai/AiTaskHeader.vue';
 import GraphUndoPill from '../components/ai/GraphUndoPill.vue';
-import PlanLedger from '../components/plan/PlanLedger.vue';
 import PlanClearDialog from '../components/plan/PlanClearDialog.vue';
 import ProfileTray from '../components/ai/ProfileTray.vue';
 import StageCard from '../components/ai/stage/StageCard.vue';
@@ -344,14 +343,13 @@ onDeactivated(() => { paused.value = true; });
       <FutureCard ref="future" v-model:face="send.face.value" :box="layout.card" :templates="templates" :disabled="send.gathering.value"
         :ready="send.ready.value" :blocked="send.blocked.value" :provider="send.provider.value.label" :provider-icon="send.provider.value.localIcon" :stale="send.stale.value" :recalled="send.recalled.value"
         :steps="send.steps.value" :save-error="send.saveError.value" :rows="hub.rows.value" :drafting="!!plan.preview.value" :plan="plan.state.value"
-        :mcp="!!plan.preview.value && !plan.accepted.value" @copy="send.copyAgain()" @open="send.openAgain()" @reveal="send.reveal()" @retry="send.retry($event as 'copy' | 'open')"
-        @received="received" @accept="plan.accept()" @discard="plan.discard()" @workout="highlightWorkout" />
+        :mcp="!!plan.preview.value && !plan.accepted.value" :busy="plan.busy.value" :simulated="hub.demo.value" @copy="send.copyAgain()" @open="send.openAgain()" @reveal="send.reveal()" @retry="send.retry($event as 'copy' | 'open')"
+        @received="received" @accept="plan.accept()" @discard="plan.discard()" @undo="plan.undo()" @clear="plan.clear()" @workout="highlightWorkout" />
     </div>
 
     <div class="stage-foot">
       <p v-if="strips.error.value" class="bridge-message" role="alert"><Icon name="warning" :size="14" />{{ strips.error.value }}<button class="pill-button quiet" @click="strips.load()">{{ t.retry }}</button></p>
       <p v-if="send.blocked.value.length === 0 && send.ready.value === null && hub.notice.value" class="bridge-message" role="status"><Icon name="info" :size="14" /><span>{{ hub.notice.value }}</span><button class="pill-button quiet" @click="plan.dismissNotice()">{{ t.close }}</button></p>
-      <div v-if="plan.state.value?.last_publish" class="plan-status-row"><PlanLedger :state="plan.state.value" :busy="plan.busy.value" :simulated="hub.demo.value" @undo="plan.undo()" @clear="plan.clear()" /></div>
     </div>
 
     <StageCardBack v-if="backCard" :card="cards.find((c) => c.id === backCard!.id) ?? backCard" @close="backCard = null" @deal="deal" />

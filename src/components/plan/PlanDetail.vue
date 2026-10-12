@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 选中的那一天：左边强度走势（PlanChart）+ 图例，右边步骤时间线（重复组折成「重复 N 次」），
+ * 选中的那一天：左边强度走势（PlanStrip）+ 图例，右边步骤时间线（重复组折成「重复 N 次」），
  * 下面是这一天的校验问题。
  *
  * 问题分三种：`error` / `unverified` 挡住发送，`warning` 只是提醒（名字太长会被手表截断）。
@@ -15,7 +15,7 @@
 import { computed } from 'vue';
 import SegmentTrack, { type SegmentItem } from '../SegmentTrack.vue';
 import { SPORT_VARIANTS } from '../../lib/trainingPlan/reshape';
-import PlanChart from './PlanChart.vue';
+import PlanStrip from './PlanStrip.vue';
 import type { DayRow } from '../../lib/trainingPlan/week';
 import { issueStepPath } from '../../lib/trainingPlan/week';
 import { workoutProfile, type StepRow } from '../../lib/trainingPlan/profile';
@@ -114,7 +114,7 @@ const stepTarget = (row: StepRow) => target(row.target);
       <div v-if="showWorkout && workout && profile" class="grid">
         <div class="chart-col">
           <p class="col-label">{{ t.chartTitle }}</p>
-          <PlanChart :profile="profile" />
+          <PlanStrip :profile="profile" />
           <div class="legend">
             <span v-for="kind in legend" :key="kind" :style="{ '--c': INTENSITY_COLOR[kind] }"><i></i>{{ intensity(kind) }}</span>
           </div>

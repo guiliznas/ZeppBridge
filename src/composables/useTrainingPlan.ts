@@ -48,7 +48,7 @@ const notice = ref<PlanNotice | null>(null);
 const clearPending = ref(false);
 let pendingAction: PlanPublishAction | null = null;
 const document = ref<PlanDocument | null>(null);
-const transcript = ref<{ lines: string[]; total: number } | null>(null);
+
 const accepted = ref(true);
 /** 手上这份草稿是从已经发出去的计划拿回来改的（批次 4.3）：界面说「有 N 处改动 · 重新同步到手表」。 */
 const editingSent = ref(false);
@@ -115,20 +115,22 @@ const paste = async (reply: string): Promise<boolean> => {
   }
 };
 
-const receiveFromClipboard = async (): Promise<boolean> => {
-  if (busy.value) return false;
-  busy.value = true;
+/**
+ * 读剪贴板（2026-10-12 第 3 批）：是定稿就返回原文，不是就记下原因、返回 null。
+ * 接回按钮先把玻璃纸片抽出来、滑到日程处，再 `paste`——读和存分两步，旧的几行才来得及先退下。
+ */
+const readClipboardPlan = async (): Promise<string | null> => {
+  if (busy.value) return null;
   notice.value = null;
   try {
     const reply = await backend.readClipboardText();
-    if (!extractPlan(reply).ok) { notice.value = { kind: 'clipboard_not_a_plan' }; return false; }
-    const lines = reply.split(/\r?\n/);
-    transcript.value = { lines: lines.filter(line => line.trim()).slice(0, 5), total: lines.length };
-    const ok = await paste(reply);
-    if (!ok) transcript.value = null;
-    return ok;
-  } catch (error) { notice.value = report(error); return false; }
-  finally { busy.value = false; }
+    if (!extractPlan(reply).ok) { notice.value = { kind: 'clipboard_not_a_plan' }; return null; }
+    return reply;
+  } catch (error) { notice.value = report(error); return null; }
+};
+const receiveFromClipboard = async (): Promise<boolean> => {
+  const reply = await readClipboardPlan();
+  return reply ? paste(reply) : false;
 };
 
 /**
@@ -271,7 +273,7 @@ const unverified = computed(() => preview.value?.check.issues.filter((issue) => 
 
 export const useTrainingPlan = () => ({
   state, draftId, preview, busy, notice, clearPending, blocking, unverified,
-  document, transcript, accepted, revision, editingSent, receiveFromClipboard, reshape, editActive,
+  document, accepted, revision, editingSent, readClipboardPlan, receiveFromClipboard, reshape, editActive,
   accept: () => { accepted.value = true; },
   load, resume, paste, discard, publish, undo, clear, dismissNotice, cancelClear, confirmClear,
 });

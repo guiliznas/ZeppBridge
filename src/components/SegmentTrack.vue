@@ -450,8 +450,11 @@ const clearGesture = () => {
   if (current && track.value?.hasPointerCapture(current.id)) track.value.releasePointerCapture(current.id);
 };
 
+/** 指针移上来就把透镜挂好（useGlassLens.prime）：第一下按住 / 拖动就是玻璃。 */
+const primeLens = () => { thumbLens.prime(); rimLens.prime(); };
 const onDown = (event: PointerEvent) => {
   if (props.disabled || event.button !== 0 || !event.isPrimary || !track.value) return;
+  primeLens();
   measure();
   elastic?.cancel();
   elastic = null;
@@ -701,6 +704,7 @@ onBeforeUnmount(() => {
     role="radiogroup"
     :aria-label="ariaLabel"
     :aria-disabled="disabled || undefined"
+    @pointerenter="primeLens"
     @pointerdown="onDown"
     @pointermove="onMove"
     @pointerup="onUp"

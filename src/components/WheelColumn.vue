@@ -178,6 +178,7 @@ const current = computed(() => props.items[indexOf(props.modelValue)]);
     :aria-label="label"
     :aria-valuenow="modelValue"
     :aria-valuetext="current?.label"
+    @pointerenter="refract.prime()"
     @pointerdown="onDown"
     @pointermove="onMove"
     @pointerup="onUp"

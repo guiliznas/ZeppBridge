@@ -9,18 +9,21 @@
 
 需要先起不带夹具的开发服务器（.claude/launch.json 的 landing-dev，端口 5190）：
     python scripts/verify/text_overlap.py [--url http://127.0.0.1:5190] [--locales fr,de] [--width 1440]
-退出码 0 = 全部通过。全量十种语言 × 九页约五分钟，单线程、不会满载。
+退出码 0 = 全部通过。全量十种语言 × 十一页约六分钟，单线程、不会满载。
 """
 import argparse
 import asyncio
 import sys
+from datetime import date, timedelta
 
 from playwright.async_api import async_playwright
 
 LOCALES = ['zh', 'en', 'es', 'nl', 'pt-BR', 'pt-PT', 'de', 'ru', 'hi-IN', 'fr']
-PATHS = ['/', '/body', '/training', '/heart', '/activity', '/ai', '/ai/exchanges', '/ai/check', '/settings']
+# 计划模块（2026-10-12 第 3 批）：周视图和明天的单天页（演示库的计划从今天排起）。
+PATHS = ['/', '/body', '/training', '/heart', '/activity', '/ai', '/ai/exchanges', '/ai/check', '/ai/plan',
+         f'/ai/plan/{(date.today() + timedelta(days=1)).isoformat()}', '/settings']
 # 点开以后才出现的整屏层（第三轮 A8：牌桌展开后头部、范围胶囊、提示条不能和牌压在一起）。
-OVERLAYS = {'/body': ('.pick-days', '牌桌')}
+OVERLAYS = {'/body': ('.pick-days', '牌桌'), '/ai': ('.face-switch .segment-item >> nth=1', '计划面')}
 
 PROBE = """() => {
   const boxes = [];

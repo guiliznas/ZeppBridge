@@ -1,15 +1,60 @@
-.bridge-future{position:relative;height:274px;padding-left:16px}.plan-summary{position:absolute;top:53px;left:24px;right:18px;max-height:48px;overflow:auto;margin:0;color:var(--muted);font-size:11px;line-height:1.65;z-index:1;pointer-events:auto}.future-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;height:230px}.future-day{position:relative;min-width:0;padding:0 5px;border:0;border-radius:8px;background:transparent;color:var(--ink);font:inherit;cursor:pointer;transition:transform var(--dur-base) var(--ease-spring),background var(--dur-base) ease;animation:plan-form 650ms var(--ease-spring) both;animation-delay:calc(var(--i)*55ms)}.future-day::after{content:'';position:absolute;top:4px;bottom:19px;left:0;border-left:1px solid var(--line);pointer-events:none}.future-day:hover,.future-day.picked{background:color-mix(in srgb,var(--ink) 4%,transparent)}.future-day.over{background:var(--mat-inset);transform:scale(.96)}.future-day.dragging{opacity:.45;transform:scale(1.03);background:var(--mat-glass)}.rest-moon{position:absolute;top:10px;left:0;right:0;display:grid;justify-items:center;gap:4px;color:var(--muted)}.rest-moon small{font:10px var(--font-mono)}.workout-shape{position:absolute;top:112px;left:5px;right:5px;height:31px}.rest-line{display:block;height:2px;width:16px;background:var(--line-strong);margin:27px auto 0;border-radius:1px}.day-name{position:absolute;top:152px;left:3px;right:3px;font-size:10px;line-height:1.45;color:var(--muted);max-height:32px;overflow:hidden}.day-duration{position:absolute;top:192px;left:0;right:0;font:12px var(--font-mono);color:var(--ink)}.day-duration small{font-size:9px;color:var(--subtle)}.day-date{position:absolute;bottom:0;left:0;right:0;color:var(--subtle);font:10px var(--font-mono)}.future-footer{display:flex;align-items:center;gap:10px;padding:10px 0 0;min-height:44px;justify-content:space-between}.window-note{display:flex;align-items:center;gap:6px;color:var(--subtle);font-size:9px;white-space:nowrap}.window-note i{height:6px;width:6px;border-radius:2px;border:1px solid var(--line-strong)}.hold-button{position:relative;display:flex;align-items:center;gap:6px;min-height:30px;padding:0 12px 0 30px;border:1px solid var(--line-strong);border-radius:999px;background:var(--mat-raised);color:var(--ink);font:11px var(--font-sans);cursor:pointer;touch-action:none;user-select:none}.hold-button>svg:first-child{position:absolute;width:26px;height:26px;left:2px;top:1px;fill:none;stroke:var(--line);stroke-width:2}.hold-button>svg:nth-child(2){position:absolute;left:9px}.hold-button circle.progress{stroke:var(--accent);stroke-dasharray:81.7;stroke-dashoffset:calc(81.7*(1 - var(--progress)));transform:rotate(-90deg);transform-origin:center}.hold-button:disabled{opacity:.4;cursor:default}.week-nav{display:flex;align-items:center;gap:5px;color:var(--subtle);font:10px var(--font-mono)}.week-nav button{border:0;background:none;color:var(--ink);cursor:pointer;padding:4px}.week-nav button:disabled{opacity:.25}.stamp{position:absolute;top:5px;right:0;color:var(--accent);animation:stamp-in 280ms var(--ease-spring) both;animation-delay:calc(var(--i)*40ms)}.future-empty{height:100%;display:grid;place-items:center;position:relative}.future-grid{position:absolute;inset:8px 0 43px;display:grid;grid-template-columns:repeat(7,1fr);pointer-events:none;opacity:.4}.future-grid i{border-left:1px dashed var(--line)}.future-empty>.receive{margin-bottom:40px}@keyframes plan-form{from{opacity:0;transform:translateY(7px) scaleY(.8)}to{opacity:1;transform:none}}@keyframes stamp-in{from{opacity:0;transform:scale(1.6) rotate(-15deg)}to{opacity:1;transform:none}}@media(prefers-reduced-motion:reduce){.future-day,.stamp{animation:none;transition:none}}.held-mark{position:absolute;top:8px;left:0;right:0;display:grid;justify-items:center;gap:3px;color:var(--warning)}.held-mark small{color:var(--ink);font-size:10px;font-weight:650}.held-mark em{font-style:normal;font-size:9px;line-height:1.2;text-align:center}
-.future-day{display:block;text-decoration:none;text-align:center}.future-day:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
-/* 批次 4.1：跟手拖拽。被拖的卡浮起来（只加阴影和一点放大，位移由 useDayDrag 写 translate）。 */
-.future-days{touch-action:pan-y;animation:week-in 420ms cubic-bezier(.4,.6,.2,1) both}
-.future-day.lifted{scale:1.04;background:var(--mat-raised);box-shadow:var(--mat-raised-rim),0 14px 30px -14px rgba(0,0,0,.55);cursor:grabbing;z-index:3}
-.future-day.is-target{background:color-mix(in srgb,var(--accent) 10%,transparent);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--accent) 55%,transparent)}
-.future-days.is-dragging .future-day:not(.lifted){cursor:grabbing}
-.week-track{margin:0 0 8px}
-@keyframes week-in{from{opacity:0;translate:0 6px}to{opacity:1;translate:0 0}}
-@media(prefers-reduced-motion:reduce){.future-days{animation:none}}
-.held-mark.fix{color:var(--danger)}
-/* 2026-10 精修 5.4：格子之间不再画竖线、休息日不再画一道短横——每天是一张浅底的圆角格，休息日只有月亮。 */
-.future-days{gap:6px}.future-day{border-radius:14px;background:color-mix(in srgb,var(--ink) 2.5%,transparent)}.future-day::after{display:none}.rest-line{display:none}
-.future-day:hover{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.bridge-future { position: relative; display: grid; gap: 12px; min-width: 0; }
+.week-track { justify-self: start; }
 
+/* 一格一列：日期 → 形状 → 名字 → 时长，谁都不压谁。 */
+.future-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; touch-action: pan-y; }
+.future-days.flipped { animation: week-in 420ms cubic-bezier(.4, .6, .2, 1) both; }
+.future-day { position: relative; display: flex; flex-direction: column; align-items: stretch; gap: 8px; min-width: 0; min-height: 214px; padding: 12px 10px 12px;
+  border: 1px solid transparent; border-radius: 16px; background: color-mix(in srgb, var(--ink) 3%, transparent); color: var(--ink); font: inherit;
+  text-align: left; text-decoration: none; cursor: pointer; transition: background var(--dur-base) ease, border-color var(--dur-base) ease, scale var(--dur-base) var(--ease-spring); }
+.future-day:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.future-day:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.future-day.today { border-color: color-mix(in srgb, var(--accent) 70%, transparent); background: color-mix(in srgb, var(--accent) 6%, transparent); }
+
+.day-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 6px; min-width: 0; }
+.day-head b { font-size: 26px; font-weight: 750; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.day-head small { overflow: hidden; color: var(--muted); font-size: var(--fs-xs); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.today .day-head b, .today .day-head small { color: var(--accent); }
+.today-tag { align-self: center; margin-left: auto; padding: 1px 7px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent); font-size: var(--fs-2xs); font-style: normal; font-weight: 700; }
+
+.day-art { display: grid; flex: 1 1 auto; align-items: end; justify-items: center; min-height: 64px; }
+.day-art :deep(.shape) { width: 100%; height: 38px; }
+.rest .day-art { align-items: center; }
+.held-mark { display: grid; justify-items: center; gap: 4px; color: var(--warning); }
+.held-mark small { color: var(--ink); font-size: var(--fs-2xs); font-weight: 650; }
+
+.day-name { display: -webkit-box; overflow: hidden; min-height: 2.8em; color: var(--ink); font-size: var(--fs-xs); font-weight: 650; line-height: 1.4;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+.rest .day-name { color: var(--muted); font-weight: 550; }
+.day-foot { display: flex; align-items: baseline; gap: 4px; min-height: 22px; color: var(--muted); font-size: var(--fs-2xs); white-space: nowrap; }
+.day-foot b { color: var(--ink); font-size: var(--fs-md); font-weight: 700; font-variant-numeric: tabular-nums; }
+.day-foot.sleep { align-items: center; color: var(--sleep); font-variant-numeric: tabular-nums; }
+.day-foot.badge { align-items: center; align-self: flex-start; padding: 2px 8px; border-radius: 999px; font-weight: 650; white-space: normal; }
+.day-foot.warn { background: color-mix(in srgb, var(--warning) 16%, transparent); color: var(--warning); }
+.day-foot.bad { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--danger); }
+.stamp { position: absolute; right: 10px; bottom: 12px; display: grid; width: 22px; height: 22px; place-items: center; border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); animation: stamp-in 280ms var(--ease-spring) both; animation-delay: calc(var(--i) * 40ms); }
+
+/* 跟手拖拽：被拖的卡浮起来（只加阴影和一点放大，位移由 useDayDrag 写 translate）。 */
+.future-day.lifted { z-index: 3; scale: 1.04; background: var(--mat-raised); box-shadow: var(--mat-raised-rim), 0 14px 30px -14px rgba(0, 0, 0, .55); cursor: grabbing; }
+.future-day.is-target { background: color-mix(in srgb, var(--accent) 10%, transparent); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent); }
+.future-days.is-dragging .future-day:not(.lifted) { cursor: grabbing; }
+
+/* 底栏只留长按发送。 */
+.future-footer { display: flex; justify-content: flex-end; }
+.hold-button { position: relative; display: flex; align-items: center; gap: 7px; min-height: 36px; padding: 0 16px 0 38px; border: 1px solid var(--line-strong); border-radius: 999px;
+  background: var(--mat-raised); box-shadow: var(--mat-raised-rim); color: var(--ink); font: 600 var(--fs-xs) var(--font-sans); cursor: pointer; touch-action: none; user-select: none; }
+.hold-button > svg:first-child { position: absolute; top: 2px; left: 3px; width: 30px; height: 30px; fill: none; stroke: var(--line); stroke-width: 2; }
+.hold-button > svg:nth-child(2) { position: absolute; left: 11px; color: var(--accent); }
+.hold-button circle.progress { stroke: var(--accent); stroke-dasharray: 81.7; stroke-dashoffset: calc(81.7 * (1 - var(--progress))); transform: rotate(-90deg); transform-origin: center; }
+.hold-button:disabled { opacity: .4; cursor: default; }
+
+.future-empty { position: relative; display: grid; place-items: center; height: 214px; }
+.future-grid { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; opacity: .5; pointer-events: none; }
+.future-grid i { border-radius: 16px; background: color-mix(in srgb, var(--ink) 3%, transparent); }
+
+@keyframes week-in { from { opacity: 0; translate: 0 6px; } to { opacity: 1; translate: 0 0; } }
+@keyframes stamp-in { from { opacity: 0; transform: scale(1.6) rotate(-15deg); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .future-days, .stamp { animation: none; } .future-day { transition: none; } }
+@media (max-width: 900px) { .future-days { grid-template-columns: repeat(4, minmax(0, 1fr)); } }

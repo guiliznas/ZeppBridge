@@ -81,6 +81,7 @@ const click = () => {
     :aria-labelledby="ariaLabelledby"
     :title="title"
     :disabled="disabled"
+    @pointerenter="lens.prime()"
     @pointerdown="down"
     @pointermove="move"
     @pointerup="finish($event, false)"

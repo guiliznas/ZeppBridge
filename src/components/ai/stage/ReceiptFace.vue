@@ -73,7 +73,7 @@ const onFileDrag = (event: MouseEvent) => {
       <button type="button" class="pill-button quiet" @click="emit('copy')">{{ s.copyAgain }}</button>
       <button type="button" class="pill-button quiet" @click="emit('open')">{{ s.openAgain(provider) }}</button>
     </div>
-    <ReceiveCapsule class="receive-row" @received="emit('received')" />
+    <ReceiveCapsule class="receive-row" variant="primary" @received="emit('received')" />
   </div>
 </template>
 
@@ -113,7 +113,6 @@ h3 { margin: 0; font-size: var(--fs-md); font-weight: 700; line-height: 1.3; }
 .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .actions .pill-button { justify-content: center; min-width: 0; overflow: hidden; font-size: var(--fs-2xs); text-overflow: ellipsis; white-space: nowrap; }
 /* 接回定稿：牌底一整条，和上面两枚是同一种胶囊，只是更重一点；提示字进 title，不再在下面另起一行。 */
-.receive-row :deep(.receive-capsule) { justify-content: center; width: 100%; min-height: 40px; }
-.receive-row :deep(.receive-capsule > svg:last-child) { display: none; }
-.receive-row :deep(p) { display: none; }
+.receive-row { display: grid; }
+.receive-row :deep(.receive-button) { width: 100%; }
 </style>

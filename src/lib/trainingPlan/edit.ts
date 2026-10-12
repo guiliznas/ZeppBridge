@@ -1,5 +1,5 @@
 /**
- * 计划的结构化修改：界面上拖强度图、拨滚轮、点玻璃分段，改的都是这里的纯函数。
+ * 计划的结构化修改：界面上拨滚轮、点玻璃分段、加删步骤，改的都是这里的纯函数。
  *
  * 改完写回 **PlanDocument 的书写格式**（`"3min"`、`"90s"`、`"5km"`、`"hr 128-138"`、`"pace 5:00-5:30"`），
  * 走 `plan.reshape`，由后端重新校验——界面不自己判断对错，也不绕过校验直接改解析结果。
@@ -111,17 +111,53 @@ export const setText = (document: PlanDocument, workout: number, field: 'focus' 
   return next;
 };
 
-/* ── 拖强度图时的吸附 ─────────────────── */
+/* ── 加一步 / 删一步（2026-10-12 第 3 批，单天页底部的四个按钮和展开态里的「删掉这一步」）──── */
 
-/** 时长吸附：短步骤（不到 3 分钟）吸附到 30 秒，长的吸附到整分钟；最短 30 秒、最长 6 小时。 */
-export const snapSeconds = (seconds: number): number => {
-  const unit = seconds < 180 ? 30 : 60;
-  return Math.min(6 * 3600, Math.max(30, Math.round(seconds / unit) * unit));
+export type AddKind = 'warmup' | 'step' | 'repeat' | 'cooldown';
+
+/**
+ * 四个按钮的默认值：热身 / 放松 / 一步都是按时间 10 分钟、不设目标（一步是主体）；
+ * 间歇组是 ×4，每组主体 3 分钟加恢复 2 分钟。
+ */
+export const addTemplate = (kind: AddKind): PlanStepInput => {
+  switch (kind) {
+    case 'warmup': return { kind: 'warmup', duration: '10min' };
+    case 'cooldown': return { kind: 'cooldown', duration: '10min' };
+    case 'repeat': return { repeat: 4, steps: [{ kind: 'active', duration: '3min' }, { kind: 'recovery', duration: '2min' }] };
+    default: return { kind: 'active', duration: '10min' };
+  }
 };
 
-/** 心率吸附到 5 bpm，整体平移、区间宽度不变；不低于 40、不高于上限。 */
-export const shiftHeartRate = (target: Extract<PlanTarget, { type: 'heart_rate' }>, delta: number, max = 220): PlanTarget => {
-  const width = target.high - target.low;
-  const low = Math.min(max - width, Math.max(40, Math.round((target.low + delta) / 5) * 5));
-  return { type: 'heart_rate', low, high: low + width };
+const isKind = (node: PlanStepInput | undefined, kind: string) => !!node && 'kind' in node && node.kind === kind;
+
+/**
+ * 加一步：热身放最前面，放松放最后面；一步和间歇组放在结尾的放松之前（没有放松就放最后）。
+ * 返回新文档和新那一节的下标（界面据此展开它）。
+ */
+export const addStep = (document: PlanDocument, workout: number, kind: AddKind): { document: PlanDocument; index: number } => {
+  const next = clone(document);
+  const steps = next.workouts[workout]?.steps;
+  if (!steps) return { document: next, index: -1 };
+  let at = steps.length;
+  if (kind === 'warmup') at = 0;
+  else if (kind !== 'cooldown') while (at > 0 && isKind(steps[at - 1], 'cooldown')) at -= 1;
+  steps.splice(at, 0, addTemplate(kind));
+  return { document: next, index: at };
+};
+
+/** 删掉一步（`[i]` 或重复组里的 `[i, j]`）；重复组删空了就连组一起删。路径不对就原样返回。 */
+export const removeStep = (document: PlanDocument, workout: number, path: number[]): PlanDocument => {
+  const next = clone(document);
+  const steps = next.workouts[workout]?.steps;
+  const node = steps?.[path[0]!];
+  if (!steps || !node) return next;
+  if (path.length === 1) {
+    steps.splice(path[0]!, 1);
+    return next;
+  }
+  if ('repeat' in node && node.steps[path[1]!]) {
+    node.steps.splice(path[1]!, 1);
+    if (!node.steps.length) steps.splice(path[0]!, 1);
+  }
+  return next;
 };

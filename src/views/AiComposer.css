@@ -67,10 +67,6 @@
 .stage-foot:empty { display: none; }
 .bridge-message { display: flex; align-items: center; gap: 10px; margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--mat-glass); font-size: var(--fs-xs); color: var(--muted); }
 .bridge-message span { flex: 1; }
-.plan-status-row { display: flex; justify-content: flex-end; align-items: center; gap: 12px; min-height: 32px; }
-/* 舞台右下角那枚「上次发到手表的计划」：一块小玻璃，宽不超过右牌，和右牌右对齐（H13）。 */
-.plan-status-row :deep(.ledger) { max-width: min(560px, 100%); padding: 8px 8px 8px 10px; border: 1px solid var(--mat-glass-line); border-radius: 18px;
-  background: var(--mat-glass-strong); -webkit-backdrop-filter: var(--mat-glass-blur); backdrop-filter: var(--mat-glass-blur); box-shadow: var(--mat-glass-shadow); }
 
 @media (max-width: 1100px) { .ai-stage-page { padding: 8px 20px 24px; } }
 @media (max-width: 700px) { .ai-stage-page { padding-inline: 12px; } }

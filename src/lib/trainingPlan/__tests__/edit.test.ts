@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  documentIndexOf, lengthText, setRepeat, setStepLength, setStepTarget, setText, shiftHeartRate, snapSeconds, targetText, workoutToInput,
+  addStep, documentIndexOf, lengthText, removeStep, setRepeat, setStepLength, setStepTarget, setText, targetText, workoutToInput,
 } from '../edit';
 import type { PlanDocument, PlanWorkout } from '../../../types/trainingPlan';
 
@@ -50,12 +50,29 @@ describe('structured plan edits write back the plan text format', () => {
     expect(documentIndexOf(doc(), '2026-10-07', 1, new Set([0]))).toBeNull();
   });
 
-  it('snaps dragged durations and heart rates', () => {
-    expect(snapSeconds(100)).toBe(90);
-    expect(snapSeconds(10)).toBe(30);
-    expect(snapSeconds(250)).toBe(240);
-    expect(shiftHeartRate({ type: 'heart_rate', low: 160, high: 170 }, 7)).toEqual({ type: 'heart_rate', low: 165, high: 175 });
-    expect(shiftHeartRate({ type: 'heart_rate', low: 160, high: 170 }, 80, 190)).toEqual({ type: 'heart_rate', low: 180, high: 190 });
+  it('adds a warm-up first, a cool-down last, and steps / repeats before a trailing cool-down', () => {
+    const withCool = setText(doc(), 1, 'name', 'Intervals');
+    withCool.workouts[1]!.steps.push({ kind: 'cooldown', duration: '5min' });
+    const warm = addStep(withCool, 1, 'warmup');
+    expect(warm.index).toBe(0);
+    expect(warm.document.workouts[1]!.steps[0]).toEqual({ kind: 'warmup', duration: '10min' });
+    const step = addStep(withCool, 1, 'step');
+    expect(step.index).toBe(2);
+    expect(step.document.workouts[1]!.steps[2]).toEqual({ kind: 'active', duration: '10min' });
+    const repeat = addStep(withCool, 1, 'repeat');
+    expect(repeat.document.workouts[1]!.steps[2]).toEqual({ repeat: 4, steps: [{ kind: 'active', duration: '3min' }, { kind: 'recovery', duration: '2min' }] });
+    const cool = addStep(withCool, 1, 'cooldown');
+    expect(cool.index).toBe(3);
+    expect(withCool.workouts[1]!.steps).toHaveLength(3);
+  });
+
+  it('removes a step, and a repeat once its last step is gone', () => {
+    expect(removeStep(doc(), 1, [0]).workouts[1]!.steps).toHaveLength(1);
+    const once = removeStep(doc(), 1, [1, 0]);
+    expect((once.workouts[1]!.steps[1] as { steps: unknown[] }).steps).toHaveLength(1);
+    const twice = removeStep(once, 1, [1, 0]);
+    expect(twice.workouts[1]!.steps).toHaveLength(1);
+    expect(removeStep(doc(), 1, [9]).workouts[1]!.steps).toHaveLength(2);
   });
 
   it('turns a sent workout back into text that round-trips', () => {

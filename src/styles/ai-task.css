@@ -56,3 +56,14 @@
 .ai-note.bad { color: var(--danger); }
 .ai-note.warn { color: var(--warning); }
 .ai-note svg { flex: 0 0 auto; margin-top: 2px; }
+
+/* 接回定稿的玻璃纸片（lib/motion/paper.ts，挂在 body 上）：外层裁切，里面的纸平移出去就是「让开」。 */
+.zb-paper { position: fixed; left: 0; top: 0; z-index: 2050; overflow: hidden; border-radius: 16px; transform-origin: 0 0; pointer-events: none; will-change: transform, opacity; }
+.zb-paper-sheet { position: absolute; inset: 0; border: 1px solid var(--mat-glass-line); border-radius: inherit; background: var(--mat-glass-strong);
+  -webkit-backdrop-filter: var(--mat-glass-blur); backdrop-filter: var(--mat-glass-blur); box-shadow: var(--glass-rim, var(--mat-glass-shadow)); }
+.zb-paper-text { display: grid; align-content: center; gap: 6px; height: 100%; padding: 16px 18px; }
+.zb-paper-text span { overflow: hidden; color: var(--muted); font: 10px / 1.4 var(--font-mono); text-overflow: ellipsis; white-space: nowrap; }
+.zb-paper-text small { color: var(--accent); font-size: var(--fs-2xs); font-weight: 650; }
+.zb-paper.is-failed .zb-paper-text small { color: var(--warning); font-size: var(--fs-xs); line-height: 1.5; }
+/* 纸片盖着日程、新行还没轮到时：先藏着（逐行落定的动画用 fill: backwards 接手）。 */
+[data-paper-hold] [data-paper-row] { opacity: 0; }

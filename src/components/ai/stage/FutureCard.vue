@@ -6,15 +6,17 @@
  *     → 按门锁：左边的牌飞进锁，**回执牌**从锁里长出来落在这里（ReceiptFace：交出去的 .md 文件卡）
  *     → 接回 AI 的定稿：回执牌翻面成**计划牌**（PlanFace，点开进 /ai/plan）。
  *
- * 朝外的那一面后面错开垫着「另一张」：问题 / 回执时垫着计划牌，计划朝外时垫着问题牌。
- * 点垫着的那张 = 翻面换过来（2D 压扁换面，flipCard）。
+ * 2026-10-12 第 3 批：去掉后面错开垫着的那张牌，牌顶一条玻璃分段「提问｜计划」切换。回执是提问那一档的另一面，
+ * 问题 ⇄ 回执仍然翻面（flipCard）；提问 ⇄ 计划是交叉溶解：旧内容先淡出，换内容，牌高平滑变到新高度，新内容稍晚淡入。
+ * 牌在 `box` 里竖直居中，思维树的线（AiComposer 的 threadTree）一直接在牌的中线上。
  */
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import CapsuleWheel from '../../CapsuleWheel.vue';
+import SegmentTrack from '../../SegmentTrack.vue';
 import Icon from '../../Icon.vue';
 import ReceiptFace from './ReceiptFace.vue';
 import PlanFace from './PlanFace.vue';
-import { flipCard, reducedMotion, SPRINGS, springCurve } from '../../../lib/motion/cards';
+import { flipCard, reducedMotion } from '../../../lib/motion/cards';
 import type { AiTaskIssue, AiTaskPrepareResult, AiTaskTemplate } from '../../../lib/bridge/types';
 import type { DayRow } from '../../../lib/trainingPlan/week';
 import type { TrainingPlanState } from '../../../types/trainingPlan';
@@ -30,17 +32,17 @@ const props = defineProps<{
   box: Box; face: FutureFace; templates: AiTaskTemplate[]; disabled: boolean;
   ready: AiTaskPrepareResult | null; blocked: AiTaskIssue[]; provider: string; providerIcon: string; stale: boolean; recalled: boolean;
   steps: Record<HandoffStepId, HandoffStep>; saveError: string | null;
-  rows: DayRow[]; drafting: boolean; plan: TrainingPlanState | null; mcp: boolean;
+  rows: DayRow[]; drafting: boolean; plan: TrainingPlanState | null; mcp: boolean; busy: boolean; simulated: boolean;
 }>();
 const emit = defineEmits<{
-  'update:face': [FutureFace]; copy: []; open: []; reveal: []; retry: [HandoffStepId]; received: []; accept: []; discard: []; workout: [];
+  'update:face': [FutureFace]; copy: []; open: []; reveal: []; retry: [HandoffStepId]; received: []; accept: []; discard: []; workout: []; undo: []; clear: [];
 }>();
 const ctl = useAiTaskDraft();
 const t = useBridgeText();
 const s = useStageText();
 const front = ref<HTMLElement | null>(null);
 const input = ref<HTMLTextAreaElement | null>(null);
-const behind = ref<HTMLElement | null>(null);
+const body = ref<HTMLElement | null>(null);
 
 /* ---------- 模板：五档玻璃分段（自由问 + 四个模板），同旧的模板胶囊 ---------- */
 type Intent = 'free' | 'sleep' | 'week' | 'workout' | 'next';
@@ -93,48 +95,77 @@ const wheelItems = computed(() => intents.value.map(({ value, label }) => ({ val
 const wheelSpan = computed(() => Math.max(160, Math.round(props.box.width - 36)));
 const intentHint = computed(() => intents.value.find((one) => one.value === intent.value)?.title ?? null);
 
-/* ---------- 翻面 ---------- */
-const back = computed<FutureFace | null>(() => (props.face === 'plan' ? 'question' : props.rows.length || props.mcp ? 'plan' : null));
-const turn = async (next: FutureFace) => {
-  if (!front.value) { emit('update:face', next); return; }
-  if (next !== 'receipt' && props.face !== 'receipt' && behind.value && !reducedMotion()) { await shuffle(next); return; }
-  await flipCard(front.value, async () => { emit('update:face', next); await nextTick(); });
-};
-/**
- * 问题 ⇄ 计划（10-09，用户：两张之间是硬切）：两张牌换位——朝外那张往下沉、淡出，垫着那张同时升到正面；
- * 换好内容以后正面这张从垫着的位置落定，换下来的那张从正面退回垫着的位置。全程只动 transform / opacity。
- */
-const BEHIND = { translate: '6px -30px', rotate: '-1.5deg', scale: '.97' };
-const FRONT = { translate: '0px 0px', rotate: '0deg', scale: '1' };
-const shuffle = async (next: FutureFace) => {
-  const card = front.value!;
-  const peek = behind.value!;
-  const sink = card.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(16px) scale(.96)' }],
-    { duration: 170, easing: 'cubic-bezier(.4, 0, 1, 1)', fill: 'forwards' });
-  const rise = peek.animate([{ ...BEHIND, opacity: 0.9 }, { ...FRONT, opacity: 1 }], { duration: 170, easing: 'cubic-bezier(.2, .8, .3, 1)', fill: 'forwards' });
-  await sink.finished.catch(() => undefined);
+/* ---------- 换面 ---------- */
+const EASE = 'cubic-bezier(.4, .6, .2, 1)';
+/** 分段上的两档：回执算「提问」那一档。点回「提问」回到上次停在的那一面（问题或回执）。 */
+const side = computed(() => (props.face === 'plan' ? 'plan' : 'question'));
+const sides = computed(() => [{ value: 'question', label: s.value.faceAsk }, { value: 'plan', label: s.value.facePlan }]);
+const askFace = ref<'question' | 'receipt'>(props.face === 'receipt' ? 'receipt' : 'question');
+watch(() => props.face, (face) => { if (face !== 'plan') askFace.value = face; });
+const pickSide = (value: string) => { void turn(value === 'plan' ? 'plan' : askFace.value); };
+
+/** 提问 ⇄ 计划：旧内容淡出（120ms）→ 换内容 → 牌高由 ResizeObserver 平滑过渡（360ms）→ 新内容晚 140ms 淡入。 */
+const crossfade = async (next: FutureFace) => {
+  const el = body.value!;
+  const out = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'cubic-bezier(.4, 0, 1, 1)', fill: 'forwards' });
+  await out.finished.catch(() => undefined);
+  // 换内容的那一帧先把牌高钉住：新高度由下面的 ResizeObserver 从这里平滑过去，不会先闪一帧终点高度。
+  pin();
   emit('update:face', next);
   await nextTick();
-  const { easing, duration } = springCurve(SPRINGS.flip);
-  const land = card.animate([{ opacity: 0, transform: 'translate(6px, -30px) rotate(-1.5deg) scale(.97)' }, { opacity: 1, offset: 0.35 }, { opacity: 1, transform: 'none' }],
-    { duration, easing });
-  sink.cancel();
-  rise.cancel();
-  behind.value?.animate([{ ...FRONT, opacity: 0.4 }, { ...BEHIND, opacity: 0.9 }], { duration, easing });
-  await land.finished.catch(() => undefined);
+  const fadeIn = el.animate([{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { duration: 260, delay: 140, easing: EASE, fill: 'backwards' });
+  out.cancel();
+  await fadeIn.finished.catch(() => undefined);
+  unpin();
 };
-const backLabel = computed(() => (back.value === 'plan' ? s.value.planPeek : s.value.questionTitle));
+let turning: Promise<void> | null = null;
+const turn = async (next: FutureFace) => {
+  if (turning) await turning;
+  if (next === props.face) return;
+  if (!front.value || !body.value || reducedMotion()) { emit('update:face', next); return; }
+  const flip = (next === 'receipt' && props.face === 'question') || (next === 'question' && props.face === 'receipt');
+  turning = flip ? flipCard(front.value, async () => { emit('update:face', next); await nextTick(); }) : crossfade(next);
+  await turning;
+  turning = null;
+};
+
+/* ---------- 牌高 ---------- */
+/** 问题 / 回执占满整个盒子；计划按内容。牌高变化（换面、空态变成日程）一律平滑过渡，只在牌上动 height。 */
+const chrome = ref(76);
+const bodyHeight = computed(() => (props.face === 'plan' ? undefined : `${Math.max(180, props.box.height - chrome.value)}px`));
+let observer: ResizeObserver | null = null;
+const pin = () => { if (front.value) front.value.style.height = `${front.value.offsetHeight}px`; };
+const unpin = () => { if (front.value) front.value.style.height = ''; };
+let shown = 0;
+let grow: Animation | null = null;
+onMounted(() => {
+  const card = front.value;
+  const inner = body.value;
+  if (!card || !inner) return;
+  chrome.value = card.offsetHeight - inner.offsetHeight;
+  shown = card.offsetHeight;
+  observer = new ResizeObserver(() => {
+    const next = inner.offsetHeight + chrome.value;
+    if (Math.abs(next - shown) < 1) return;
+    const from = grow?.playState === 'running' ? parseFloat(getComputedStyle(card).height) : shown;
+    grow?.cancel();
+    shown = next;
+    unpin();
+    if (reducedMotion()) return;
+    grow = card.animate([{ height: `${from}px` }, { height: `${next}px` }], { duration: 360, easing: EASE });
+  });
+  observer.observe(inner);
+});
+onBeforeUnmount(() => { observer?.disconnect(); grow?.cancel(); });
 
 defineExpose({ front, turn });
 </script>
 
 <template>
-  <div class="future" :style="{ left: `${box.x}px`, top: `${box.y}px`, width: `${box.width}px`, '--card-h': `${box.height}px` }">
-    <div class="stack">
-      <button v-if="back" ref="behind" type="button" class="fcard behind" :aria-label="backLabel" @click="turn(back)">
-        <span class="peek"><Icon :name="back === 'plan' ? 'compass' : 'edit'" :size="13" />{{ backLabel }}</span>
-      </button>
-      <section ref="front" :class="['fcard', 'front', `face-${face}`]">
+  <div class="future" :style="{ left: `${box.x}px`, top: `${box.y}px`, width: `${box.width}px`, height: `${box.height}px` }">
+    <section ref="front" :class="['fcard', `face-${face}`]">
+      <SegmentTrack class="face-switch" variant="glass" compact :items="sides" :model-value="side" :disabled="disabled" :aria-label="t.future" @update:model-value="pickSide" />
+      <div ref="body" :class="['face-body', `body-${face}`]" :style="{ height: bodyHeight }">
         <template v-if="face === 'question'">
           <label class="question">
             <span>{{ t.composer }}</span>
@@ -151,15 +182,22 @@ defineExpose({ front, turn });
         <ReceiptFace v-else-if="face === 'receipt'" :ready="ready" :provider="provider" :provider-icon="providerIcon" :stale="stale" :recalled="recalled" :steps="steps" :save-error="saveError"
           :question="ctl.draft.value.prompt" @copy="emit('copy')" @open="emit('open')" @reveal="emit('reveal')" @retry="emit('retry', $event)"
           @edit="turn('question')" @received="emit('received')" />
-        <PlanFace v-else :rows="rows" :drafting="drafting" :state="plan" :mcp="mcp" @received="emit('received')" @accept="emit('accept')" @discard="emit('discard')" />
-      </section>
-    </div>
+        <PlanFace v-else :rows="rows" :drafting="drafting" :state="plan" :mcp="mcp" :busy="busy" :simulated="simulated"
+          @received="emit('received')" @accept="emit('accept')" @discard="emit('discard')" @undo="emit('undo')" @clear="emit('clear')" />
+      </div>
+    </section>
   </div>
 </template>
 
 <style scoped>
 .future { position: absolute; }
-.stack { position: relative; height: var(--card-h); }
+/* 牌在盒子里竖直居中：高度按内容变，中线不动（思维树的线接在中线上）。 */
+.fcard { position: absolute; top: 50%; right: 0; left: 0; display: flex; flex-direction: column; gap: 12px; padding: 12px 18px 16px; overflow: hidden;
+  border: 1px solid var(--mat-line); border-radius: 24px; background: var(--mat-card); box-shadow: var(--mat-rim), var(--mat-shadow); color: var(--ink); translate: 0 -50%; }
+.face-switch { align-self: center; }
+.face-body { min-height: 0; }
+.body-question { display: grid; grid-template-rows: minmax(0, 1fr) auto auto; gap: 12px; }
+.body-receipt { display: grid; }
 /* 模板：问题牌底边一只玻璃滚轮，宽度就是牌里的宽度；下面一行是选中项的全称。 */
 .templates { display: grid; justify-items: center; gap: 6px; min-width: 0; padding-top: 12px; border-top: 1px solid var(--mat-line); }
 .intent-wheel { max-width: 100%; }
@@ -168,20 +206,11 @@ defineExpose({ front, turn });
 .hint-swap-enter-active, .hint-swap-leave-active { transition: opacity 160ms ease, translate 200ms ease; }
 .hint-swap-enter-from { opacity: 0; translate: 0 4px; }
 .hint-swap-leave-to { opacity: 0; translate: 0 -4px; }
-.fcard { position: absolute; inset: 0; border-radius: 24px; background: var(--mat-card); box-shadow: var(--mat-rim), var(--mat-shadow); border: 1px solid var(--mat-line); color: var(--ink); }
-.front { display: grid; padding: 18px 18px 16px; overflow: hidden; }
-/* 垫着的那张：往右上错开、歪一点，只露出上沿写着名字的那一条。 */
-.behind { translate: 6px -30px; rotate: -1.5deg; scale: .97; padding: 0; cursor: pointer; opacity: .9; transition: translate 260ms cubic-bezier(.3, 1.3, .5, 1), opacity var(--dur-base) ease; }
-.behind:hover { translate: 8px -40px; opacity: 1; }
-.behind:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
-.peek { position: absolute; top: 7px; right: 22px; display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: var(--fs-2xs); font-weight: 650; }
-.front.face-question { grid-template-rows: minmax(0, 1fr) auto auto; gap: 12px; }
 .question { display: grid; grid-template-rows: auto 1fr; gap: 10px; min-height: 0; }
 .question > span { color: var(--subtle); font-size: var(--fs-xs); }
 .question textarea { width: 100%; min-height: 0; padding: 0; border: 0; outline: 0; background: none; resize: none; color: var(--ink); font: 17px / 1.65 var(--font-sans); }
 .question textarea::placeholder { color: var(--subtle); opacity: .75; }
-.front.face-question:focus-within { box-shadow: var(--mat-rim), var(--mat-shadow), inset 0 0 0 1px var(--line-strong); }
+.fcard.face-question:focus-within { box-shadow: var(--mat-rim), var(--mat-shadow), inset 0 0 0 1px var(--line-strong); }
 .issues { display: grid; gap: 6px; margin: 10px 0 0; padding: 0; list-style: none; color: var(--danger, var(--warning)); font-size: var(--fs-2xs); }
 .issues li { display: flex; gap: 6px; }
-@media (prefers-reduced-motion: reduce) { .behind { transition: none; } }
 </style>

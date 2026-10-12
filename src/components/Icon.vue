@@ -205,9 +205,13 @@ const stroke = computed(() => Math.min(1.75, Math.max(1.5, props.stroke)));
       <circle cx="16.7" cy="13.8" r="3.1" :stroke-width="stroke" />
     </g>
     <path v-else-if="name === 'warning'" d="m12 3 9 16H3L12 3Zm0 6v4m0 3v.1" :stroke-width="stroke" />
-    <g v-else-if="name === 'watch'">
-      <rect x="7.2" y="6.5" width="9.6" height="11" rx="2.4" :stroke-width="stroke" />
-      <path d="M9 6.5V4.2h6V6.5M9 17.5v2.3h6V17.5" :stroke-width="stroke" />
+    <!-- 手表（2026-10-12）：双色填充带高光——表带浅、表身实、表盘压暗，指针和左上角一道高光。 -->
+    <g v-else-if="name === 'watch'" stroke="none">
+      <path d="M8.7 3.4h6.6l.7 3.4H8Zm-.7 13.8h8l-.7 3.4H8.7Z" fill="currentColor" opacity=".42" />
+      <rect x="6.2" y="6" width="11.6" height="12" rx="3.2" fill="currentColor" />
+      <rect x="8" y="7.8" width="8" height="8.4" rx="2" fill="#000" opacity=".3" />
+      <path d="M12 9.6V12l1.7 1.1" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M7.5 9.4a2.6 2.6 0 0 1 2.1-2.2" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1.1" stroke-linecap="round" />
     </g>
     <path v-else-if="name === 'wifi'" d="M3.5 8.8a13.4 13.4 0 0 1 17 0M6.5 12a8.6 8.6 0 0 1 11 0M9.4 15.2a4 4 0 0 1 5.2 0M12 18.7v.1" :stroke-width="stroke" />
     <path v-else-if="name === 'chevron-right'" d="m9 6 6 6-6 6" :stroke-width="stroke" />

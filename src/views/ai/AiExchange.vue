@@ -62,7 +62,7 @@ const reveal = () => { if (item.value?.md_path && isDesktop()) void revealInFold
       <div class="ai-panel">
         <h2>{{ h.planBack }} · <span class="state">{{ state }}</span></h2>
         <p v-if="item.plan?.summary" class="ai-panel-note">{{ item.plan.summary }}</p>
-        <BridgeFuture v-if="planView" :preview="planView" readonly :link-days="false" :show-summary="false" :stamped="item.publish_state === 'sent' && !item.undone" />
+        <BridgeFuture v-if="planView" :preview="planView" readonly :link-days="false" :stamped="item.publish_state === 'sent' && !item.undone" />
         <p v-else class="ai-panel-note">{{ t.noPlan }}</p>
       </div>
     </template>

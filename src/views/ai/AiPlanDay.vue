@@ -1,14 +1,15 @@
 <script setup lang="ts">
 /**
  * 单天页（/ai/plan/:date）：这一天的每一条训练都能就地改（PlanWorkoutEditor：名字、目的、要点、运动与子类型、
- * 强度图直接拖、每一步滚轮精调、重复组轮数），缺目的 / 缺要点、步骤写错的训练也照样画出来、红框标出要补的地方；
- * 走路这类发不到手表的在下面给「删掉 / 换成能发的大类」。前一天 / 后一天直接换（替换当前历史，返回仍回到周视图、
- * 缩回当初那一格）。已经发出去的计划也能改：第一下改动时把它拿回来变成草稿。
+ * 总览条 + 步骤卡、每一步滚轮精调、加删步骤、重复组轮数），缺目的 / 缺要点、步骤写错的训练也照样画出来、红框标出要补的地方；
+ * 走路这类发不到手表的在下面给「删掉 / 换成能发的大类」。页头：前一天 / 后一天直接换（替换当前历史，返回仍回到周视图、
+ * 缩回当初那一格），「⋯」里是删掉这一天。已经发出去的计划也能改：第一下改动时把它拿回来变成草稿。
  */
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import PageHeader from '../../components/PageHeader.vue';
 import Icon from '../../components/Icon.vue';
+import GlassPopover from '../../components/GlassPopover.vue';
 import PlanDetail from '../../components/plan/PlanDetail.vue';
 import PlanWorkoutEditor from '../../components/plan/PlanWorkoutEditor.vue';
 import { useAiHub } from '../../composables/ai/useAiHub';
@@ -66,6 +67,17 @@ const issuesOf = (entry: Entry) => {
   const at = doc ? entry.locate(doc) : null;
   return at === null ? [] : allIssues.value.filter((issue) => issue.workout === at);
 };
+/** 下面那块（走路这类、休息建议、问题清单）有东西才画，不留一块空板。 */
+const detailNeeded = computed(() => !!row.value && (!entries.value.length || issues.value.length > 0 || row.value.held.some((item) => item.activity) || !!row.value.rest));
+/** 页头「⋯」：删掉这一天（以前是面板底下一枚按钮）。 */
+const canDelete = computed(() => hub.editable.value && !!row.value && (row.value.after.length > 0 || row.value.held.length > 0));
+const menu = ref(false);
+const moreButton = ref<HTMLElement | null>(null);
+const menuPop = ref<InstanceType<typeof GlassPopover> | null>(null);
+const deleteDay = async () => {
+  await menuPop.value?.close();
+  void hub.removeDay(date.value);
+};
 const title = computed(() => (/^\d{4}-\d{2}-\d{2}$/.test(date.value)
   ? displayDateTimeFormatter({ month: 'long', day: 'numeric', weekday: 'long' }).format(parseDisplayDate(date.value))
   : '—'));
@@ -73,23 +85,24 @@ const title = computed(() => (/^\d{4}-\d{2}-\d{2}$/.test(date.value)
 
 <template>
   <section class="page ai-sub-page" aria-labelledby="ai-day-title">
-    <PageHeader title-id="ai-day-title" :title="title" :intro="h.dayIntro">
+    <PageHeader title-id="ai-day-title" :title="title">
       <nav class="day-nav" :aria-label="title" data-no-morph>
-        <RouterLink v-if="prev" :to="`/ai/plan/${prev}`" replace class="pill-button quiet"><Icon name="arrow-left" :size="13" />{{ h.prevDay }}</RouterLink>
-        <RouterLink v-if="next" :to="`/ai/plan/${next}`" replace class="pill-button quiet">{{ h.nextDay }}<Icon name="arrow-right" :size="13" /></RouterLink>
+        <RouterLink v-if="prev" :to="`/ai/plan/${prev}`" replace class="nav-button" :aria-label="h.prevDay" :title="h.prevDay"><Icon name="arrow-left" :size="16" /></RouterLink>
+        <RouterLink v-if="next" :to="`/ai/plan/${next}`" replace class="nav-button" :aria-label="h.nextDay" :title="h.nextDay"><Icon name="arrow-right" :size="16" /></RouterLink>
+        <button v-if="canDelete" ref="moreButton" type="button" class="nav-button" :aria-label="e.more" :title="e.more" :aria-expanded="menu" @click="menu = true"><Icon name="dots" :size="16" /></button>
       </nav>
     </PageHeader>
+    <GlassPopover v-if="menu" ref="menuPop" :anchor="moreButton" :width="220" @close="menu = false">
+      <button type="button" class="menu-item danger" data-pop-item :disabled="plan.busy.value" @click="deleteDay"><Icon name="trash" :size="14" />{{ t.deleteDay }}</button>
+    </GlassPopover>
     <div v-if="hub.notice.value" class="ai-message" role="status"><Icon name="info" :size="14" /><span>{{ hub.notice.value }}</span><button class="pill-button quiet" @click="plan.dismissNotice()">{{ pt.dismiss }}</button></div>
     <template v-if="row">
       <div v-for="entry in entries" :key="entry.key" class="ai-panel">
         <p v-if="entry.held" class="held-note"><Icon name="warning" :size="14" />{{ e.held }}</p>
         <PlanWorkoutEditor :workout="entry.workout" :locate="entry.locate" :issues="issuesOf(entry)" :editable="hub.editable.value" />
       </div>
-      <div class="ai-panel">
+      <div v-if="detailNeeded" class="ai-panel">
         <PlanDetail :row="row" :issues="issues" :show-date="false" :show-workout="!entries.length" :editable="hub.editable.value" @retype="hub.retype" @remove="hub.removeWorkout" />
-        <footer v-if="hub.editable.value && (row.after.length || row.held.length)" class="day-foot">
-          <button class="pill-button quiet" :disabled="plan.busy.value" @click="hub.removeDay(date)"><Icon name="trash" :size="13" />{{ t.deleteDay }}</button>
-        </footer>
       </div>
     </template>
     <p v-else class="ai-panel ai-empty">{{ pt.noPlanDay }}</p>
@@ -99,6 +112,13 @@ const title = computed(() => (/^\d{4}-\d{2}-\d{2}$/.test(date.value)
 <style scoped src="./aiPage.css"></style>
 <style scoped>
 .day-nav { display: flex; gap: 6px; }
-.day-foot { display: flex; justify-content: flex-end; padding-top: 8px; border-top: 1px solid var(--line); }
+.nav-button { display: grid; width: 36px; height: 36px; place-items: center; padding: 0; border: 1px solid var(--mat-line); border-radius: 50%; background: var(--mat-raised);
+  box-shadow: var(--mat-raised-rim); color: var(--ink); cursor: pointer; transition: translate var(--dur-base) var(--ease-spring); }
+.nav-button:hover { translate: 0 -1px; }
+.nav-button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.menu-item { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 38px; padding: 0 12px; border: 0; border-radius: 12px; background: none; color: var(--ink);
+  font: inherit; font-size: var(--fs-sm); text-align: left; cursor: pointer; }
+.menu-item:hover:not(:disabled) { background: var(--glass-press); }
+.menu-item.danger { color: var(--danger); }
 .held-note { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--danger); font-size: var(--fs-xs); }
 </style>
