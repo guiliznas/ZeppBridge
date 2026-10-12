@@ -21,7 +21,7 @@ const items = [{ value: 'windows', label: 'Windows' }, { value: 'macos', label: 
       <template v-if="available && platform === 'linux' && linux.length"><a v-for="item in linux" :key="item.label" class="lp-btn lp-btn-primary download-button" :href="item.url"><Icon name="export" :size="22" />{{ item.label }}</a></template>
       <a v-else-if="available && platform !== 'linux'" class="lp-btn lp-btn-primary download-button" :href="selected.href"><Icon name="export" :size="22" />{{ selected.label }}</a>
       <button v-else class="lp-btn download-button unavailable-download" type="button" disabled><Icon name="export" :size="22" />{{ journey.downloadPending }}</button>
-      <a class="star-button lp-btn" :href="GITHUB_URL" target="_blank" rel="noopener noreferrer"><Icon name="star" :size="20" /><span>Star on GitHub</span><Icon name="external" :size="16" /></a>
+      <a class="star-button lp-btn" :href="GITHUB_URL" target="_blank" rel="noopener noreferrer"><Icon name="star" :size="20" /><span>{{ journey.starOnGithub }}</span><Icon name="external" :size="16" /></a>
     </div>
   </section>
 </template>

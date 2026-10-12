@@ -135,6 +135,7 @@ export default {
       probeEmpty: 'pas de données',
       probeRefused: 'point d’accès refusé',
       probeFailed: 'requête échouée',
+      probeUnrecognized: 'Format de réponse non reconnu',
       codesUnnamed: (count: number) => `${count} encore sans nom`,
       codesIntro: 'Les modèles d’entraînement personnalisés de Zepp ne donnent qu’un numéro, sans nom, et le catalogue intégré non plus. Plutôt qu’un sport deviné, nommez le code une fois : tous les enregistrements portant ce code l’utiliseront, marqué comme venant de vous sur la page de la séance.',
       codeNumber: (code: number) => `Code Zepp ${code}`,
@@ -356,7 +357,11 @@ Si tu as besoin d’informations de ma part (quel client j’utilise, où se tro
       capabilityNotIngested: 'Le cloud contient des enregistrements, mais cette machine n’a encore rien d’exploitable. Synchronisez ou rattrapez ; si l’absence persiste, leur format de message aura sûrement besoin d’un support en plus.',
       capabilityFoodHistoryHint: 'Des repas existent dans le cloud mais pas encore en local. S’ils précèdent la fenêtre de la dernière synchro incrémentale, lancez une synchro d’historique sur ces dates ; s’ils restent absents, signalez le format des données.',
       capabilityUnsupported: 'Non fourni par votre compte ou votre appareil',
-      capabilityNoneProbed: (days: number) => `Aucune mesure sur les ${days} derniers jours`,
+      capabilityNoneProbed: (days: number) =>
+        `Les candidats consultés n’ont renvoyé aucun enregistrement sur les ${days} derniers jours ; cela ne permet pas de déterminer si l’appareil a mesuré.`,
+      capabilityUnconfirmed:
+        'Les points de terminaison candidats n’ont pas pu confirmer ces données. La prise en charge par le compte ou l’appareil reste inconnue.',
+      probeWindow: (days: number) => `Plage consultée : ${days} jours`,
       capabilityNotProbed: 'Pas encore sondé',
       capabilityLocal: (records: number, unit: string, latest: string) =>
         `${records} ${unit}${latest ? ` · jusqu’au ${latest}` : ''}`,
@@ -1629,6 +1634,9 @@ Si tu as besoin d’informations de ma part (quel client j’utilise, où se tro
       odiLabel: 'ODI de SpO₂ nocturne',
       respiratoryLabel: 'Fréquence respiratoire',
       restingLabel: 'Fréquence cardiaque de repos',
+      systolicLabel: 'Pression artérielle · Systolique',
+      diastolicLabel: 'Pression artérielle · Diastolique',
+      bloodPressurePulseLabel: 'Pouls lors de la mesure de pression',
 
       curveTitle: 'Stress des dernières 24 heures',
       curveSub: 'La montre mesure toutes les cinq minutes ; relevés individuels dans l’ordre du temps',
@@ -1752,7 +1760,11 @@ Si tu as besoin d’informations de ma part (quel client j’utilise, où se tro
       summaryFailed: (n: number) =>
         `${plural(n, { one: `${n} flux a un problème`, other: `${n} flux ont un problème` })} — la section «\u00A0Jusqu’où va chaque flux\u00A0» ci-dessous indique où cela bloque`,
       summaryPending: (n: number) =>
-        `${plural(n, { one: `${n} flux n’a pas encore de données`, other: `${n} flux n’ont pas encore de données` })} — l’appareil ne produit généralement pas cette donnée`,
+        `${n} points de terminaison ou étapes d’analyse restent non confirmés. Cela ne prouve pas que l’appareil ne les prend pas en charge.`,
+      heartRateAlternate:
+        'Le point de terminaison de fréquence cardiaque distinct n’a renvoyé aucune mesure. D’autres sources synchronisées fournissent les données locales.',
+      heartRateEndpointEmpty:
+        'Le point de terminaison de fréquence cardiaque distinct n’a renvoyé aucune mesure exploitable. Essayez de synchroniser les détails du bracelet ; une réponse vide ne prouve pas que l’appareil ne mesure pas.',
       summaryStreams: (ok: number, total: number) => `${ok} / ${total} flux de données en bonne santé`,
       intro: 'Pour chaque flux : où il en est entre récupération du cloud, analyse et écriture locale ; quelles dates il couvre ; d’où il vient. Manquant veut dire manquant : pas de 0 en remplissage.',
       loadingAria: 'Lecture de l’état de santé des données',
@@ -2973,6 +2985,13 @@ Réponds en Markdown.`,
       daily_max_hrChart: 'Deux courbes : valeur maximale et moyenne du jour ; les jours avec très peu d’échantillons (moins de 60) sont dessinés avec des points creux — le « maximum » n’est alors que le plus haut parmi ces quelques points.',
       daily_max_hrHow: 'Calculé en local par ZeppBridge à partir des échantillons sans appliquer les filtres de l’application Zepp, il est donc normal que les chiffres diffèrent. Les échantillons de l’autorisation officielle et des Données avancées sont tous pris en compte.',
     },
+    'lib/metricInfo/bloodPressure': {
+      systolic: 'Pression systolique pendant la contraction du cœur, en mmHg.',
+      diastolic: 'Pression diastolique entre les battements de cœur, en mmHg.',
+      pulse: 'Pouls renvoyé lors de la mesure de la pression, en bpm. Enregistré séparément de la fréquence cardiaque sur la journée.',
+      chart: 'Moyenne mesurée par jour. Les jours sans mesure restent vides. Les requêtes de données conservent les plages journalières ; les exports conservent l’heure et la valeur de chaque mesure.',
+      how: 'Synchronisation expérimentale de la pression artérielle : accepte les paires de valeurs explicites. Les points de terminaison candidats nécessitent encore une vérification avec un compte qui mesure. La méthode et les données de calibrage sont conservées dans la réponse brute.',
+    },
     'demo/texts': {
       easyRun: 'Course facile',
       intervals: 'Intervalles 5 × 3 minutes',
@@ -3092,6 +3111,7 @@ Réponds en Markdown.`,
     'err.backfill.start_in_future': 'Le début du rattrapage ne peut pas être après aujourd’hui',
     'err.backup.restore_busy': 'Restauration non exécutée : une autre écriture est en cours. Base actuelle inchangée — nouvelle tentative au prochain lancement',
     'err.backup.restore_failed': 'Restauration non aboutie — base actuelle inchangée, nouvelle tentative au prochain lancement',
+    'err.backup.not_found': 'La sauvegarde n’existe pas ou a été supprimée',
     'err.capability.not_synced': 'Pas encore synchronisé',
     'err.capability.needs_reauth': 'Réauthentification nécessaire',
     'err.capability.unverified': 'Pas encore vérifié',

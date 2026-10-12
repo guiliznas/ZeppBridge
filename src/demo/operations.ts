@@ -34,7 +34,7 @@ export const createDemoOperations = (data: DemoData, plan: DemoPlan) => {
     schema_version: 35, normalizer_revision: 'demo-1', kind: 'manual', coverage: { earliest_sample_at: iso(at(data.now, 1 - DAYS)), latest_sample_at: now(), last_cloud_sync_at: now() },
     table_counts: { ...counts }, bytes: 28_431_360, sha256: 'd'.repeat(64), integrity_ok: true, pinned: false });
   const backups = [makeBackup('demo-backup-2', -1), makeBackup('demo-backup-1', -8)];
-  const getBackup = (id: unknown) => { const b = backups.find(b => b.id === id); if (!b) throw new Error('Unknown sample backup'); return b; };
+  const getBackup = (id: unknown) => { const b = backups.find(b => b.id === id); if (!b) throw Object.assign(new Error('Unknown sample backup'), { code: 'err.backup.not_found' }); return b; };
   const verification = (id: unknown) => ({ id: getBackup(id).id, file_present: true, bytes_match: true, sha256_match: true, integrity_ok: true, problem: null });
   const health = (): DataHealth => ({ generated_at: now(),
     database: { schema_version: 35, normalizer_revision: 'demo-1', replay_in_progress: false, database_bytes: 28_431_360,
@@ -52,7 +52,7 @@ export const createDemoOperations = (data: DemoData, plan: DemoPlan) => {
     save_life_event: a => { const input = a.input as LifeEvent, id = input.id ?? Math.max(0, ...events.map(e => e.id)) + 1; const old = events.findIndex(e => e.id === id); const value = { ...input, id, createdAt: now(), updatedAt: now() }; if (old < 0) events.push(value); else events[old] = value; return id; },
     delete_life_event: a => { const i = events.findIndex(e => e.id === a.id); if (i >= 0) events.splice(i, 1); },
     ai_task_list: () => [...tasks.values()].map(t => ({ id: t.id, title: t.title, template_id: t.template_id, workout_count: t.workout_ids.length, updated_at: t.updated_at, mcp_shared: t.mcp_shared, pinned: pinned.has(t.id) })),
-    ai_task_get: a => { const t = tasks.get(String(a.id)); if (!t) throw new Error('Unknown sample task'); return structuredClone(t); },
+    ai_task_get: a => { const t = tasks.get(String(a.id)); if (!t) throw Object.assign(new Error('Unknown sample task'), { code: 'err.ai_task.not_found' }); return structuredClone(t); },
     ai_task_save: a => { const t = structuredClone(a.task as AiTask); t.id ||= `demo-task-${tasks.size + 2}`; t.updated_at = now(); tasks.set(t.id, t); return structuredClone(t); },
     ai_task_delete: a => { tasks.delete(String(a.id)); },
     ai_task_delete_many: a => (a.ids as string[]).flatMap(id => { const task = tasks.get(id); tasks.delete(id); return task ? [{ task, pinned: pinned.has(id) }] : []; }),

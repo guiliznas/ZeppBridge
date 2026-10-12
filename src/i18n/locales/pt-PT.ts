@@ -145,6 +145,7 @@ export default {
       probeEmpty: 'sem dados',
       probeRefused: 'endpoint recusado',
       probeFailed: 'pedido falhou',
+      probeUnrecognized: 'Estrutura de resposta não reconhecida',
       codesUnnamed: (count: number) => `${count} ainda sem nome`,
       codesIntro:
         'Treinos personalizados Zepp usam códigos sem nome e fora do catálogo. Em vez de adivinhar, dá-lhe um nome uma vez — todos os registos com esse código usam-no, marcados no detalhe do treino como «nome dado por ti».',
@@ -404,7 +405,11 @@ Se precisares de alguma informação minha (que cliente utilizo, onde está o fi
         'A nuvem contém registos, mas ainda não há dados utilizáveis guardados localmente. Tenta sincronizar ou repor histórico; se persistir, o formato do pacote poderá exigir suporte adicional.',
       capabilityFoodHistoryHint: 'Existem registos alimentares na nuvem, mas ainda não estão locais. Se forem anteriores à janela incremental, repõe o histórico para essas datas. Se continuarem sem surgir, reporta o formato dos dados.',
       capabilityUnsupported: 'A tua conta ou dispositivo não disponibiliza este fluxo',
-      capabilityNoneProbed: (days: number) => `Sem medições nos últimos ${days} dias`,
+      capabilityNoneProbed: (days: number) =>
+        `Os candidatos consultados não devolveram registos nos últimos ${days} dias; isto não comprova se o dispositivo efetuou medições.`,
+      capabilityUnconfirmed:
+        'Os endpoints candidatos não conseguiram confirmar estes dados. O suporte pela conta ou pelo dispositivo continua por confirmar.',
+      probeWindow: (days: number) => `Intervalo consultado: ${days} dias`,
       capabilityNotProbed: 'Ainda não testado',
       capabilityLocal: (records: number, unit: string, latest: string) =>
         `${records} ${unit}${latest ? ` · até ${latest}` : ''}`,
@@ -1412,6 +1417,9 @@ Se precisares de alguma informação minha (que cliente utilizo, onde está o fi
       odiLabel: 'ODI noturno',
       respiratoryLabel: 'Frequência respiratória',
       restingLabel: 'FC em repouso',
+      systolicLabel: 'Pressão arterial · Sistólica',
+      diastolicLabel: 'Pressão arterial · Diastólica',
+      bloodPressurePulseLabel: 'Pulso na medição de pressão arterial',
       unitScore: 'pts',
       unitPerHour: '/h',
       unitBreathsPerMinute: 'resp./min',
@@ -1626,7 +1634,11 @@ Se precisares de alguma informação minha (que cliente utilizo, onde está o fi
       summaryFailed: (n: number) =>
         `${n} requerem atenção — consulta o detalhe por fluxo abaixo`,
       summaryPending: (n: number) =>
-        `${n} sem dados — comum quando o dispositivo não suporta a métrica`,
+        `${n} endpoints ou fases de processamento continuam por confirmar. Isto não demonstra que o dispositivo não os suporte.`,
+      heartRateAlternate:
+        'O endpoint independente de frequência cardíaca não devolveu leituras. Outras fontes sincronizadas fornecem os dados locais de frequência cardíaca.',
+      heartRateEndpointEmpty:
+        'O endpoint independente de frequência cardíaca não devolveu leituras utilizáveis. Experimenta sincronizar os detalhes da pulseira; uma resposta vazia não demonstra que o dispositivo não meça.',
       summaryStreams: (ok: number, total: number) =>
         `${ok} / ${total} fluxos em conformidade`,
     },
@@ -3189,6 +3201,16 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
       daily_max_hrChart: 'Duas linhas: o valor máximo e a média do dia; os dias com muito poucas amostras (menos de 60) surgem como pontos vazios — o «máximo» desse dia é apenas o mais alto desses pontos.',
       daily_max_hrHow: 'Calculado pelo ZeppBridge a partir de amostras brutas locais sem os filtros aplicados pela aplicação Zepp, pelo que é normal que os valores difiram. Inclui amostras da autorização oficial e de «Dados avançados».',
     },
+    'lib/metricInfo/bloodPressure': {
+      systolic: 'Pressão sistólica durante a contração do coração, em mmHg.',
+      diastolic: 'Pressão diastólica entre os batimentos cardíacos, em mmHg.',
+      pulse:
+        'Pulso devolvido com a medição de pressão arterial, em bpm. Guardado separadamente da frequência cardíaca de todo o dia.',
+      chart:
+        'Média medida diária. As datas sem medições ficam em branco. As consultas mantêm os intervalos diários; as exportações mantêm a hora e o valor de cada medição.',
+      how:
+        'Sincronização experimental de pressão arterial: aceita pares de leituras explícitos. Os endpoints candidatos ainda requerem verificação numa conta com medições ativas. O método e as informações de calibração ficam na resposta original.',
+    },
   },
   errors: {
     'err.app.starting': 'Os dados locais ainda estão a ser preparados; a página atualizar-se-á automaticamente dentro de momentos',
@@ -3280,6 +3302,7 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
     'err.backfill.partial_window':
       'Apenas parte do intervalo foi gravado. Requer nova tentativa',
     'err.backfill.start_in_future': 'A data de início da reposição não pode ser futura',
+    'err.backup.not_found': 'A cópia de segurança não existe ou foi eliminada',
     'err.backup.restore_busy':
       'Restauro adiado: base de dados ocupada. A base de dados atual mantém-se intacta. Tenta novamente no próximo arranque',
     'err.backup.restore_failed':

@@ -88,8 +88,8 @@ export const demoZones = (data: DemoData, preference: HeartRateZonePreference, d
   const maximum = Math.max(...data.workouts.map(w => w.max_hr ?? 0));
   const resting = Math.round(data.metrics.resting_hr.slice(-28).reduce((s, p) => s + p.value, 0) / 28);
   const bases = [
-    { id: 'workout_max', kind: 'max_hr', label: 'Workout maximum', value: maximum, unit: 'bpm', source: 'workouts', measuredAt: data.now.toISOString() },
-    { id: 'resting_28d', kind: 'resting_hr', label: 'Resting HR', value: resting, unit: 'bpm', source: 'daily_metrics', noteCount: 28 },
+    { id: 'observed_max', kind: 'max_hr', label: 'Workout maximum', value: maximum, unit: 'bpm', source: 'workouts', measuredAt: data.now.toISOString() },
+    { id: 'computed_resting', kind: 'resting_hr', label: 'Resting HR', value: resting, unit: 'bpm', source: 'daily_metrics', noteCount: 28 },
     { id: 'lactate_threshold', kind: 'threshold_hr', label: 'Lactate threshold', value: 168, unit: 'bpm', source: 'daily_metrics' },
   ];
   const bands = Array.from({ length: 5 }, (_, i) => ({ zone: i + 1, label: `Z${i + 1}`, lowPercent: 50 + i * 10, highPercent: 60 + i * 10 }));

@@ -109,6 +109,7 @@ const messages = defineMessages(
     'err.backfill.start_in_future': '补拉起点不能晚于今天',
     'err.backup.restore_busy': '恢复还没执行：另一个写入操作正在进行。当前库没改动，下次启动再试。',
     'err.backup.restore_failed': '恢复没完成，当前库保持原样，下次启动再试。',
+    'err.backup.not_found': '备份记录不存在或已删除',
 
     /* —— 能力状态 —— */
     'err.capability.not_synced': '尚未同步',
@@ -298,6 +299,7 @@ const messages = defineMessages(
       'Restore did not run — another write is in progress. Current library unchanged; retried at next launch',
     'err.backup.restore_failed':
       'Restore did not finish. Current library unchanged; retried at next launch',
+    'err.backup.not_found': 'Backup record does not exist or was deleted',
 
     /* —— capabilities —— */
     'err.capability.not_synced': 'Not synced yet',
@@ -491,6 +493,7 @@ const messages = defineMessages(
       'Restauración pospuesta: otra escritura en curso. Base intacta; se reintentará al iniciar',
     'err.backup.restore_failed':
       'Restauración incompleta. Base intacta; se reintentará al iniciar',
+    'err.backup.not_found': 'La copia de seguridad no existe o fue eliminada',
 
     /* —— capabilities —— */
     'err.capability.not_synced': 'Aún sin sincronizar',
@@ -566,6 +569,8 @@ const messages = defineMessages(
 
     /* —— planes de entrenamiento —— */
     'err.training_plan.draft_not_found': 'Este borrador de plan ya no existe',
+    'err.training_plan.rest_unparsable': 'No se puede leer la fecha del día de descanso, la hora de dormir o la meta de sueño',
+    'err.training_plan.rest_outside_range': 'El día de descanso queda fuera del rango de fechas del plan',
     'err.training_plan.draft_closed': 'Este borrador ya se envió o se descartó',
     'err.training_plan.publish_not_found': 'No hay registro de ese envío',
     'err.training_plan.rejected': 'Zepp no aceptó este plan; el plan de tu reloj no cambió',

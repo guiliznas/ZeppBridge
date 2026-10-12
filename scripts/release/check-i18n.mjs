@@ -31,6 +31,8 @@ const SKIP_FILES = [
   'composables/useLandingLocale.ts',
   'views/landing/copy.ts',
   'views/landing/journeyCopy.ts', // Typed ten-language website copy, selected by LandingLocale.
+  'views/landing/reelCopy.ts', // Typed ten-language MotionReel controls.
+  'demo/dialogueCopy.ts', // Typed ten-language demo dialogue strings.
 ];
 
 /**
@@ -291,8 +293,8 @@ const isProseRisk = (line) => {
   if (!PROSE_FIELDS.test(line)) return false;
   if (line.includes('toUserMessage(')) return false;
   if (CSS_LINE.test(line.trim())) return false;
-  // `error.message` 这种是 JS Error，不是后端载荷。
-  const stripped = line.replace(JS_ERROR, '');
+  // `error.message` 这种是 JS Error，不是后端载荷；console.error 是控制台打印。
+  const stripped = line.replace(JS_ERROR, '').replace(/\bconsole\.error\b/g, '');
   return PROSE_FIELDS.test(stripped);
 };
 
@@ -359,6 +361,8 @@ const ALLOWED_PROSE = [
   { file: 'views/settings/DiagnosticReportForm.vue', text: 'form.error', why: '诊断表单本地状态，catch 里已经 toUserMessage。' },
   { file: 'composables/settings/useDiagnosticReport.ts', text: 'form.note', why: '用户自己填的诊断备注，不是后端字段。' },
   { file: 'views/settings/DiagnosticReportForm.vue', text: 'form.note', why: '用户自己填的诊断备注，不是后端字段。' },
+  { file: 'demo/DemoConversation.vue', text: '.message-pair', why: 'CSS 类名选择器，不是后端散文字段。' },
+  { file: 'views/landing/DeviceRibbon.vue', text: 'd.display_name', why: '设备目录里的商品名，不是界面文案。' },
 ];
 
 const proseFindings = [];
@@ -397,8 +401,8 @@ if (proseFindings.length) {
 }
 
 const missingCodes = [...declaredCodes].filter((code) => (translated.get(code) ?? 0) < 2).sort();
-/* 前端自己产生的码（不来自 Rust）：bridge 在后端就绪门超时时给的「还在准备」。 */
-const FRONTEND_CODES = new Set(['err.app.starting']);
+/* 前端自己产生的码（不来自 Rust）：bridge 在后端就绪门超时时给的「还在准备」，以及前端备份查找失败。 */
+const FRONTEND_CODES = new Set(['err.app.starting', 'err.backup.not_found']);
 const unusedCodes = [...translated.keys()]
   .filter((code) => !declaredCodes.has(code) && !FRONTEND_CODES.has(code))
   .sort();

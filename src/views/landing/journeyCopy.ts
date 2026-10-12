@@ -17,6 +17,7 @@ export interface JourneyCopy {
   back: string;
   downloadTitle: string; downloadLead: string; downloadPending: string; install: string;
   system: string;
+  starOnGithub: string;
 }
 
 const zh: JourneyCopy = {
@@ -76,6 +77,7 @@ const zh: JourneyCopy = {
   downloadPending: 'v3 正式安装包尚未发布',
   install: 'Windows 运行安装包。macOS 拖进应用程序。Linux 选对应的包。',
   system: '跟随系统',
+  starOnGithub: '在 GitHub 上加星',
 };
 
 const en: JourneyCopy = {
@@ -135,9 +137,10 @@ const en: JourneyCopy = {
   downloadPending: 'The v3 release is not available yet',
   install: 'Run the Windows installer. Drag the macOS app into Applications. Pick a package for Linux.',
   system: 'System',
+  starOnGithub: 'Star on GitHub',
 };
 
-function pack(partial: Pick<JourneyCopy, 'title' | 'lead' | 'nav' | 'groups' | 'links' | 'themes' | 'motionTitle' | 'motionLead' | 'motions' | 'recordsTitle' | 'records' | 'aiTitle' | 'aiLead' | 'you' | 'reply' | 'turns' | 'beats' | 'settingsTitle' | 'settingsLead' | 'settings' | 'demoTitle' | 'demoLead' | 'demoStart' | 'demoReset' | 'demoTabs' | 'back' | 'downloadTitle' | 'downloadLead' | 'downloadPending' | 'install' | 'system'>): JourneyCopy {
+function pack(partial: Pick<JourneyCopy, 'title' | 'lead' | 'nav' | 'groups' | 'links' | 'themes' | 'motionTitle' | 'motionLead' | 'motions' | 'recordsTitle' | 'records' | 'aiTitle' | 'aiLead' | 'you' | 'reply' | 'turns' | 'beats' | 'settingsTitle' | 'settingsLead' | 'settings' | 'demoTitle' | 'demoLead' | 'demoStart' | 'demoReset' | 'demoTabs' | 'back' | 'downloadTitle' | 'downloadLead' | 'downloadPending' | 'install' | 'system' | 'starOnGithub'>): JourneyCopy {
   return partial;
 }
 
@@ -195,6 +198,7 @@ export const JOURNEY: Record<LandingLocale, JourneyCopy> = {
     downloadPending: 'La versión v3 aún no está publicada',
     install: 'Ejecuta el instalador de Windows. Arrastra la app de macOS a Aplicaciones. Elige un paquete para Linux.',
     system: 'Sistema',
+    starOnGithub: 'Dar estrella en GitHub',
   }),
   fr: pack({
     title: ['Sommeil, séances, récupération', 'sur cet ordinateur.'],
@@ -248,6 +252,7 @@ export const JOURNEY: Record<LandingLocale, JourneyCopy> = {
     downloadPending: 'La version v3 n’est pas encore publiée',
     install: 'Lancez l’installateur Windows. Glissez l’app macOS dans Applications. Choisissez un paquet Linux.',
     system: 'Système',
+    starOnGithub: 'Star sur GitHub',
   }),
   de: pack({
     title: ['Schlaf, Training, Erholung', 'auf diesem Computer.'],
@@ -301,6 +306,7 @@ export const JOURNEY: Record<LandingLocale, JourneyCopy> = {
     downloadPending: 'Die Version v3 ist noch nicht veröffentlicht',
     install: 'Windows-Setup starten. Die macOS-App in Programme ziehen. Für Linux ein Paket wählen.',
     system: 'System',
+    starOnGithub: 'Stern auf GitHub',
   }),
   nl: pack({
     title: ['Slaap, training, herstel', 'op deze computer.'],
@@ -354,6 +360,7 @@ export const JOURNEY: Record<LandingLocale, JourneyCopy> = {
     downloadPending: 'Versie v3 is nog niet gepubliceerd',
     install: 'Start het Windows-installatieprogramma. Sleep de macOS-app naar Programma’s. Kies een Linux-pakket.',
     system: 'Systeem',
+    starOnGithub: 'Ster op GitHub',
   }),
   'pt-BR': pack({
     title: ['Sono, treinos e recuperação', 'neste computador.'],
@@ -407,6 +414,7 @@ export const JOURNEY: Record<LandingLocale, JourneyCopy> = {
     downloadPending: 'A versão v3 ainda não foi publicada',
     install: 'Execute o instalador do Windows. Arraste o app do macOS para Aplicativos. Escolha um pacote Linux.',
     system: 'Sistema',
+    starOnGithub: 'Dar estrela no GitHub',
   }),
   'pt-PT': pack({
     title: ['Sono, treinos e recuperação', 'neste computador.'],
@@ -460,6 +468,7 @@ export const JOURNEY: Record<LandingLocale, JourneyCopy> = {
     downloadPending: 'A versão v3 ainda não foi publicada',
     install: 'Executa o instalador do Windows. Arrasta a app do macOS para Aplicações. Escolhe um pacote Linux.',
     system: 'Sistema',
+    starOnGithub: 'Dar estrela no GitHub',
   }),
   ru: pack({
     title: ['Сон, тренировки, восстановление', 'на этом компьютере.'],
@@ -513,6 +522,7 @@ export const JOURNEY: Record<LandingLocale, JourneyCopy> = {
     downloadPending: 'Версия v3 ещё не опубликована',
     install: 'Запустите установщик Windows. Перетащите приложение macOS в «Программы». Для Linux выберите пакет.',
     system: 'Системная',
+    starOnGithub: 'Оценить на GitHub',
   }),
   'hi-IN': pack({
     title: ['नींद, कसरत, रिकवरी', 'इसी कंप्यूटर पर।'],
@@ -566,5 +576,6 @@ export const JOURNEY: Record<LandingLocale, JourneyCopy> = {
     downloadPending: 'v3 संस्करण अभी प्रकाशित नहीं है',
     install: 'Windows इंस्टॉलर चलाएँ। macOS ऐप को Applications में रखें। Linux के लिए पैकेज चुनें।',
     system: 'सिस्टम',
+    starOnGithub: 'GitHub पर स्टार दें',
   }),
 };
