@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { DesktopUnavailableError } from './errors';
+import { sharedCall, stateChanged } from './sharedReads';
 import type {
   AiTask,
   AiTaskAttachmentStat,
@@ -127,7 +128,10 @@ export const whenBackendReady = (): Promise<void> => {
 /* 后端还没把 AppState 挂上时 Tauri 回的是这句英文。它不是用户能看懂的错，换成有码的。 */
 const isStateNotManaged = (error: unknown): boolean => /state not managed/i.test(String(error));
 
-const call = <T>(command: string, args?: UnknownRecord): Promise<T> => {
+/** 同一时刻同参数的只读查询合成一次；写命令完成就作废之前读的（sharedReads.ts）。 */
+const call = <T>(command: string, args?: UnknownRecord): Promise<T> => sharedCall(command, args, () => send<T>(command, args));
+
+const send = <T>(command: string, args?: UnknownRecord): Promise<T> => {
   if (ready) return invoke<T>(command, args);
   if (!isTauriRuntime()) return Promise.reject(new DesktopUnavailableError());
   return new Promise<T>((resolve, reject) => {
@@ -498,6 +502,10 @@ export const tauriBackend: BridgeBackend = {
 
   async listen<T>(event: string, handler: (payload: T) => void): Promise<UnlistenFn> {
     if (!isTauriRuntime()) throw new DesktopUnavailableError();
-    return listen<T>(event, (eventPayload) => handler(eventPayload.payload));
+    return listen<T>(event, (eventPayload) => {
+      // 后端主动发来的事件都意味着它那边的状态动过了（同步、补拉、登录……）。
+      stateChanged();
+      handler(eventPayload.payload);
+    });
   },
 };
