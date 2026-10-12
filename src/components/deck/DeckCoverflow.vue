@@ -342,8 +342,9 @@ onBeforeUnmount(() => {
   opacity: var(--fade, 0);
   pointer-events: none;
 }
-.cover-card.is-left .cover-fade { background: linear-gradient(90deg, var(--canvas) 0%, color-mix(in srgb, var(--canvas) 70%, transparent) 30%, transparent 62%); }
-.cover-card.is-right .cover-fade { background: linear-gradient(270deg, var(--canvas) 0%, color-mix(in srgb, var(--canvas) 70%, transparent) 30%, transparent 62%); }
+/* 靠正中那一半也压暗一层（10-09：法语标题长，伸到侧卡靠里那一半，以前那里完全不压，侧卡看着和正中一样亮）。 */
+.cover-card.is-left .cover-fade { background: linear-gradient(90deg, var(--canvas) 0%, color-mix(in srgb, var(--canvas) 70%, transparent) 30%, color-mix(in srgb, var(--canvas) 66%, transparent) 62%, color-mix(in srgb, var(--canvas) 62%, transparent) 100%); }
+.cover-card.is-right .cover-fade { background: linear-gradient(270deg, var(--canvas) 0%, color-mix(in srgb, var(--canvas) 70%, transparent) 30%, color-mix(in srgb, var(--canvas) 66%, transparent) 62%, color-mix(in srgb, var(--canvas) 62%, transparent) 100%); }
 /* 顶上一层很淡的亮面，给卡一点厚度——不画边线（以前那圈 1px 亮边就是「卡片边界明显」的来源）。 */
 .cover-card::after {
   content: '';
