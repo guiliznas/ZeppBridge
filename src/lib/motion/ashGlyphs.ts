@@ -51,8 +51,8 @@ const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'OPTION', 
 
 type Paint = { font: string; color: string; spacing: string; transform: string; clip: DOMRect | null; alpha: number };
 
-/** 把可视区里看得见的文字按原样画到一张 CSS 像素大小的画布上。 */
-export const drawVisibleText = (width: number, height: number): CanvasRenderingContext2D | null => {
+/** 把可视区里看得见的文字按原样画到一张 CSS 像素大小的画布上。`scope` 给了就只取它里面的字（盖满整屏的浮层）。 */
+export const drawVisibleText = (width: number, height: number, scope: Element = document.body): CanvasRenderingContext2D | null => {
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
@@ -137,7 +137,7 @@ export const drawVisibleText = (width: number, height: number): CanvasRenderingC
   };
 
   const range = document.createRange();
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode() as Text | null; node; node = walker.nextNode() as Text | null) {
     const raw = node.data;
     // 只有带字的才化灰：纯数字、日期、符号换了语言也还是那个样子，碎掉再原样出现反而怪。

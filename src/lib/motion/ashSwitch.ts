@@ -32,6 +32,11 @@ import { LOCALE_REVEAL_MS, OPEN_EASE } from './timing';
  *
  * 系统要求减少动效、内核没有 View Transitions 时直接换；没有 WebGL 时只放涟漪、不放灰。
  *
+ * 盖满整屏的浮层（新手引导第一屏）里拨语言时传 `scope`（10-13 录屏）：只把浮层里的字化灰、只给浮层里的字
+ * 蒙雾，顶栏导航也不单独成层。以前压在毛玻璃底下、看不见的整页文字也被取了出来——换场时灰从一大片看不见的
+ * 字上飞起来，在涟漪前沿堆成一道亮圈；雾层画在浮层上面，底下的概览一下子清楚地闪出来；导航那一层
+ * 浮在浮层之上，顶栏凭空闪一下。
+ *
  * 第三版（2026-10-06 精修纲领 2.2）：
  *   - 慢下来、柔一点：涟漪 1050ms（timing.ts 的 LOCALE_REVEAL_MS，换主题仍是 640），灰飘得更远、更久，三次方收尾；
  *   - 新字不是「啪」地出现：圆扫过的地方先蒙着一层预先模糊好的新字，按圈分四环依次淡掉，像卡片那样由糊到清
@@ -57,7 +62,7 @@ const defaultOrigin = (): AshOrigin => {
 };
 
 /** 放一圈：从 origin 扩散到 value。返回时这一圈的换场已经结束（灰可能还在飘）。 */
-const ripple = async (value: Locale, origin: AshOrigin) => {
+const ripple = async (value: Locale, origin: AshOrigin, scope?: Element) => {
   const doc = document as ViewTransitionDocument;
   // 语言包先到：换上去的第一帧就是新语言，不会先露出英文兜底、过一会儿再变（那又是一跳）。
   await Promise.race([ensureLocalePack(value), new Promise((resolve) => window.setTimeout(resolve, 600))]);
@@ -67,7 +72,7 @@ const ripple = async (value: Locale, origin: AshOrigin) => {
   const height = window.innerHeight;
   const reach = Math.ceil(Math.hypot(Math.max(origin.x, width - origin.x), Math.max(origin.y, height - origin.y)));
   const layer = dustLayer(width, height);
-  const grains = grainsOf([[drawVisibleText(width, height), TEXT_INK]], width, height, origin, reach);
+  const grains = grainsOf([[drawVisibleText(width, height, scope), TEXT_INK]], width, height, origin, reach);
   let settle = null as ReturnType<typeof settleNewText>;
   const batch = layer && grains ? layer.add(grains, origin) : null;
 
@@ -79,6 +84,7 @@ const ripple = async (value: Locale, origin: AshOrigin) => {
   root.style.setProperty('--ash-f', `${feather}px`);
   const unmask = () => { for (const name of ['--ash-x', '--ash-y', '--ash-f']) root.style.removeProperty(name); };
   root.dataset.ashMorph = '';
+  if (scope) root.dataset.ashScoped = '';
   openSweep(origin, reach);
   const transition = doc.startViewTransition!(async () => {
     setLocale(value);
@@ -86,7 +92,7 @@ const ripple = async (value: Locale, origin: AshOrigin) => {
     // 顶栏换语言后要重新量档位（AppTopBar 的 refit，一串 nextTick）：等它落定再拍新快照，换场途中顶栏不再变。
     for (let i = 0; i < 6; i += 1) await nextTick();
     // 新字的「糊」底：在新快照里，所以只在圆里面看得见。
-    settle = settleNewText(width, height, origin, reach, layer?.canvas ?? null);
+    settle = settleNewText(width, height, origin, reach, layer?.canvas ?? null, scope);
   });
   try {
     await transition.ready;
@@ -95,6 +101,7 @@ const ripple = async (value: Locale, origin: AshOrigin) => {
     settle?.dispose();
     closeSweep();
     delete root.dataset.ashMorph;
+    delete root.dataset.ashScoped;
     unmask();
     return;
   }
@@ -113,24 +120,25 @@ const ripple = async (value: Locale, origin: AshOrigin) => {
   if (batch) layer!.start(batch, grow);
   startSweep();
   settle?.start();
-  breatheCharts(width, height, origin, reach, layer?.canvas ?? null);
+  breatheCharts(width, height, origin, reach, layer?.canvas ?? null, scope);
   await transition.finished.catch(() => undefined);
   closeSweep();
   delete root.dataset.ashMorph;
+  delete root.dataset.ashScoped;
   unmask();
 };
 
 let busy = false;
-let queued: { value: Locale; origin?: AshOrigin } | null = null;
+let queued: { value: Locale; origin?: AshOrigin; scope?: Element } | null = null;
 
 /**
  * 换语言并放「响指」。`origin` 是被拨的那只语言轮（视口坐标），不给就用顶栏的语言轮。
  * 上一圈还没放完又拨：记下最后拨到的那一项（语言轮先停在那儿），这一圈放完再从语言轮放一圈过去。
- * 放不了（减少动效、内核不支持）就直接换。
+ * 放不了（减少动效、内核不支持）就直接换。`scope`：盖满整屏的浮层，只动它里面的字（见上面）。
  */
-export const switchLocaleWithAsh = async (value: Locale, origin?: AshOrigin): Promise<void> => {
+export const switchLocaleWithAsh = async (value: Locale, origin?: AshOrigin, scope?: Element): Promise<void> => {
   if (busy) {
-    queued = { value, origin };
+    queued = { value, origin, scope };
     localeTarget.value = value;
     return;
   }
@@ -147,14 +155,14 @@ export const switchLocaleWithAsh = async (value: Locale, origin?: AshOrigin): Pr
   busy = true;
   localeTarget.value = value;
   try {
-    await ripple(value, origin ?? defaultOrigin());
+    await ripple(value, origin ?? defaultOrigin(), scope);
   } catch {
     if (locale.value !== value) setLocale(value);
   } finally {
     busy = false;
     const next = queued;
     queued = null;
-    if (next) void switchLocaleWithAsh(next.value, next.origin);
+    if (next) void switchLocaleWithAsh(next.value, next.origin, next.scope);
     else localeTarget.value = null;
   }
 };

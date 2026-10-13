@@ -52,6 +52,7 @@ const renderReport = (
   outcome: SyncOutcome,
   failedStreams: string[],
   latestAt?: string,
+  backendCode?: string,
   backendMessage?: string,
   cloudLatestAt?: string,
 ): string => {
@@ -65,7 +66,7 @@ const renderReport = (
     return names.length ? t.partialWithStreams(names.join(t.streamSeparator)) : t.partial;
   }
   if (outcome === 'cancelled') return t.cancelled;
-  if (outcome === 'deferred') return backendMessage ?? t.deferred;
+  if (outcome === 'deferred') return errorTextFor(backendCode) ?? backendText(backendMessage, t.deferred);
   if (outcome === 'cloud_stale') {
     const clock = cloudLatestAt ? formatTime(cloudLatestAt) : null;
     return clock ? t.cloudStale(clock) : t.cloudStaleNoTime;
@@ -108,7 +109,7 @@ const renderNotice = (value: SyncNotice): string => {
     case 'connectFirst': return t.connectFirst;
     case 'cancelling': return t.cancelling;
     case 'report': {
-      const text = renderReport(value.outcome, value.failedStreams, value.latestAt, value.backendMessage, value.cloudLatestAt);
+      const text = renderReport(value.outcome, value.failedStreams, value.latestAt, value.backendCode, value.backendMessage, value.cloudLatestAt);
       return value.cleanupFailed ? `${text} · ${t.cleanupFailed}` : text;
     }
   }
@@ -125,10 +126,9 @@ export const noticeForReport = (report: SyncReport): SyncNotice => ({
   outcome: report.outcome,
   failedStreams: failedStreamKeys(report.streams),
   latestAt: latestHeartRateAt(report),
-  // deferred 那句话后端给了稳定码，按界面语言取；取不到才用后端的中文原文。
-  backendMessage: report.outcome === 'deferred'
-    ? errorTextFor(report.message_code) ?? report.message ?? undefined
-    : undefined,
+  // deferred 那句话后端给了稳定码，渲染时按界面语言取；取不到才用后端的中文原文。
+  backendCode: report.outcome === 'deferred' ? report.message_code ?? undefined : undefined,
+  backendMessage: report.outcome === 'deferred' ? report.message ?? undefined : undefined,
   cleanupFailed: report.notice_code === 'ui.sync.cleanup_failed',
   // 同步前探云端「不新」（后端 ui.sync.cloud_stale）：句子按界面语言自己写，时刻由后端给。
   cloudLatestAt: report.message_code === 'ui.sync.cloud_stale' ? report.cloud_latest_at ?? undefined : undefined,

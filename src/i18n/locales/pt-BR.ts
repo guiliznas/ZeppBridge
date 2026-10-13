@@ -2913,8 +2913,6 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
       welcomePick: 'Escolha um idioma',
       welcomeStart: 'Começar tour',
       welcomeSkip: 'Pular e começar',
-      inviteText: 'O que mudou na V3? Um tour rápido de um minuto',
-      inviteGo: 'Ver',
       inviteLater: 'Mais tarde',
       toolsText: 'Suas ferramentas de IA ainda usam o ZeppBridge antigo; reconecte-as',
       toolsGo: 'Reconectar',

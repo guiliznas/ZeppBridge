@@ -18,6 +18,7 @@ declare global {
 
 const SEEN_KEY = 'zeppbridge.tour.seen';
 const FIRST_LAUNCH_KEY = 'zeppbridge.tour.firstLaunch';
+const TOOLS_REMINDER_KEY = 'zeppbridge.tour.toolsReminder';
 const THEME_KEY = 'zeppbridge-theme';
 const LOCALE_KEY = 'zeppbridge-locale';
 
@@ -81,6 +82,27 @@ export const markFirstLaunchHandled = (): void => {
     realStorage()?.setItem(FIRST_LAUNCH_KEY, '1');
   } catch {
     // 存不下就每次启动问一次，比不问强。
+  }
+};
+
+/** 升级来的库首次启动时发现 AI 客户端里还登记着旧版 MCP：记下，等引导走完回到真实应用再提醒。 */
+export const markToolsReminder = (): void => {
+  try {
+    realStorage()?.setItem(TOOLS_REMINDER_KEY, '1');
+  } catch {
+    // 存不下就不提醒，设置卡里那行黄字还在。
+  }
+};
+
+/** 取走提醒（只提醒一次）。 */
+export const takeToolsReminder = (): boolean => {
+  try {
+    const storage = realStorage();
+    if (storage?.getItem(TOOLS_REMINDER_KEY) !== '1') return false;
+    storage.removeItem(TOOLS_REMINDER_KEY);
+    return true;
+  } catch {
+    return false;
   }
 };
 

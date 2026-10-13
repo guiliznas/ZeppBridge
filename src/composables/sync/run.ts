@@ -2,7 +2,6 @@ import { backend, isDesktop, toUserMessage } from '../../lib/bridge';
 import type { OfficialStatus, SyncReport } from '../../types';
 import { readyOnReport, readyOnStart } from '../../lib/dataReady';
 import { failedStreamKeys, isCancelledSyncError, isDeferredSyncError } from '../../lib/syncDeferred';
-import { errorTextFor } from '../../i18n/errors';
 import { noticeForReport } from './notice';
 import {
   appStatus, cloudStaleTip, copy, dataReady, dataRevision, notice, refreshStatus, statusError, statusErrorFromSync, streamUpdate,
@@ -188,7 +187,7 @@ export const runSync = (
           kind: 'report',
           outcome: 'deferred',
           failedStreams: [],
-          backendMessage: errorTextFor(code) ?? undefined,
+          backendCode: code,
         };
         await refreshStatus();
         if (wroteSomething) dataRevision.value += 1;

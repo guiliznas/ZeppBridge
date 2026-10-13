@@ -220,10 +220,11 @@ html[data-ash-morph]::view-transition-new(root) {
 }
 ::view-transition-group(ash-dust), ::view-transition-new(ash-dust) { animation: none; mix-blend-mode: normal; }
 ::view-transition-old(ash-dust) { display: none; }
-html[data-ash-morph] .pill-nav { view-transition-name: ash-nav; }
-html[data-ash-morph] .pill-nav,
-html[data-ash-morph] .pill-nav::after { box-shadow: none; background: none; }
-html[data-ash-morph] .pill-nav .segment-glass { opacity: 0; }
+/* 浮层里换语言（data-ash-scoped，见 ashSwitch.ts）：导航压在浮层底下，不单独成层，不然它会浮到浮层上面闪一下。 */
+html[data-ash-morph]:not([data-ash-scoped]) .pill-nav { view-transition-name: ash-nav; }
+html[data-ash-morph]:not([data-ash-scoped]) .pill-nav,
+html[data-ash-morph]:not([data-ash-scoped]) .pill-nav::after { box-shadow: none; background: none; }
+html[data-ash-morph]:not([data-ash-scoped]) .pill-nav .segment-glass { opacity: 0; }
 html[data-ash-morph]::view-transition-group(ash-nav) {
   animation-duration: 1050ms;
   animation-timing-function: cubic-bezier(.4, .6, .2, 1);

@@ -3239,8 +3239,6 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
       welcomePick: 'Escolha um idioma',
       welcomeStart: 'Iniciar visita guiada',
       welcomeSkip: 'Saltar e iniciar',
-      inviteText: 'O que mudou na V3? Uma vista de olhos de um minuto',
-      inviteGo: 'Ver',
       inviteLater: 'Mais tarde',
       toolsText: 'As tuas ferramentas de IA ainda usam o ZeppBridge antigo; volta a ligá-las',
       toolsGo: 'Voltar a ligar',

@@ -42,6 +42,10 @@ export type SyncNotice =
     outcome: SyncOutcome;
     failedStreams: string[];
     latestAt?: string;
+    /** `deferred`：后端给的稳定码（err.sync.deferred_*）。存码不存句子，渲染时按当时的界面语言取（截图 193243：
+        启动时按中文取好的句子，换成英文以后顶栏下面那条还是中文）。 */
+    backendCode?: string;
+    /** 后端的中文原文，码取不到时的兜底（非中文界面不显示中文，见 backendText）。 */
     backendMessage?: string;
     /** 同步本身好了，但旧数据清理没成功（后端 `ui.sync.cleanup_failed`）。 */
     cleanupFailed?: boolean;

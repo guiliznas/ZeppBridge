@@ -565,6 +565,9 @@ export const usePageMorph = (options: { back: () => void }) => {
     if (!(el instanceof HTMLElement)) return;
     let keeping = false;
     for (const animation of el.getAnimations()) {
+      // 样式表里的切页动画（shell.css 的 page-fade-in 等，随 Vue 的过渡类出现、消失）不归这里管：
+      // beta.58 切页改成 CSS animation 后，onEnter 一上来就把新页的淡入取消了，新页硬切出现（10-13 录屏）。
+      if (animation instanceof CSSAnimation || animation instanceof CSSTransition) continue;
       if (kept.has(animation) && animation.playState === 'running') keeping = true;
       else animation.cancel();
     }

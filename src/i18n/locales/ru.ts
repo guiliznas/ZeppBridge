@@ -3141,8 +3141,6 @@ export default {
       welcomePick: 'Выберите язык',
       welcomeStart: 'Начать обзор',
       welcomeSkip: 'Пропустить и начать',
-      inviteText: 'Что изменилось в V3? Минутный обзор',
-      inviteGo: 'Посмотреть',
       inviteLater: 'Позже',
       toolsText: 'В инструментах ИИ всё ещё подключена старая версия ZeppBridge; переподключите её',
       toolsGo: 'Переподключить',

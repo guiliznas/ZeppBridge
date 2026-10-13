@@ -27,8 +27,9 @@ export const settleNewText = (
   origin: AshOrigin,
   reach: number,
   skip: HTMLCanvasElement | null,
+  scope?: Element,
 ): Settle | null => {
-  const text = drawVisibleText(width, height);
+  const text = drawVisibleText(width, height, scope);
   if (!text) return null;
   const canvases: HTMLCanvasElement[] = [];
   for (let ring = 0; ring < RINGS; ring += 1) {
@@ -94,8 +95,9 @@ export const breatheCharts = (
   origin: AshOrigin,
   reach: number,
   skip: HTMLCanvasElement | null,
+  scope?: Element,
 ): void => {
-  const charts = [...document.querySelectorAll<HTMLElement | SVGSVGElement>('canvas, svg')].filter((el) => {
+  const charts = [...(scope ?? document).querySelectorAll<HTMLElement | SVGSVGElement>('canvas, svg')].filter((el) => {
     // SwapChart 的画布自己跟着涟漪交叉溶解（见下面的 openSweep）；这里再逐帧改它的 blur 就是动滤镜了。
     if (el === skip || el.closest('[data-ash-skip], .swap-chart')) return false;
     const r = el.getBoundingClientRect();

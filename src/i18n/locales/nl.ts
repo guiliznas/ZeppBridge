@@ -3278,8 +3278,6 @@ Regels: vergelijk me alleen met mijn eigen historie, niet met populatiegemiddeld
       welcomePick: 'Kies een taal',
       welcomeStart: 'Rondleiding starten',
       welcomeSkip: 'Overslaan en starten',
-      inviteText: 'Wat is er veranderd in V3? Een kort overzicht van één minuut',
-      inviteGo: 'Bekijken',
       inviteLater: 'Later',
       toolsText: 'Je AI-tools gebruiken nog de oude ZeppBridge; verbind ze opnieuw',
       toolsGo: 'Opnieuw verbinden',

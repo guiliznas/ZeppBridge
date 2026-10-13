@@ -5,8 +5,10 @@
  *
  * 首次启动（只判断一次，记在真实 localStorage）：
  *   - 新装（没连过账号、也没同步过）→ 直接进示例沙盒，从语言轮开始走完整引导，看完回到「账号与设备」卡去连接；
- *   - 有数据的库（多半是从 2.x 或早期 beta 升上来的）→ 底部浮一张小卡问要不要看「V3 变了什么」，不强行打断；
- *     本机 AI 客户端里还登记着旧版 zeppbridge-mcp 时，那张卡收起后再浮一张，请用户去「交给 AI 工具」卡重新连一次。
+ *   - 有数据的库（多半是从 2.x 或早期 beta 升上来的）→ 也从语言轮开始把完整引导走一遍，看完回到概览
+ *     （10-13 用户定：升级来的也要看全套，不再给「V3 变了什么」那份简略版；看完一次就不再出）。
+ *     本机 AI 客户端里还登记着旧版 zeppbridge-mcp 时，引导前先记下，回到真实应用后浮一张卡，
+ *     请用户去「交给 AI 工具」卡重新连一次。
  */
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -15,7 +17,7 @@ import TourWelcome from './TourWelcome.vue';
 import { launchSandbox, startTour, useTour } from '../../composables/useTour';
 import { useSyncController } from '../../composables/useSyncController';
 import { FULL_TOUR } from '../../lib/tour/chapters';
-import { firstLaunchHandled, leaveSandbox, markFirstLaunchHandled, markSeen, sandboxFlags } from '../../lib/tour/sandbox';
+import { firstLaunchHandled, leaveSandbox, markFirstLaunchHandled, markSeen, markToolsReminder, sandboxFlags, takeToolsReminder } from '../../lib/tour/sandbox';
 import { INLINE_CHAPTERS } from '../../lib/tour/chapters';
 import { backend, isDesktop } from '../../lib/bridge';
 import { useTourText } from './tour.i18n';
@@ -23,7 +25,6 @@ import { useTourText } from './tour.i18n';
 const t = useTourText();
 const { welcomeOpen } = useTour();
 const { appStatus, refreshStatus } = useSyncController();
-const invite = ref(false);
 const toolsStale = ref(false);
 const router = useRouter();
 const flags = sandboxFlags();
@@ -38,11 +39,6 @@ const skipFromWelcome = () => {
   leaveSandbox(flags?.ret ?? '/');
 };
 
-const acceptInvite = () => {
-  invite.value = false;
-  launchSandbox(['whatsnew']);
-};
-const declineInvite = () => { invite.value = false; };
 const openTools = () => {
   toolsStale.value = false;
   void router.push('/settings/ai');
@@ -55,13 +51,15 @@ const decideFirstLaunch = async () => {
   if (!status) return;
   markFirstLaunchHandled();
   const fresh = !status.configured && !status.last_sync && !status.streams.some((stream) => (stream.records ?? 0) > 0);
-  if (fresh) launchSandbox([...FULL_TOUR], { welcome: true, ret: '/settings/account' });
-  else {
-    invite.value = true;
-    backend.getMcpSidecar()
-      .then((sidecar) => { toolsStale.value = !!sidecar.stale_clients?.length; })
-      .catch(() => undefined);
+  if (!fresh) {
+    // 引导是整页载入进沙盒，回来时这里已经不再走首次启动：旧版 MCP 的提醒先记在真实 localStorage 里。
+    const sidecar = await Promise.race([
+      backend.getMcpSidecar().catch(() => null),
+      new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 1500)),
+    ]);
+    if (sidecar?.stale_clients?.length) markToolsReminder();
   }
+  launchSandbox([...FULL_TOUR], { welcome: true, ret: fresh ? '/settings/account' : '/' });
 };
 
 onMounted(() => {
@@ -70,6 +68,7 @@ onMounted(() => {
     else startTour(flags.chapters, 'sandbox');
     return;
   }
+  if (takeToolsReminder()) toolsStale.value = true;
   void decideFirstLaunch();
 });
 </script>
@@ -78,14 +77,7 @@ onMounted(() => {
   <TourOverlay />
   <TourWelcome v-if="welcomeOpen" @start="startFromWelcome" @skip="skipFromWelcome" />
   <Transition name="tour-invite">
-    <div v-if="invite" class="tour-invite" role="dialog" aria-labelledby="tour-invite-text">
-      <span id="tour-invite-text">{{ t.inviteText }}</span>
-      <button type="button" class="button primary" @click="acceptInvite">{{ t.inviteGo }}</button>
-      <button type="button" class="tour-invite-later" @click="declineInvite">{{ t.inviteLater }}</button>
-    </div>
-  </Transition>
-  <Transition name="tour-invite">
-    <div v-if="toolsStale && !invite" class="tour-invite" role="dialog" aria-labelledby="tour-tools-text">
+    <div v-if="toolsStale" class="tour-invite" role="dialog" aria-labelledby="tour-tools-text">
       <span id="tour-tools-text">{{ t.toolsText }}</span>
       <button type="button" class="button primary" @click="openTools">{{ t.toolsGo }}</button>
       <button type="button" class="tour-invite-later" @click="toolsStale = false">{{ t.inviteLater }}</button>
