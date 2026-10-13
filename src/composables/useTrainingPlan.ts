@@ -55,13 +55,19 @@ const editingSent = ref(false);
 const revision = ref(0);
 
 let loadSeq = 0;
+/** 上一次读到的原文：交给 AI 页每 15 秒重读一次，内容没变就不换引用，挂在它上面的计算和整周视图都不重算。 */
+let lastStateJson = '';
 
 const load = async () => {
   if (!isDesktop()) return;
   const mine = ++loadSeq;
   try {
     const next = await backend.trainingPlanState();
-    if (mine === loadSeq) state.value = next;
+    if (mine !== loadSeq) return;
+    const json = JSON.stringify(next);
+    if (json === lastStateJson && state.value) return;
+    lastStateJson = json;
+    state.value = next;
   } catch {
     // 读不到就保持现状；界面不因为一次读失败把已经显示的计划抹掉。
   }

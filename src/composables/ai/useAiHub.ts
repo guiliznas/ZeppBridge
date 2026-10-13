@@ -38,6 +38,17 @@ let started = false;
 let mounted = 0;
 let timer = 0;
 
+/* 窗口藏到托盘 / 最小化时不轮询（性能审计 12）：没人看，读了也白读。重新露面马上看一眼，
+   MCP 等外部送来的计划照样在露面的那一刻出现，发现时限不变。 */
+const tick = () => {
+  if (document.hidden) return;
+  const now = dayKey();
+  if (now !== today.value) today.value = now;
+  const plan = useTrainingPlan();
+  if (!plan.busy.value) void plan.resume();
+};
+const onVisible = () => { if (!document.hidden) tick(); };
+
 /** 一份校验结果 → 能画周视图的逐日预览（往返记录里的旧计划、已生效的计划都没有「之前」）。 */
 export const planViewOf = (check: PlanCheck, start: string): PlanDraftPreview => {
   const last = check.to && check.to > addDays(start, 6) ? check.to : addDays(start, 6);
@@ -115,16 +126,16 @@ export const useAiHub = () => {
     void bootstrap();
     mounted += 1;
     if (mounted === 1) {
-      timer = window.setInterval(() => {
-        const now = dayKey();
-        if (now !== today.value) today.value = now;
-        if (!plan.busy.value) void plan.resume();
-      }, 15000);
+      timer = window.setInterval(tick, 15000);
+      document.addEventListener('visibilitychange', onVisible);
     }
   });
   onBeforeUnmount(() => {
     mounted -= 1;
-    if (!mounted) window.clearInterval(timer);
+    if (!mounted) {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    }
   });
 
 
