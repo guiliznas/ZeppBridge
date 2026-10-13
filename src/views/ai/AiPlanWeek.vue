@@ -6,7 +6,7 @@
  * 已经过去的日子不在这里，改不到。
  */
 import { computed, ref, watch } from 'vue';
-import { offerInline } from '../../composables/useTour';
+import { offerInlineSoon } from '../../composables/useTour';
 import { gatherCards } from '../../lib/motion/cards/gather';
 import PageHeader from '../../components/PageHeader.vue';
 import Icon from '../../components/Icon.vue';
@@ -27,7 +27,7 @@ import '../../styles/ai-task.css';
 defineOptions({ name: 'AiPlanWeek' });
 const hub = useAiHub();
 /* 第一次看到一周计划：就地说一句怎么改、怎么发（新手引导的就地一章）。没有计划时不说。 */
-watch(() => !!hub.future.value, (has) => { if (has) window.setTimeout(() => offerInline('planFirst'), 900); }, { immediate: true });
+watch(() => !!hub.future.value, (has) => { if (has) offerInlineSoon('planFirst', 900, () => !!hub.future.value); }, { immediate: true });
 const plan = useTrainingPlan();
 const history = useExchanges();
 const t = useBridgeText();

@@ -4,12 +4,13 @@
  *
  * 聚光框是一块圆角框，外面一圈超大的阴影把别处压暗；换步时只动 transform（FLIP：先摆到新位置，
  * 再从旧位置的样子放回来），说明卡也只过渡 transform。引导期间整页不接点击，免得点到别处把
- * 步骤带跑；Esc 跳过，← → 翻步。prefers-reduced-motion 下一律直接落位。
+ * 步骤带跑；Esc 跳过（经 onMotionEscape 排在最前），← → 翻步。prefers-reduced-motion 下一律直接落位。
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useTour, type TargetBox } from '../../composables/useTour';
 import { inSandbox } from '../../lib/tour/sandbox';
 import { useTourText } from './tour.i18n';
+import { onMotionEscape } from '../../lib/motion/interrupt';
 
 const t = useTourText();
 const { active, box, current, next, prev, skip } = useTour();
@@ -75,11 +76,8 @@ watch(() => current.value?.index, async () => {
 
 const onKey = (event: KeyboardEvent) => {
   if (!active.value) return;
-  if (event.key === 'Escape') {
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    skip();
-  } else if (event.key === 'ArrowRight') {
+  // Esc 不在这里：全局的动效打断、弹层都在更早的 window 捕获监听上，走 onMotionEscape 的 first 才排得到最前。
+  if (event.key === 'ArrowRight') {
     event.preventDefault();
     next();
   } else if (event.key === 'ArrowLeft') {
@@ -107,11 +105,18 @@ watch(card, (el) => {
   observer.observe(el);
 });
 
+let releaseEscape: (() => void) | null = null;
 onMounted(() => {
+  releaseEscape = onMotionEscape(() => {
+    if (!active.value) return false;
+    skip();
+    return true;
+  }, { first: true });
   window.addEventListener('keydown', onKey, true);
   window.addEventListener('resize', onResize);
 });
 onBeforeUnmount(() => {
+  releaseEscape?.();
   window.removeEventListener('keydown', onKey, true);
   window.removeEventListener('resize', onResize);
   observer?.disconnect();
@@ -189,7 +194,8 @@ onBeforeUnmount(() => {
 .tour-skip:hover { color: var(--ink); }
 .tour-skip:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
 .tour-sample {
-  position: fixed; left: 16px; bottom: 16px; z-index: 9001;
+  /* 压在引导层下面：说明卡贴到左下角时字不会被它挡住（引导期间它被压暗，但仍看得见）。 */
+  position: fixed; left: 16px; bottom: 16px; z-index: 8999;
   padding: 5px 12px; border: 1px solid var(--mat-glass-line); border-radius: 999px;
   background: var(--mat-glass-strong); box-shadow: var(--mat-glass-shadow);
   color: var(--accent); font-size: var(--fs-xs); font-weight: 700; letter-spacing: .06em;

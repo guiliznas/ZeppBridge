@@ -5,7 +5,8 @@
  * 必须在鼠标按下的那一刻调用：系统拖拽要「正按着键」才会开始。网页预览里没有这条路，
  * 调用方应当只在桌面运行时显示可拖的样子。
  */
-import { Channel, invoke } from '@tauri-apps/api/core';
+import { Channel } from '@tauri-apps/api/core';
+import { invoke } from './bridge/ipc';
 
 /** 拖动时跟着指针的那张小图：一张画出来的文件卡（系统要一张 PNG）。 */
 const dragPreview = (label: string): string => {

@@ -8,6 +8,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import CapsuleWheel from '../CapsuleWheel.vue';
 import { locale, LOCALE_LABELS, LOCALES, type Locale } from '../../i18n';
 import { useTourText } from './tour.i18n';
+import { onMotionEscape } from '../../lib/motion/interrupt';
 
 const emit = defineEmits<{ (event: 'start'): void; (event: 'skip'): void }>();
 const t = useTourText();
@@ -26,23 +27,18 @@ const onLocale = (value: string | number) => {
 };
 
 const startButton = ref<HTMLElement | null>(null);
-const onKey = (event: KeyboardEvent) => {
-  if (event.key !== 'Escape') return;
-  event.preventDefault();
-  event.stopImmediatePropagation();
-  emit('skip');
-};
+let releaseEscape: (() => void) | null = null;
 
 onMounted(() => {
   if (!(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)) {
     timer = window.setInterval(() => { greeting.value = (greeting.value + 1) % GREETINGS.length; }, 2200);
   }
-  window.addEventListener('keydown', onKey, true);
+  releaseEscape = onMotionEscape(() => { emit('skip'); return true; }, { first: true });
   startButton.value?.focus({ preventScroll: true });
 });
 onBeforeUnmount(() => {
   window.clearInterval(timer);
-  window.removeEventListener('keydown', onKey, true);
+  releaseEscape?.();
 });
 </script>
 

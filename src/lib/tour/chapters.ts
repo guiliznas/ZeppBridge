@@ -17,6 +17,8 @@ export interface TourStep {
   target: string | null;
   /** 这一步在哪一页；省略 = 留在当前页。 */
   route?: string;
+  /** 圈住选择器匹配到的**所有**可见元素的外接框（一组牌），而不是第一个。 */
+  all?: boolean;
 }
 
 /** 完整引导按这个顺序走。 */
@@ -39,7 +41,8 @@ export const TOUR_STEPS: Record<TourChapterId, TourStep[]> = {
   ],
   basics: [
     { route: '/', target: '.theme-toggle' },
-    { route: '/', target: '.locale-wheel' },
+    // 顶栏放不下时（手机）语言轮会被收起，那时圈「显示」卡里的语言那一行；选择器按文档顺序取第一个看得见的。
+    { route: '/settings/display', target: '.locale-wheel, .deck-stage .open-card [data-tour="locale"]' },
   ],
   connect: [
     { route: '/settings/account', target: '.deck-stage .open-card' },
@@ -52,15 +55,16 @@ export const TOUR_STEPS: Record<TourChapterId, TourStep[]> = {
   ],
   detail: [
     { route: '/heart', target: '.range-bar' },
-    { route: '/heart', target: '.missing-row' },
+    // 示例数据里心率页每项都有读数，身体页的夜间血氧 ODI 没有：缺失行在那里才看得到。
+    { route: '/body', target: '.missing-row' },
   ],
   pick: [
     { route: '/heart', target: '.pick-days' },
     { route: '/heart', target: null },
   ],
   handoff: [
-    { route: '/ai', target: '.ai-stage-page .cloud' },
-    { route: '/ai', target: '.ai-stage-page .stage' },
+    { route: '/ai', target: '.ai-stage-page .cloud .slot', all: true },
+    { route: '/ai', target: '.ai-stage-page .future' },
   ],
   plan: [
     { route: '/ai/plan', target: '.ai-plan-week .future-days' },

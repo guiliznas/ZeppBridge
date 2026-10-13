@@ -54,7 +54,7 @@ const chooseTheme = (value: string | number) => {
     <div class="s-list">
       <!-- 语言开关标签是双语的，而且不跟着界面语言变：一个看不懂中文的人
            必须能在中文界面上找到它，反过来也一样。 -->
-      <div class="s-row">
+      <div class="s-row" data-tour="locale">
         <div class="s-row-main"><span class="s-row-title">语言 · Language</span></div>
         <div class="s-row-control">
           <CapsuleWheel loop :span="236" :items="localeOptions" :model-value="shownLocale" aria-label="语言 · Language" @update:model-value="chooseLocale" ref="localeWheel" />

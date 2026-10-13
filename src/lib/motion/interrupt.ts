@@ -19,6 +19,8 @@ const FAST_MS = 90;
 
 const waiting = new Set<() => void>();
 const escapers: Array<() => boolean> = [];
+/** 比所有动效都先问的（新手引导：说明卡盖在一切上面，Esc 先是「跳过引导」）。 */
+const firstEscapers: Array<() => boolean> = [];
 /** 已经在「撤回 / 收尾」的动画：它们本身就是对打断的回应，再被快进就又成了一下硬跳。 */
 const exempt = new WeakSet<Animation>();
 
@@ -47,18 +49,19 @@ export const hurryAnimation = (animation: Animation, ms: number): void => {
   else animation.playbackRate = next;
 };
 
-/** 登记一段自己处理 Esc 的动效（后登记的先问）；返回注销函数。 */
-export const onMotionEscape = (handler: () => boolean): (() => void) => {
-  escapers.push(handler);
+/** 登记一段自己处理 Esc 的动效（后登记的先问；`first` 的排在所有普通的前面）；返回注销函数。 */
+export const onMotionEscape = (handler: () => boolean, options: { first?: boolean } = {}): (() => void) => {
+  const list = options.first ? firstEscapers : escapers;
+  list.push(handler);
   return () => {
-    const index = escapers.lastIndexOf(handler);
-    if (index >= 0) escapers.splice(index, 1);
+    const index = list.lastIndexOf(handler);
+    if (index >= 0) list.splice(index, 1);
   };
 };
 
 /** 问一遍接管了 Esc 的动效；有一个用掉了就返回 true。 */
 export const escapeMotion = (): boolean => {
-  for (const handler of [...escapers].reverse()) {
+  for (const handler of [...firstEscapers.slice().reverse(), ...escapers.slice().reverse()]) {
     if (handler()) return true;
   }
   return false;

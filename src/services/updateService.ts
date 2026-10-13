@@ -83,7 +83,8 @@ let selfUpdateSupported: boolean | null = null;
 async function isSelfUpdateSupported(): Promise<boolean> {
   if (selfUpdateSupported !== null) return selfUpdateSupported;
   try {
-    const { invoke } = await import('@tauri-apps/api/core');
+    const { invoke } = await import('../lib/bridge/ipc');
+    // 经 bridge 的 ipc：新手引导的示例沙盒里由演示运行时回答「不支持」，沙盒里不会去碰真的更新。
     selfUpdateSupported = await invoke<boolean>('self_update_supported');
     return selfUpdateSupported;
   } catch (error) {
@@ -165,7 +166,7 @@ export async function downloadAndInstallDesktopUpdate(): Promise<void> {
   }
   updateState.status = 'downloading';
   try {
-    const { invoke } = await import('@tauri-apps/api/core');
+    const { invoke } = await import('../lib/bridge/ipc');
     const portable = await invoke<boolean>('is_portable_update');
     updateState.error = '';
     updateState.downloadedBytes = 0;

@@ -23,10 +23,9 @@ else initializeTheme();
 const demo = window.__ZB_DEMO__?.demo === true;
 /* 新手引导的示例沙盒（lib/tour/sandbox.ts）：也是演示模式，但不和落地页通消息、不放演示对话。 */
 const tourSandbox = demo && window.__ZB_DEMO__?.tour !== undefined;
-/* 沙盒的底线：后端必须真的换成了演示运行时。桌面里 Tauri 先注入了真的那份，万一没盖掉，
+/* 沙盒的底线：bridge 必须真的改走了演示运行时（lib/bridge/ipc.ts 的 __ZB_IPC__）。万一没接上，
    引导里的每一步就会落到真实库上——宁可不看引导，立刻回到真实应用。 */
-const demoRuntimeInstalled = () =>
-  (window as Window & { __TAURI_INTERNALS__?: { __zbDemo?: boolean } }).__TAURI_INTERNALS__?.__zbDemo === true;
+const demoRuntimeInstalled = () => window.__ZB_IPC__?.__zbDemo === true;
 const abandonSandbox = () => {
   const ret = window.__ZB_DEMO__?.ret;
   window.location.replace(ret && ret.startsWith('/') && !ret.startsWith('//') ? ret : '/');

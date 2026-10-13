@@ -220,6 +220,12 @@ export const installDemoRuntime = (now: Date = new Date()): DemoData => {
       throw new Error(`demo: no data for ${command}`);
     },
   };
-  Object.assign(window, { __TAURI_INTERNALS__: internals, __TAURI_EVENT_PLUGIN_INTERNALS__: { unregisterListener: () => undefined } });
+  /* bridge 认的是这一份（lib/bridge/ipc.ts）：桌面里 Tauri 的 __TAURI_INTERNALS__ 是定死的、盖不掉。
+     定成不可改，页面里别的脚本也换不回真的后端。 */
+  Object.defineProperty(window, '__ZB_IPC__', { configurable: false, writable: false, value: internals });
+  /* 浏览器里（落地页演示）顺带盖掉 Tauri 的全局，让 isDesktop()、插件自带的调用也落到这里；
+     桌面里这两步会抛错，忽略即可。 */
+  try { Object.assign(window, { __TAURI_INTERNALS__: internals }); } catch { /* 桌面：Tauri 已定死 */ }
+  try { Object.assign(window, { __TAURI_EVENT_PLUGIN_INTERNALS__: { unregisterListener: () => undefined } }); } catch { /* 同上 */ }
   return data;
 };
