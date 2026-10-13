@@ -126,7 +126,7 @@ export const settingsMessages = defineMessages(
     privacyReportBody: '无需注册 GitHub 或复制数据。确认后只把产品级字段结构、固件版本、型号类编号（整数，只说明哪一款表）、未知运动编号和数量发到 ZeppBridge 私有错误报告库；绝不发账号、Token、序列号、设备 ID、MAC、GPS、健康数值、原始响应或本机路径。',
 
     // ── 5. MCP ──
-    mcpBadge: '只读 · 不监听端口',
+    mcpBadge: '健康数据只读 · 不监听端口',
     mcpCopyPrompt: '复制这段去问 AI',
     mcpCopyConfig: '只复制配置片段',
     mcpPromptCopied: '已复制。粘给正在用的 AI，它会按你的机器给配置步骤。',
@@ -478,7 +478,7 @@ export const settingsMessages = defineMessages(
     privacyReportBody: 'No GitHub account, no copying data. On confirm, only product-level field shapes, firmware version, model-level numbers (integers — which model only), and unknown workout codes with counts go to ZeppBridge\'s private report store. Never account, tokens, serials, device IDs, MAC, GPS, health values, raw responses or local paths.',
 
     // ── 5. MCP ──
-    mcpBadge: 'Read-only · listens on no port',
+    mcpBadge: 'Health data read-only · listens on no port',
     mcpCopyPrompt: 'Copy this and ask your AI',
     mcpCopyConfig: 'Copy just the config snippet',
     mcpPromptCopied: 'Copied. Paste it to your AI — it gives setup steps for your machine.',
@@ -830,7 +830,7 @@ If you need anything from me (which client I use, where the file lives), just as
     privacyReportBody: 'Sin cuenta de GitHub ni copiar datos. Al confirmar solo van al almacén privado de reportes de ZeppBridge la forma de los campos a nivel de producto, la versión de firmware, números de modelo (enteros, solo qué modelo de reloj) y los códigos de entrenamiento desconocidos con su conteo. Jamás cuenta, tokens, series, IDs de dispositivo, MAC, GPS, valores de salud, respuestas originales ni rutas locales.',
 
     // ── 5. MCP ──
-    mcpBadge: 'Solo lectura · no abre ningún puerto',
+    mcpBadge: 'Datos de salud de solo lectura · no abre ningún puerto',
     mcpCopyPrompt: 'Copiar esto y preguntarle a tu IA',
     mcpCopyConfig: 'Copiar solo el fragmento de configuración',
     mcpPromptCopied: 'Copiado. Pégaselo a la IA que uses; te dará los pasos para tu equipo.',

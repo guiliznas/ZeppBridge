@@ -1350,7 +1350,6 @@ export default {
       manualSaving: 'Opslaan…',
       manualTokenPlaceholder: 'Kopiëren uit de apptoken-HTTP-header',
       manualUserIdPlaceholder: 'Halen uit het URL-pad /users/{user_id}/',
-      mcpBadge: 'Alleen-lezen · luistert op geen poort',
       mcpConfigCopied:
         'Config gekopieerd. Vervang command door het echte pad naar zeppbridge-mcp op je machine.',
       mcpConfigCopyFailed: 'Kopiëren mislukt — selecteer de config hierboven zelf.',
@@ -2528,7 +2527,6 @@ Regels: vergelijk me alleen met mijn eigen historie, niet met populatiegemiddeld
       sumSyncOff: 'Automatisch synchroniseren staat uit',
       sumArchiveOn: "Langdurig bewaren · niet automatisch opruimen",
       sumArchiveOff: (days: number) => plural(days, { one: `Laatste ${days} dag bewaren · oudere gegevens automatisch verwijderen`, other: `Laatste ${days} dagen bewaren · oudere gegevens automatisch verwijderen` }),
-      sumAi: (format: string) => `Alleen-lezen MCP-toegang · standaardexport ${format}`,
       sumAdvanced: "Back-up en herstel · lokale API · gegevenskwaliteit",
       sumPrivacy: 'Je gegevens blijven op deze computer',
       sumFeedback: 'Apparaat niet herkend of gegevens kloppen niet? Stuur ons een geanonimiseerd rapport',
