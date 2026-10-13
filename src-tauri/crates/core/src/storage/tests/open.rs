@@ -386,3 +386,24 @@ fn a_corrupt_library_that_cannot_be_preserved_is_left_exactly_as_it_was() {
     );
     let _ = std::fs::remove_dir_all(dir);
 }
+
+/// 页缓存不能在连接之间共用（`.cargo/config.toml` 的 `LIBSQLITE3_FLAGS`）。
+///
+/// 共用时一条连接扫完大段数据就占满整个池，其余连接的命中率归零，大范围读慢 10 倍左右；
+/// 绕开这份配置构建（例如别处另起一个 cargo 调用）时这里会挂。
+#[test]
+fn sqlite_page_caches_are_not_shared_between_connections() {
+    let db = Database::in_memory().unwrap();
+    let shared: i64 = db
+        .conn
+        .query_row(
+            "SELECT sqlite_compileoption_used('ENABLE_MEMORY_MANAGEMENT')",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(
+        shared, 0,
+        "SQLite 带着 SQLITE_ENABLE_MEMORY_MANAGEMENT 编译了"
+    );
+}
