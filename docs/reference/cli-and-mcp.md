@@ -87,10 +87,13 @@ zeppbridge-cli help
 With `--json`, stdout contains only the payload; human-readable notices go to
 stderr. So `zeppbridge-cli export > a.csv` gives you a clean file.
 
-The human-readable half is English. Errors raised by the shared core are still
-Chinese: those strings live in hundreds of places the desktop app never shows
-(it looks up localized text by error code instead), and translating half of them
-would put two languages inside one sentence. The `--json` field names and the
+The human-readable half is English, including errors raised by the shared core.
+The core's own wording is Chinese and lives in hundreds of places the desktop app
+never shows (it looks up localized text by error code instead), so the command
+line does not translate it sentence by sentence: it says in English what kind of
+problem it is, and where the original wording is Chinese it prints the error code
+(for example `err.core.config`) instead, so one sentence never mixes two
+languages. The `--json` field names and the
 exit codes are a contract and do not change with any of this.
 
 A misspelled flag is always an error rather than being ignored — silently

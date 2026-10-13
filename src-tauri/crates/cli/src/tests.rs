@@ -434,3 +434,75 @@ fn a_schema_upgrade_and_a_missing_token_do_not_share_an_exit_code() {
     assert_eq!(kind, "auth");
     assert_ne!(no_store, EXIT_FAILED);
 }
+
+/// 命令行印给人看的错误不能有中文：英文用户读不懂，而桌面端那套按码查文案的
+/// 本地化在命令行上不存在。带中文原话的变体要换成英文那句 + 错误码。
+#[test]
+fn cli_errors_never_print_chinese() {
+    let cases = vec![
+        ZeppBridgeError::ConfigError("请至少选择一种导出数据".into()),
+        ZeppBridgeError::AuthError("令牌读不出来".into()),
+        ZeppBridgeError::CredentialStore("凭据管理器拒绝写入".into()),
+        ZeppBridgeError::InvalidHost("不在白名单里".into()),
+        ZeppBridgeError::DataUnavailable("本地库里没有这条运动记录".into()),
+        ZeppBridgeError::Unavailable("这个区域没有该接口".into()),
+        ZeppBridgeError::Busy("桌面应用正在同步".into()),
+        ZeppBridgeError::TimedOut("本轮同步超时".into()),
+        ZeppBridgeError::NeedsReauth("令牌过期".into()),
+        ZeppBridgeError::ParseError("JSON 处理失败".into()),
+        ZeppBridgeError::Unknown("未知".into()),
+        ZeppBridgeError::Cancelled,
+        ZeppBridgeError::AccountMismatch,
+        ZeppBridgeError::TrainingPlan {
+            code: "err.training_plan.not_found",
+            message: "草稿不存在".into(),
+        },
+        ZeppBridgeError::CloudRejected {
+            code: 401,
+            message: "登录已过期".into(),
+        },
+        ZeppBridgeError::RetryExhausted {
+            status: 503,
+            message: "维护中".into(),
+        },
+    ];
+    for error in &cases {
+        let text = user_text(error);
+        assert!(!text.chars().any(is_cjk), "{error:?} -> {text}");
+    }
+    // 原话是中文时，错误码替它留在输出里，反馈里能搜到。
+    let text = user_text(&ZeppBridgeError::ConfigError(
+        "请至少选择一种导出数据".into(),
+    ));
+    assert!(text.contains("err.core.config"), "{text}");
+    // 原话是 ASCII 时照样带上，地址仍然隐藏、占位符也是英文。
+    let text = user_text(&ZeppBridgeError::ConfigError(
+        "unknown data type 'food' (https://api-mifit.huami.com/x)".into(),
+    ));
+    assert!(text.contains("unknown data type 'food'"), "{text}");
+    assert!(text.contains("[address hidden]"), "{text}");
+}
+
+/// 五种导出范围错误都由 core 的 `validated()` 真造出来：core 改了原文，这里就挂，
+/// 而不是让命令行悄悄退回去印中文。
+#[test]
+fn every_export_scope_error_is_translated() {
+    let date = |start: &str, end: &str| ExportScope::DateRange {
+        start: start.into(),
+        end: end.into(),
+    };
+    for scope in [
+        date("nope", "2026-01-01"),
+        date("2026-01-01", "nope"),
+        date("2026-02-01", "2026-01-01"),
+        date("2024-01-01", "2026-01-01"),
+        ExportScope::Workout {
+            workout_id: "  ".into(),
+        },
+    ] {
+        let message = scope.validated().unwrap_err();
+        let text = translate_export_scope_error(message.clone());
+        assert_ne!(text, message, "{message} 没有对应的英文");
+        assert!(!text.chars().any(is_cjk), "{text}");
+    }
+}

@@ -34,27 +34,104 @@ pub(super) fn exit_code_for(error: &ZeppBridgeError) -> (u8, &'static str) {
 
 /// 这条错误给命令行用户看的那句话。
 ///
-/// `user_text(&error)` 是中文——桌面端按错误码取本地化文案，所以那边一直
+/// `user_message()` 是中文——桌面端按错误码取本地化文案，所以那边一直
 /// 没问题；命令行没有 i18n 层，直接印它就是给英文用户一句中文。issue #40 那位
 /// Linux 用户正是这么收到「无法读取系统密钥环…」和「本机数据库还是 v19…」的。
 ///
-/// 所以在这里做一次语言边界：认得的错误出英文，认不得的仍然回落到原文——
-/// 看不懂的中文也好过一句空白，而回落的范围会随着核心那边逐条挪走而缩小。
+/// 所以在这里按变体逐一出英文。带自由文本的那几种（配置、认证、数据不可用……），
+/// 原话是 core 七百多处拼出来的中文，没法逐句翻：英文那句说清是哪一类问题，
+/// 原话是 ASCII 就接在后面，是中文就换成稳定的错误码——同一句里中英混排比
+/// 全中文更难读（见 main.rs 顶上的说明），而错误码在文档和反馈里搜得到。
 ///
-/// 回落调用 core 的脱敏方法，不能递归调用本函数，也不能把带请求地址的
+/// match 不留 `_`：core 加了新变体，这里编译不过，逼着补一句英文。
+/// 带原话的分支一律先过 core 的脱敏（去地址、限长），不能把带请求地址的
 /// Display 原样写到 stdout / stderr。
 pub(super) fn user_text(error: &ZeppBridgeError) -> String {
+    let code = error.code();
     match error {
         ZeppBridgeError::Headless(problem) => problem.english(),
-        ZeppBridgeError::AccountMismatch => "This database already holds another Zepp account's \
-            data, so nothing was written for this account. To switch accounts, move or rename \
-            the data folder, then connect again."
+        ZeppBridgeError::AccountMismatch => "This database already holds another Zepp account's             data, so nothing was written for this account. To switch accounts, move or rename             the data folder, then connect again."
             .to_string(),
         ZeppBridgeError::TimedOut(_) => {
             "This sync ran out of time; the remaining streams will continue next time.".to_string()
         }
-        other => other.user_message(),
+        ZeppBridgeError::NetworkError(_) => {
+            "Could not reach the Zepp region service. Check the network and try again.".to_string()
+        }
+        ZeppBridgeError::NeedsReauth(_) => "The saved Zepp sign-in is no longer valid. Reconnect             the account in the desktop app, or supply a fresh ZEPPBRIDGE_APP_TOKEN, then try again."
+            .to_string(),
+        ZeppBridgeError::RetryExhausted { status, .. } => {
+            format!("The Zepp service is temporarily unavailable (HTTP {status}). Try again later.")
+        }
+        ZeppBridgeError::HttpStatus { status, .. } => {
+            format!("The Zepp service returned HTTP {status}. Try again later.")
+        }
+        ZeppBridgeError::CloudRejected {
+            code: cloud_code,
+            message,
+        } => with_detail(
+            &format!(
+                "Zepp's cloud rejected the request (cloud code {cloud_code}); if this keeps                  happening, reconnect the Zepp account in the desktop app"
+            ),
+            message,
+            code,
+        ),
+        ZeppBridgeError::Cancelled => "The sync was cancelled.".to_string(),
+        ZeppBridgeError::ParseError(_) => "The data Zepp returned could not be parsed.".to_string(),
+        ZeppBridgeError::DatabaseError(_) => {
+            "The local database is temporarily unavailable.".to_string()
+        }
+        ZeppBridgeError::IoError(_) => "Reading or writing a local file failed.".to_string(),
+        ZeppBridgeError::Busy(_) => "Another ZeppBridge process is writing to this library.             Try again in a moment."
+            .to_string(),
+        ZeppBridgeError::AuthError(message) => with_detail("Authentication failed", message, code),
+        ZeppBridgeError::CredentialStore(message) => with_detail(
+            "The system credential store refused to read or write the token",
+            message,
+            code,
+        ),
+        ZeppBridgeError::InvalidHost(message) => {
+            with_detail("The Zepp region host is not allowed", message, code)
+        }
+        ZeppBridgeError::ConfigError(message) => {
+            with_detail("Configuration problem", message, code)
+        }
+        ZeppBridgeError::Unavailable(message) | ZeppBridgeError::DataUnavailable(message) => {
+            with_detail(
+                "Not available: this library or account does not provide the requested data",
+                message,
+                code,
+            )
+        }
+        ZeppBridgeError::TrainingPlan { message, .. } => {
+            with_detail("The training-plan action failed", message, code)
+        }
+        ZeppBridgeError::AiTask(inner) => with_detail(
+            "The AI task could not be completed",
+            &inner.user_message(),
+            code,
+        ),
+        ZeppBridgeError::Unknown(message) => with_detail("Unexpected error", message, code),
     }
+}
+
+/// 英文的那一句，加上脱敏后的原话（ASCII 时）或错误码（原话是中文时）。
+fn with_detail(lead: &str, detail: &str, code: &str) -> String {
+    // core 的脱敏把地址换成中文的「[已隐藏地址]」；命令行换成英文，免得一句
+    // 英文原话因为这个占位符被当成中文丢掉。
+    let detail = sanitize_user_text(detail).replace("[已隐藏地址]", "[address hidden]");
+    if detail.is_empty() {
+        format!("{lead}.")
+    } else if detail.chars().any(is_cjk) {
+        format!("{lead} ({code}).")
+    } else {
+        format!("{lead}: {detail}")
+    }
+}
+
+/// CJK 统一表意文字、标点和全角形式：出现任何一个就当这句是中文。
+pub(super) fn is_cjk(character: char) -> bool {
+    matches!(character, '　'..='〿' | '㐀'..='鿿' | '豈'..='﫿' | '＀'..='￯')
 }
 
 /// `ExportScope::validated()` 活在 core 里，给 GUI 用，按现有约定回中文——
@@ -63,7 +140,8 @@ pub(super) fn user_text(error: &ZeppBridgeError) -> String {
 /// 命令行输出里冒出中文，和 `user_text()` 顶上要解决的是同一个问题。
 ///
 /// 消息集合比 `ZeppBridgeError` 的变体小得多，这里直接按原文匹配；认不出
-/// 的（原文改了、或者以后新增了分支）照样原样透传，不瞎猜，不递归。
+/// 的（原文改了、或者以后新增了分支）是中文就换成一句笼统的英文，否则原样透传；
+/// 不瞎猜，不递归。测试直接拿 core 的 `validated()` 造这五种错误，原文一改就会挂。
 pub(super) fn translate_export_scope_error(message: String) -> String {
     match message.as_str() {
         "导出开始日期无效" => "Invalid export start date",
@@ -75,6 +153,8 @@ pub(super) fn translate_export_scope_error(message: String) -> String {
             "A single export cannot span more than 366 days"
         }
         "workout id 不能为空" => "Workout id cannot be empty",
+        // 原文改了或新增了分支：不瞎猜具体是哪条，但也不把中文印出去。
+        _ if message.chars().any(is_cjk) => "Invalid export range or workout id",
         _ => return message,
     }
     .to_string()

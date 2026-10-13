@@ -24,7 +24,7 @@ use zeppbridge_core::export_formats;
 
 use zeppbridge_core::fetcher::DataFetcher;
 
-use zeppbridge_core::models::error::HeadlessProblem;
+use zeppbridge_core::models::error::{sanitize_user_text, HeadlessProblem};
 
 use zeppbridge_core::models::{error::ZeppBridgeError, ExportDetail, ExportScope, ExportSelection};
 
@@ -98,10 +98,9 @@ const EXIT_FAILED: u8 = 1;
 /// 中文提示。`--json` 的字段名和退出码是契约，一个字都没动。
 ///
 /// **边界在哪：** 这个文件里的每一句人读文案都是英文了。从 `zeppbridge-core`
-/// 冒上来的错误（`user_text(&error)`）**还是中文**——那些字符串散在 core 的
-/// 七百多处，桌面端靠错误码查本地文案、根本不显示它们（`i18n/backendText.ts`
-/// 在英文界面下会把带中文的后端原文整句换掉）。把 core 翻过来是另一件事，
-/// 不能顺手做一半：翻一半的结果是中英文混在同一条错误里，比全中文更难读。
+/// 冒上来的错误由 `exit.rs` 的 `user_text()` 按变体出英文；带自由文本的变体，
+/// 原话是中文时换成错误码，不把中英文混在同一句里（core 那七百多处中文原话是
+/// 桌面端的兜底，桌面端按码查本地文案、根本不显示它们）。
 const HELP: &str = "\
 zeppbridge-cli — the non-interactive command line for ZeppBridge
 
