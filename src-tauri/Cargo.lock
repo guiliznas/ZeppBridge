@@ -6754,7 +6754,7 @@ dependencies = [
 
 [[package]]
 name = "zeppbridge"
-version = "3.0.0-beta.60"
+version = "3.0.0-beta.61"
 dependencies = [
  "anyhow",
  "arboard",
@@ -6773,6 +6773,7 @@ dependencies = [
  "tauri-plugin-single-instance",
  "tauri-plugin-updater",
  "tokio",
+ "windows 0.61.3",
  "windows-sys 0.61.2",
  "zeppbridge-core",
  "zip",
@@ -6780,7 +6781,7 @@ dependencies = [
 
 [[package]]
 name = "zeppbridge-cli"
-version = "3.0.0-beta.60"
+version = "3.0.0-beta.61"
 dependencies = [
  "chrono",
  "serde_json",
@@ -6790,7 +6791,7 @@ dependencies = [
 
 [[package]]
 name = "zeppbridge-core"
-version = "3.0.0-beta.60"
+version = "3.0.0-beta.61"
 dependencies = [
  "base64 0.22.1",
  "chrono",
@@ -6815,7 +6816,7 @@ dependencies = [
 
 [[package]]
 name = "zeppbridge-mcp"
-version = "3.0.0-beta.60"
+version = "3.0.0-beta.61"
 dependencies = [
  "chrono",
  "rusqlite",

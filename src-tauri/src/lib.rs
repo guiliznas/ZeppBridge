@@ -8,6 +8,8 @@ mod local_api;
 mod main_window;
 mod tray_i18n;
 mod updates;
+#[cfg(windows)]
+mod web_composer;
 
 // The desktop shell is an adapter over the shared core: models, storage,
 // migrations, normalization, queries, export and write coordination all live in

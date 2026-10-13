@@ -32,7 +32,7 @@ zeppbridge-core = { path = "crates/core" }
 
 [package]
 name = "zeppbridge"
-version = "3.0.0-beta.60"
+version = "3.0.0-beta.61"
 description = "本地优先的 Zepp 健康数据桥"
 authors = ["ZeppBridge"]
 edition = "2021"
@@ -77,6 +77,15 @@ zip = { version = "4.6", default-features = false }
 arboard = { version = "3.6", default-features = false, features = ["wayland-data-control"] }
 
 [target.'cfg(windows)'.dependencies]
+# 全自动交给 AI 的「眼睛」：读浏览器给读屏软件的界面树（UI Automation，src/web_composer.rs）。
+# windows 0.61 本来就在依赖树里（tauri 带进来的），这里只是变成直接依赖、打开这几个模块。
+windows = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_System_Com",
+    "Win32_System_Ole",
+    "Win32_System_Variant",
+    "Win32_UI_Accessibility",
+] }
 windows-sys = { version = "0.61", features = [
     "Win32_Foundation",
     "Win32_Globalization",

@@ -128,6 +128,12 @@ mod imp {
         put(&[(CF_UNICODETEXT, u16_bytes(&wide(text)))])
     }
 
+    pub fn foreground_window() -> Option<isize> {
+        // SAFETY: 只读前台窗口句柄。
+        let hwnd: HWND = unsafe { GetForegroundWindow() };
+        (!hwnd.is_null()).then_some(hwnd as isize)
+    }
+
     pub fn foreground_title() -> Option<String> {
         // SAFETY: 只读前台窗口的标题，缓冲区长度如实传入。
         unsafe {
@@ -211,38 +217,14 @@ mod imp {
     pub fn copy_file(path: &Path) -> Result<(), ClipboardError> {
         with(|clipboard| clipboard.set().file_list(&[path]))
     }
-    pub fn copy_text(text: &str) -> Result<(), ClipboardError> {
-        with(|clipboard| clipboard.set_text(text))
-    }
-    pub fn foreground_title() -> Option<String> {
-        None
-    }
-    pub fn escape_down() -> bool {
-        false
-    }
-    pub fn press_paste() -> bool {
-        false
-    }
-    pub fn press_enter() -> bool {
-        false
-    }
 }
 
 pub fn copy_file(path: &Path) -> Result<(), ClipboardError> {
     imp::copy_file(path)
 }
-pub fn copy_text(text: &str) -> Result<(), ClipboardError> {
-    imp::copy_text(text)
-}
-pub fn foreground_title() -> Option<String> {
-    imp::foreground_title()
-}
-pub fn escape_down() -> bool {
-    imp::escape_down()
-}
-pub fn press_paste() -> bool {
-    imp::press_paste()
-}
-pub fn press_enter() -> bool {
-    imp::press_enter()
-}
+
+// 下面这些只给全自动用，全自动只有 Windows（commands/ai_handoff.rs 的 `auto`）。
+#[cfg(windows)]
+pub use imp::{
+    copy_text, escape_down, foreground_title, foreground_window, press_enter, press_paste,
+};
