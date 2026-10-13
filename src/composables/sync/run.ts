@@ -21,6 +21,8 @@ import {
  */
 const DEFERRED_RETRY_MS = 60_000;
 let deferredRetryTimer = 0;
+/** 让路之后等着重跑的那一次。重放 / 压缩一结束就马上跑（retryDeferredNow），60 秒定时器只是兜底。 */
+let pendingRetry: (() => void) | null = null;
 let firstRunTimer = 0;
 let runningSync: Promise<SyncReport | null> | null = null;
 /** 上一次真正发出同步命令的时刻（毫秒）。自动同步据此避开「刚同步过 / 刚失败过」。 */
@@ -29,9 +31,22 @@ let lastAttemptAt = 0;
 /* `quick` 要原样带过去：定时的快速同步让路之后，重试不能变成一次 30 天整窗。 */
 const scheduleDeferredRetry = (mode: 'incremental' | 'initial' | 'history', days?: number, quick?: boolean) => {
   window.clearTimeout(deferredRetryTimer);
-  deferredRetryTimer = window.setTimeout(() => {
+  const retry = () => {
+    pendingRetry = null;
+    window.clearTimeout(deferredRetryTimer);
+    deferredRetryTimer = 0;
     void runSync(mode, days, { silent: true, quick });
-  }, DEFERRED_RETRY_MS);
+  };
+  pendingRetry = retry;
+  deferredRetryTimer = window.setTimeout(retry, DEFERRED_RETRY_MS);
+};
+
+/**
+ * 后台维护（重放、压缩）做完了：之前让路的同步现在就跑，不再等满一分钟（10-13）。
+ * 以前启动时撞上整库重放，同步要等一分多钟才重试；这期间窗口藏到托盘或者被关掉，这一天就一直没同步上。
+ */
+export const retryDeferredNow = () => {
+  pendingRetry?.();
 };
 
 /**
@@ -257,6 +272,7 @@ export const isRunningSync = () => runningSync !== null;
 export const clearRunTimers = () => {
   window.clearTimeout(deferredRetryTimer);
   deferredRetryTimer = 0;
+  pendingRetry = null;
   window.clearTimeout(firstRunTimer);
   firstRunTimer = 0;
 };

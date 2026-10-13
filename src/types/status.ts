@@ -63,6 +63,8 @@ export interface AppStatus {
   region_confidence?: 'identified' | 'hinted' | 'unconfirmed' | 'unknown' | string;
   /** 后台是否正在压缩历史报文。事件可能在前端监听之前就发出去了，所以状态里也要有。 */
   compacting?: boolean;
+  /** 后台是否正在用本地原始报文重放派生数据（期间同步让路）。 */
+  replaying?: boolean;
 }
 
 /**

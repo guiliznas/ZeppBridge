@@ -73,6 +73,9 @@ pub struct AppStatus {
     /// 于是界面上只剩一行「同步让路」的提示，却没有任何东西解释为什么。
     /// 状态可以随时被读到，事件不行。
     pub compacting: bool,
+    /// 后台是否正在用本地原始报文重放派生数据。和 `compacting` 一样：启动时的事件前端多半听不到，
+    /// 状态随时读得到。重放期间云端同步会让路（`deferred`）。
+    pub replaying: bool,
 }
 
 /// Web-login progress exposed to the frontend and the `login://status` event.

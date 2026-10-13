@@ -132,6 +132,7 @@ pub(crate) async fn build_app_status(state: &AppState) -> std::result::Result<Ap
         coverage,
         region_confidence,
         compacting: zeppbridge_core::storage::compaction_in_progress(),
+        replaying: zeppbridge_core::storage::replay_in_progress(),
     })
 }
 

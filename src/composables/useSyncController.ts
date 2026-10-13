@@ -9,7 +9,7 @@ import type { LoginStatus, OfficialStatus, SyncProgress } from '../types';
 import { readyOnPickUp } from '../lib/dataReady';
 import { formatClock, formatTime, lastOutcomeLabel, statusErrorText, syncMessage } from './sync/notice';
 import {
-  applyOfficialStatus, cancelSync, clearRunTimers, isRunningSync, lastSyncAttemptAt, runSync,
+  applyOfficialStatus, cancelSync, clearRunTimers, isRunningSync, lastSyncAttemptAt, retryDeferredNow, runSync,
 } from './sync/run';
 import {
   appStatus, applyLoginStatus, autoSyncEnabled, cloudStaleTip, autoSyncInterval, compacting, compactingEvent, compactionPending,
@@ -147,6 +147,11 @@ const initialize = async () => {
         void runSync('incremental');
       }),
       safeListen<LoginStatus>('login://status', applyLoginStatus),
+      // 启动时的重放做完了：让路的同步马上跑（compaction://finished 那边也一样）。
+      safeListen('replay://finished', () => {
+        void refreshStatus({ preserveError: true });
+        retryDeferredNow();
+      }),
       safeListen<OfficialStatus>('official://status', applyOfficialStatus),
       safeListen<number>('compaction://started', (pending) => {
         compactionPending.value = typeof pending === 'number' ? pending : 0;
@@ -159,6 +164,7 @@ const initialize = async () => {
           compactingEvent.value = false;
           // appStatus.compacting 是开始前读的快照，不刷新的话横幅会一直转到下次读状态。
           void refreshStatus({ preserveError: true });
+          retryDeferredNow();
           const saved = (report?.bytesBefore ?? 0) - (report?.bytesAfter ?? 0);
           compactionSaved.value = saved > 0 ? saved : null;
           window.clearTimeout(compactionSavedTimer);
@@ -244,6 +250,8 @@ export const useSyncController = () => ({
   autoSyncEnabled: readonly(autoSyncEnabled),
   autoSyncInterval: readonly(autoSyncInterval),
   isSyncing: computed(() => syncState.value === 'syncing'),
+  /** 这一轮同步让路了（重放 / 压缩 / 写锁忙），等它们做完会自己重跑。界面要说出来，不然像「点了没反应」。 */
+  syncDeferred: computed(() => syncState.value === 'deferred'),
   canIncrementalSync: computed(() => appStatus.value?.connection_state === 'connected'),
   lastCloudSyncLabel: computed(() => {
     const clock = formatClock(appStatus.value?.last_cloud_sync_at);

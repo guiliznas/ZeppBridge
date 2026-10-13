@@ -59,19 +59,8 @@ impl Database {
     /// 本该秒回的命令里默默跑上几分钟。
     pub fn pending_replay_plan(&self) -> Result<Option<ReplayPlan>> {
         let stored = self.stored_normalizer_revision()?;
-        if stored.as_deref() == Some(NORMALIZER_REVISION) {
-            let pending: i64 = self.conn.query_row(
-                "SELECT COUNT(*) FROM raw_records r
-                 WHERE NOT EXISTS (SELECT 1 FROM raw_normalization n
-                                   WHERE n.raw_record_id = r.id AND n.revision = ?1)
-                   AND NOT EXISTS (SELECT 1 FROM raw_quarantine q
-                                   WHERE q.raw_record_id = r.id AND q.revision = ?1)",
-                [NORMALIZER_REVISION],
-                |row| row.get(0),
-            )?;
-            if pending == 0 {
-                return Ok(None);
-            }
+        if stored.as_deref() == Some(NORMALIZER_REVISION) && self.unstamped_raw_count()? == 0 {
+            return Ok(None);
         }
         // Revisit all streams: date parsing is shared, and older upgrades
         // still need readiness repair and per-raw attempt history.
@@ -83,6 +72,21 @@ impl Database {
             streams,
             raw_records,
         }))
+    }
+
+    /// 还没按当前解析器盖过章、也没按它隔离过的原始报文条数。修订号没变时，重放只补这些。
+    pub fn unstamped_raw_count(&self) -> Result<i64> {
+        self.conn
+            .query_row(
+                "SELECT COUNT(*) FROM raw_records r
+                 WHERE NOT EXISTS (SELECT 1 FROM raw_normalization n
+                                   WHERE n.raw_record_id = r.id AND n.revision = ?1)
+                   AND NOT EXISTS (SELECT 1 FROM raw_quarantine q
+                                   WHERE q.raw_record_id = r.id AND q.revision = ?1)",
+                [NORMALIZER_REVISION],
+                |row| row.get(0),
+            )
+            .map_err(Into::into)
     }
 
     /// 库里一共存着多少条原始报文。整库重放前用它把「要过多少条」说清楚。

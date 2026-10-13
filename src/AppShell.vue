@@ -54,7 +54,7 @@ const router = useRouter();
 const trayHint = ref(false);
 const {
   statusError,
-  compacting, compactionPending, compactionSaved,
+  compacting, compactionPending, compactionSaved, syncDeferred, syncMessage,
   dataReady, pickUpReady,
   initialize, dispose: disposeSyncController, refreshStatus, markDataChanged,
 } = useSyncController();
@@ -273,6 +273,14 @@ onUnmounted(() => {
           <div v-else-if="compactionSaved" key="compacted" class="sync-feedback tone-updated" role="status">
             <Icon name="circle-check" :size="14" />
             <span>{{ t.compacted(formatBytes(compactionSaved)) }}</span>
+          </div>
+        </Transition>
+        <!-- 同步让路了（启动时撞上整库重放 / 压缩，或者别的进程在写）：说一声，做完自己重跑（10-13）。
+             以前这句话只在同步胶囊的悬停提示里，用户看到的是「点同步没反应」。压缩那条已经在上面说了。 -->
+        <Transition name="notice">
+          <div v-if="syncDeferred && !compacting" class="sync-feedback" role="status" aria-live="polite">
+            <Icon name="database" :size="14" class="spinning" />
+            <span>{{ syncMessage }}</span>
           </div>
         </Transition>
         <Transition name="notice">

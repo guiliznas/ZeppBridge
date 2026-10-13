@@ -424,10 +424,23 @@ pub fn run() {
                             init_data_dir.join("zepp.db"),
                         )
                         .ok();
-                        let replay_flag = replay_db
+                        let replay_plan = replay_db
                             .as_ref()
-                            .filter(|db| matches!(db.pending_replay_plan(), Ok(Some(_))))
-                            .map(|_| storage::ReplayGuard::enter());
+                            .and_then(|db| db.pending_replay_plan().ok().flatten());
+                        // 为什么要重放记一笔：整库重放要一分多钟、期间同步让路，用户只会觉得「点同步没反应」。
+                        // 修订号没变还要重放，就是有报文没盖章——记下条数，下次能查到是谁漏了（10-13）。
+                        if let (Some(db), Some(plan)) = (replay_db.as_ref(), replay_plan.as_ref()) {
+                            diagnostics::log(&format!(
+                                "Startup: replay planned (stored={}, target={}, raw_records={}, unstamped={})",
+                                plan.stored_revision.as_deref().unwrap_or("none"),
+                                plan.target_revision,
+                                plan.raw_records,
+                                db.unstamped_raw_count()
+                                    .map(|count| count.to_string())
+                                    .unwrap_or_else(|_| "?".into()),
+                            ));
+                        }
+                        let replay_flag = replay_plan.map(|_| storage::ReplayGuard::enter());
                         // 先立旗再广播：前端先注册监听、再问一次 `app_is_ready`，
                         // 顺序不能反——反过来就有一个「事件已发、旗还没立」
                         // 的窗口期，那一页会等到 60 秒超时。
@@ -464,6 +477,8 @@ pub fn run() {
                                     }
                                 }
                                 drop(replay_flag);
+                                // 重放期间让路的同步在等它：前端收到就马上重试，不再干等一分钟。
+                                let _ = compaction_handle.emit("replay://finished", ());
                             }
 
                             // 存量报文压缩：默认开着，装完新版本第一次启动时自己做完。

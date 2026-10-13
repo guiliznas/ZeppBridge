@@ -291,7 +291,44 @@ async fn require_manager(state: &AppState) -> std::result::Result<Arc<SyncManage
         .ok_or_else(|| AppError::new("err.sync.not_connected", "尚未连接 Zepp，请先完成连接"))
 }
 
+/// 每一轮同步在诊断日志里留两行：开始（哪种窗口、探不探云端）和结论（让路 / 云端不新 / 写了几条 / 错误码）。
+/// 以前一行都没有：用户说「点同步没反应」时，日志里看不出同步到底开没开始、为什么停下（10-13）。
+/// 只记结论和条数，不记任何健康数据、令牌或请求内容。
 async fn run_sync(
+    app: &AppHandle,
+    state: &AppState,
+    window: SyncWindow,
+    probe: bool,
+) -> std::result::Result<UiSyncReport, AppError> {
+    let label = match &window {
+        SyncWindow::Incremental => "incremental".to_string(),
+        SyncWindow::Quick => "quick".to_string(),
+        SyncWindow::History(days) => format!("history {days}d"),
+    };
+    crate::diagnostics::log(&format!("Sync started: {label}, probe={probe}"));
+    let started = std::time::Instant::now();
+    let result = run_sync_locked(app, state, window, probe).await;
+    let took = started.elapsed().as_secs_f64();
+    match &result {
+        Ok(report) => crate::diagnostics::log(&format!(
+            "Sync finished: {label}, outcome={}{}, records={}, in {took:.1}s",
+            report.outcome,
+            report
+                .message_code
+                .as_deref()
+                .map(|code| format!(" ({code})"))
+                .unwrap_or_default(),
+            report.total_records,
+        )),
+        Err(error) => crate::diagnostics::log(&format!(
+            "Sync failed: {label}, code={}, in {took:.1}s",
+            error.code
+        )),
+    }
+    result
+}
+
+async fn run_sync_locked(
     app: &AppHandle,
     state: &AppState,
     window: SyncWindow,
