@@ -104,10 +104,15 @@ const paste = async (reply: string): Promise<boolean> => {
     notice.value = { kind: 'paste_failed', failure: found.failure };
     return false;
   }
+  return startDraft(found.document);
+};
+
+/** 用一份写好的计划起一份新草稿（粘贴的 AI 回复；没有计划时用模板或文件起头）。 */
+const startDraft = async (next: PlanDocument): Promise<boolean> => {
   busy.value = true;
   try {
-    const id = await backend.trainingPlanSaveDraft(found.document, true);
-    document.value = found.document;
+    const id = await backend.trainingPlanSaveDraft(next, true);
+    document.value = next;
     accepted.value = true;
     await loadPreview(id);
     await load();
@@ -281,5 +286,5 @@ export const useTrainingPlan = () => ({
   state, draftId, preview, busy, notice, clearPending, blocking, unverified,
   document, accepted, revision, editingSent, readClipboardPlan, receiveFromClipboard, reshape, editActive,
   accept: () => { accepted.value = true; },
-  load, resume, paste, discard, publish, undo, clear, dismissNotice, cancelClear, confirmClear,
+  load, resume, paste, startDraft, discard, publish, undo, clear, dismissNotice, cancelClear, confirmClear,
 });

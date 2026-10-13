@@ -3,7 +3,8 @@
  * 单天页（/ai/plan/:date）：这一天的每一条训练都能就地改（PlanWorkoutEditor：名字、目的、要点、运动与子类型、
  * 总览条 + 步骤卡、每一步滚轮精调、加删步骤、重复组轮数），缺目的 / 缺要点、步骤写错的训练也照样画出来、红框标出要补的地方；
  * 走路这类发不到手表的在下面给「删掉 / 换成能发的大类」。页头：前一天 / 后一天直接换（替换当前历史，返回仍回到周视图、
- * 缩回当初那一格），「⋯」里是删掉这一天。已经发出去的计划也能改：第一下改动时把它拿回来变成草稿。
+ * 缩回当初那一格），「⋯」里是把这一天的训练存成模板、从模板或 .zwo / .fit 文件加一条、删掉这一天。
+ * 已经发出去的计划也能改：第一下改动时把它拿回来变成草稿。
  */
 import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
@@ -12,6 +13,12 @@ import Icon from '../../components/Icon.vue';
 import GlassPopover from '../../components/GlassPopover.vue';
 import PlanDetail from '../../components/plan/PlanDetail.vue';
 import PlanWorkoutEditor from '../../components/plan/PlanWorkoutEditor.vue';
+import PlanLibraryItems from '../../components/plan/PlanLibraryItems.vue';
+import PlanAddNotice from '../../components/plan/PlanAddNotice.vue';
+import { usePlanAdd } from '../../composables/usePlanAdd';
+import { useLibraryText } from '../../components/plan/library.i18n';
+import { addWorkout } from '../../lib/trainingPlan/reshape';
+import type { PlanTemplate } from '../../lib/trainingPlan/templates';
 import { useAiHub } from '../../composables/ai/useAiHub';
 import { useTrainingPlan } from '../../composables/useTrainingPlan';
 import { useBridgeText } from '../../components/ai/bridge/bridge.i18n';
@@ -19,7 +26,7 @@ import { useHubText } from '../../components/ai/hub/hub.i18n';
 import { usePlanText } from '../../components/plan/usePlanText';
 import { useEditorText } from '../../components/plan/editor.i18n';
 import { issueDate } from '../../lib/trainingPlan/week';
-import { documentIndexOf } from '../../lib/trainingPlan/edit';
+import { documentIndexOf, workoutToInput } from '../../lib/trainingPlan/edit';
 import { displayDateTimeFormatter, parseDisplayDate } from '../../lib/dateTime';
 import type { PlanDocument, PlanSport, PlanWorkout } from '../../types/trainingPlan';
 import '../../styles/ai-task.css';
@@ -32,6 +39,7 @@ const t = useBridgeText();
 const h = useHubText();
 const e = useEditorText();
 const { t: pt } = usePlanText();
+const l = useLibraryText();
 const SPORTS: PlanSport[] = ['running', 'cycling', 'pool_swim', 'open_water_swim'];
 const date = computed(() => String(route.params.date ?? ''));
 const index = computed(() => hub.rows.value.findIndex((row) => row.date === date.value));
@@ -69,14 +77,30 @@ const issuesOf = (entry: Entry) => {
 };
 /** 下面那块（走路这类、休息建议、问题清单）有东西才画，不留一块空板。 */
 const detailNeeded = computed(() => !!row.value && (!entries.value.length || issues.value.length > 0 || row.value.held.some((item) => item.activity) || !!row.value.rest));
-/** 页头「⋯」：删掉这一天（以前是面板底下一枚按钮）。 */
+/** 页头「⋯」：存成模板、加一条训练（模板 / 文件）、删掉这一天。能改的日子才有，休息日也有（可以加）。 */
 const canDelete = computed(() => hub.editable.value && !!row.value && (row.value.after.length > 0 || row.value.held.length > 0));
+const canEdit = computed(() => hub.editable.value && !!row.value);
+/** 能存成模板的：校验通过的训练（缺东西的先补齐再存）。 */
+const savable = computed(() => entries.value.filter((entry) => !entry.held));
+const library = usePlanAdd((workout) => hub.queueEdit((doc) => addWorkout(doc, workout, date.value)));
 const menu = ref(false);
 const moreButton = ref<HTMLElement | null>(null);
 const menuPop = ref<InstanceType<typeof GlassPopover> | null>(null);
 const deleteDay = async () => {
   await menuPop.value?.close();
   void hub.removeDay(date.value);
+};
+const saveTemplate = async (entry: Entry) => {
+  await menuPop.value?.close();
+  library.save(workoutToInput(entry.workout));
+};
+const placeTemplate = async (template: PlanTemplate) => {
+  await menuPop.value?.close();
+  await library.place(template.workout);
+};
+const importFile = async () => {
+  await menuPop.value?.close();
+  library.openFile();
 };
 const title = computed(() => (/^\d{4}-\d{2}-\d{2}$/.test(date.value)
   ? displayDateTimeFormatter({ month: 'long', day: 'numeric', weekday: 'long' }).format(parseDisplayDate(date.value))
@@ -89,12 +113,21 @@ const title = computed(() => (/^\d{4}-\d{2}-\d{2}$/.test(date.value)
       <nav class="day-nav" :aria-label="title" data-no-morph>
         <RouterLink v-if="prev" :to="`/ai/plan/${prev}`" replace class="nav-button" :aria-label="h.prevDay" :title="h.prevDay"><Icon name="arrow-left" :size="16" /></RouterLink>
         <RouterLink v-if="next" :to="`/ai/plan/${next}`" replace class="nav-button" :aria-label="h.nextDay" :title="h.nextDay"><Icon name="arrow-right" :size="16" /></RouterLink>
-        <button v-if="canDelete" ref="moreButton" type="button" class="nav-button" :aria-label="e.more" :title="e.more" :aria-expanded="menu" @click="menu = true"><Icon name="dots" :size="16" /></button>
+        <button v-if="canEdit" ref="moreButton" type="button" class="nav-button" :aria-label="e.more" :title="e.more" :aria-expanded="menu" @click="menu = true"><Icon name="dots" :size="16" /></button>
       </nav>
     </PageHeader>
-    <GlassPopover v-if="menu" ref="menuPop" :anchor="moreButton" :width="220" @close="menu = false">
-      <button type="button" class="menu-item danger" data-pop-item :disabled="plan.busy.value" @click="deleteDay"><Icon name="trash" :size="14" />{{ t.deleteDay }}</button>
+    <GlassPopover v-if="menu" ref="menuPop" :anchor="moreButton" :width="260" @close="menu = false">
+      <button v-for="entry in savable" :key="entry.key" type="button" class="menu-item" data-pop-item @click="saveTemplate(entry)">
+        <Icon name="star" :size="14" /><span class="menu-text">{{ savable.length > 1 ? l.saveTemplateNamed(entry.workout.name) : l.saveTemplate }}</span>
+      </button>
+      <hr v-if="savable.length" class="menu-rule" />
+      <PlanLibraryItems :templates="library.templates.value" @place="placeTemplate" @remove="library.remove" @import="importFile" />
+      <template v-if="canDelete">
+        <hr class="menu-rule" />
+        <button type="button" class="menu-item danger" data-pop-item :disabled="plan.busy.value" @click="deleteDay"><Icon name="trash" :size="14" />{{ t.deleteDay }}</button>
+      </template>
     </GlassPopover>
+    <PlanAddNotice :outcome="library.outcome.value" :need="library.need.value" @supply="library.supply" @cancel="library.cancelNeed" @dismiss="library.dismiss" />
     <div v-if="hub.notice.value" class="ai-message" role="status"><Icon name="info" :size="14" /><span>{{ hub.notice.value }}</span><button class="pill-button quiet" @click="plan.dismissNotice()">{{ pt.dismiss }}</button></div>
     <template v-if="row">
       <div v-for="entry in entries" :key="entry.key" class="ai-panel">
@@ -120,5 +153,7 @@ const title = computed(() => (/^\d{4}-\d{2}-\d{2}$/.test(date.value)
   font: inherit; font-size: var(--fs-sm); text-align: left; cursor: pointer; }
 .menu-item:hover:not(:disabled) { background: var(--glass-press); }
 .menu-item.danger { color: var(--danger); }
+.menu-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.menu-rule { height: 1px; margin: 4px 8px; border: 0; background: var(--mat-line); }
 .held-note { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--danger); font-size: var(--fs-xs); }
 </style>

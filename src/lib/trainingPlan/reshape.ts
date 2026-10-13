@@ -1,4 +1,4 @@
-import type { PlanDocument, PlanSport, PlanVariant } from '../../types/trainingPlan';
+import type { PlanDocument, PlanSport, PlanVariant, PlanWorkoutInput } from '../../types/trainingPlan';
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 /** Swap whole days, including local rest notes. Never overwrite a destination. */
@@ -65,3 +65,12 @@ export const deleteWorkout = (document: PlanDocument, index: number): PlanDocume
 
 export const deleteDay = (document: PlanDocument, date: string): PlanDocument => ({ ...clone(document),
   workouts: document.workouts.filter(w => w.date !== date).map(w => clone(w)), rest: document.rest?.filter(r => r.date !== date).map(r => ({ ...r })) });
+
+/** 把一条训练放到某一天（模板、导入的文件）。那一天在计划写明的范围外就把范围撑开，那一天原有的训练不动。 */
+export const addWorkout = (document: PlanDocument, workout: Omit<PlanWorkoutInput, 'date'>, date: string): PlanDocument => {
+  const next = clone(document);
+  next.workouts.push({ ...clone(workout), date });
+  if (next.from && date < next.from) next.from = date;
+  if (next.to && date > next.to) next.to = date;
+  return next;
+};

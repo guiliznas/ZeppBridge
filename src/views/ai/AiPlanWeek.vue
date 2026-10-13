@@ -4,6 +4,7 @@
  * 长按发到手表。标题行是状态胶囊（点开看每一周送没送到、撤销、清空）和「接回定稿」。
  * 已经发出去的计划也能直接拖、直接改：第一下改动时把它拿回来变成草稿，按钮变成「有 N 处改动 · 重新同步到手表」。
  * 已经过去的日子不在这里，改不到。
+ * 还没有计划时，除了接回 AI 的定稿，也可以用存过的模板或一个 .zwo / .fit 文件起一份（放在今天，拖到别的日子）。
  */
 import { computed, ref, watch } from 'vue';
 import { offerInlineSoon } from '../../composables/useTour';
@@ -14,6 +15,13 @@ import BridgeFuture from '../../components/ai/bridge/BridgeFuture.vue';
 import ReceiveCapsule from '../../components/ai/bridge/ReceiveCapsule.vue';
 import PlanStatusChip from '../../components/plan/PlanStatusChip.vue';
 import PlanClearDialog from '../../components/plan/PlanClearDialog.vue';
+import GlassPopover from '../../components/GlassPopover.vue';
+import PlanLibraryItems from '../../components/plan/PlanLibraryItems.vue';
+import PlanAddNotice from '../../components/plan/PlanAddNotice.vue';
+import { usePlanAdd } from '../../composables/usePlanAdd';
+import { useLibraryText } from '../../components/plan/library.i18n';
+import { addDays } from '../../lib/aiTask/bridgeScale';
+import type { PlanTemplate } from '../../lib/trainingPlan/templates';
 import { useAiHub } from '../../composables/ai/useAiHub';
 import { useExchanges } from '../../composables/useExchanges';
 import { useTrainingPlan } from '../../composables/useTrainingPlan';
@@ -33,6 +41,17 @@ const history = useExchanges();
 const t = useBridgeText();
 const h = useHubText();
 const { t: pt } = usePlanText();
+const l = useLibraryText();
+/** 没有计划时用一条训练起一份新草稿：管今天起的 7 天，训练放在今天。 */
+const library = usePlanAdd((workout) => plan.startDraft({
+  format: 'zeppbridge-plan/3', from: hub.today.value, to: addDays(hub.today.value, 6),
+  workouts: [{ ...workout, date: hub.today.value }],
+}));
+const startMenu = ref(false);
+const startButton = ref<HTMLElement | null>(null);
+const startPop = ref<InstanceType<typeof GlassPopover> | null>(null);
+const startWith = async (template: PlanTemplate) => { await startPop.value?.close(); await library.place(template.workout); };
+const startFromFile = async () => { await startPop.value?.close(); library.openFile(); };
 const root = ref<HTMLElement | null>(null);
 const chip = ref<InstanceType<typeof PlanStatusChip> | null>(null);
 /** 挂不到某一天的问题（整份计划的、日期写坏的）列在这里；挂得到的在那一天的单天页里。 */
@@ -83,6 +102,7 @@ const changes = computed(() => (plan.editingSent.value
       </div>
     </PageHeader>
     <div v-if="plan.preview.value && !plan.accepted.value" class="ai-message"><Icon name="spark" :size="16" /><span>{{ t.mcp }}</span><button class="pill-button" @click="plan.accept()">{{ t.accept }}</button><button class="pill-button quiet" @click="plan.discard()">{{ t.discard }}</button></div>
+    <PlanAddNotice :outcome="library.outcome.value" :need="library.need.value" @supply="library.supply" @cancel="library.cancelNeed" @dismiss="library.dismiss" />
     <div v-if="hub.notice.value" class="ai-message" role="status"><Icon name="info" :size="14" /><span>{{ hub.notice.value }}</span><button class="pill-button quiet" @click="plan.dismissNotice()">{{ pt.dismiss }}</button></div>
 
     <div v-if="hub.future.value" class="ai-panel week-panel">
@@ -95,7 +115,11 @@ const changes = computed(() => (plan.editingSent.value
     <div v-else class="ai-panel ai-empty">
       <p>{{ h.planEmpty }}</p>
       <ReceiveCapsule variant="primary" :target="landing" @received="received" />
+      <button ref="startButton" type="button" class="pill-button quiet start-from" :aria-expanded="startMenu" @click="startMenu = true"><Icon name="file" :size="14" />{{ l.startFrom }}</button>
     </div>
+    <GlassPopover v-if="startMenu" ref="startPop" :anchor="startButton" :width="260" @close="startMenu = false">
+      <PlanLibraryItems :templates="library.templates.value" @place="startWith" @remove="library.remove" @import="startFromFile" />
+    </GlassPopover>
     <PlanClearDialog />
   </section>
 </template>
@@ -104,6 +128,7 @@ const changes = computed(() => (plan.editingSent.value
 <style scoped>
 .head-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .week-panel { gap: 14px; }
+.start-from { display: inline-flex; align-items: center; gap: 6px; }
 .plan-summary { margin: 0; color: var(--muted); font-size: var(--fs-sm); line-height: 1.6; }
 .whole-issues { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; color: var(--warning); font-size: var(--fs-xs); }
 .whole-issues li { display: flex; align-items: center; gap: 8px; }
