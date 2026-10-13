@@ -294,14 +294,32 @@ pub(super) fn spo2_apnea_sample(object: &Map<String, Value>, out: &mut WellnessN
 /// PAI items are flat — no `value` envelope. Alongside the score they carry the
 /// watch's own `maxHr` and `restHr`, which are the only device-sourced heart
 /// rate bounds available anywhere in this API.
+///
+/// 一天只写一行，`device_id` 一律留空。同一天云端会给好几条：手表自己的
+/// （真实设备号）、手机合并的（`"fused"`）、兜底的（`"max-device-fallback"`），
+/// 后两种不像设备号，清洗后是空；以前按设备号分行，于是一天出两条
+/// `pai_daily`，而且白天中途上传的那条是半天的旧值（本机 9 月 20 日：
+/// 兜底条 0.0，合并条 31.85）。PAI 是手机按账号算的一个分数，取上传最晚的
+/// 那条才是 Zepp 界面上的数。
 pub(super) fn pai_metrics(items: &[Value], out: &mut WellnessNormalizedData) {
+    let mut latest: BTreeMap<String, (f64, &Map<String, Value>)> = BTreeMap::new();
     for item in items {
         let Some(object) = item.as_object() else {
             continue;
         };
-        let Some(date) = summary_date(object, None) else {
+        let Some(date) = pai_local_date(object) else {
             continue;
         };
+        let uploaded = first_number(object, &["uploadTimestamp"]).unwrap_or(0.0);
+        // 上传时间相同时后来的覆盖前面的，和逐条写库的结果一致。
+        match latest.get(&date) {
+            Some((kept, _)) if *kept > uploaded => {}
+            _ => {
+                latest.insert(date, (uploaded, object));
+            }
+        }
+    }
+    for (date, (_, object)) in latest {
         for (metric, keys, unit, range) in [
             ("pai_daily", &["dailyPai"][..], "pai", (0.0, 500.0)),
             ("pai_low_zone", &["lowZonePai"][..], "pai", (0.0, 500.0)),
@@ -368,11 +386,37 @@ pub(super) fn pai_metrics(items: &[Value], out: &mut WellnessNormalizedData) {
                     value,
                     unit: unit.into(),
                     source_scope: SourceScope::Device,
-                    device_id: device_id(object),
+                    device_id: None,
                 });
             }
         }
     }
+}
+
+/// PAI 条目是哪一天。
+///
+/// `timestamp` 是那一天的**本地零点**，`timeZone` 是以 15 分钟为单位的
+/// 偏移：上海是 `"32"`（32 × 15 分钟 = 8 小时），所以 9 月 2 日那条的
+/// `timestamp` 是 9 月 1 日 16:00 UTC。以前把 `"32"` 当成认不出的时区、按
+/// UTC 切日，东半球用户的 PAI 整体早一天——本机 9 月 2 日跑了 99 分钟
+/// （训练负荷 336），满分 75 却记在 9 月 1 日；用户 9 月 19 日骑了 4 小时，
+/// 75 记在 9 月 18 日。
+///
+/// 只有换算后正好落在零点才采用这个解释，否则退回通用的切日规则：
+/// 15 分钟单位只在 PAI 报文里见过，别处的数字时区是秒或毫秒。
+pub(super) fn pai_local_date(object: &Map<String, Value>) -> Option<String> {
+    let instant = first_number(object, &["timestamp", "time"]).map(|value| value.round() as i64);
+    let quarters = first_number(object, &["timeZone"])
+        .filter(|value| value.fract() == 0.0 && (-48.0..=56.0).contains(value));
+    if let (Some(instant), Some(quarters)) = (instant, quarters) {
+        let local = instant + quarters as i64 * 15 * 60 * 1000;
+        if local.rem_euclid(86_400_000) == 0 {
+            if let Some(at) = DateTime::from_timestamp_millis(local) {
+                return Some(at.format("%Y-%m-%d").to_string());
+            }
+        }
+    }
+    summary_date(object, None)
 }
 
 /// The all-day stress roll-up. One item is one day, and it carries two

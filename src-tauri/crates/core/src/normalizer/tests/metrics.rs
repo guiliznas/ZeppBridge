@@ -174,7 +174,7 @@ fn a_goal_of_zero_means_no_goal_was_set_and_is_not_stored() {
     assert!(rows.iter().any(|row| row.metric == "steps"));
 }
 
-/// 一条真实的 PAI 报文，照抄本机库里 2026-05-18 那条（去掉两个数组字段）。
+/// 一条真实的 PAI 报文，照抄本机库里上海 2026-08-20 那条（去掉两个数组字段）。
 fn pai_item() -> Value {
     json!({
         "age": "20", "dailyPai": "11.707199",
@@ -244,6 +244,66 @@ fn zero_minutes_in_a_pai_zone_is_a_real_reading() {
             .map(|row| row.value),
         Some(0.0)
     );
+}
+
+/// PAI 的 `timestamp` 是本地零点、`timeZone` 以 15 分钟计。以前按 UTC 切日，
+/// 东半球整体早一天：用户 9 月 19 日骑了 4 小时，满分 75 记在 9 月 18 日。
+#[test]
+fn pai_lands_on_the_local_day_it_scores() {
+    let daily_dates = |item: Value| {
+        Normalizer::normalize_wellness(
+            "wellness:pai:user_events:2026-08-19:2026-08-21",
+            &json!({ "items": [item] }),
+        )
+        .daily_metrics
+        .iter()
+        .filter(|row| row.metric == "pai_daily")
+        .map(|row| row.date.clone())
+        .collect::<Vec<_>>()
+    };
+    // 2026-08-19 16:00 UTC，上海 "32" = UTC+8 → 8 月 20 日零点。
+    assert_eq!(daily_dates(pai_item()), vec!["2026-08-20"]);
+
+    // 莫斯科 UTC+3 是 "12"：9 月 19 日零点 = 9 月 18 日 21:00 UTC。
+    let mut moscow = pai_item();
+    moscow["timestamp"] = json!(1_789_765_200_000i64);
+    moscow["time"] = json!("1789765200000");
+    moscow["timeZone"] = json!("12");
+    assert_eq!(daily_dates(moscow), vec!["2026-09-19"]);
+
+    // 换算后不在零点，说明不是这个编码：退回原来的切日，不硬套。
+    let mut odd = pai_item();
+    odd["timeZone"] = json!("31");
+    assert_eq!(daily_dates(odd), vec!["2026-08-19"]);
+}
+
+/// 同一天手表、手机合并、兜底各给一条时只写一行，取上传最晚的那条。
+/// 以前按设备号分行，一天两条 `pai_daily`，其中一条是白天中途的半天值。
+#[test]
+fn pai_keeps_one_row_per_day_from_the_latest_upload() {
+    let mut watch = pai_item();
+    watch["dailyPai"] = json!("29.269928");
+    watch["uploadTimestamp"] = json!("1787200000000");
+    let mut fused = pai_item();
+    fused["deviceId"] = json!("fused");
+    fused["dailyPai"] = json!("75");
+    fused["uploadTimestamp"] = json!("1787300000000");
+    let mut fallback = pai_item();
+    fallback["deviceId"] = json!("max-device-fallback");
+    fallback["dailyPai"] = json!("0");
+    fallback["uploadTimestamp"] = json!("1787190000000");
+
+    let batch = Normalizer::normalize_wellness(
+        "wellness:pai:user_events:2026-08-19:2026-08-21",
+        &json!({ "items": [fused, watch, fallback] }),
+    );
+    let rows: Vec<_> = batch
+        .daily_metrics
+        .iter()
+        .filter(|row| row.metric == "pai_daily")
+        .map(|row| (row.date.as_str(), row.value, row.device_id.clone()))
+        .collect();
+    assert_eq!(rows, vec![("2026-08-20", 75.0, None)]);
 }
 
 fn all_day_stress_item() -> Value {
