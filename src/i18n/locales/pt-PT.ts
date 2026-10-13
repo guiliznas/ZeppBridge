@@ -2503,7 +2503,7 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
       pickWorkouts: 'Escolher treinos concretos',
       drop: 'Não incluir',
       flickHint: 'Deslize para cima para excluir este tipo',
-      nothing: 'Ainda sem dados para enviar. Toque em „Adicionar tipo”.',
+      nothing: 'Ainda sem dados para enviar. Toque em «Adicionar tipo».',
       lock: (provider: string) => `Enviar para ${provider}`,
       lockBusy: 'A preparar ficheiro…',
       freeIntent: 'Pergunta livre',

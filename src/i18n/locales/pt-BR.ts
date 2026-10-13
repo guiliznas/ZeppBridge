@@ -2360,7 +2360,7 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
       pickWorkouts: 'Escolher treinos específicos',
       drop: 'Não incluir',
       flickHint: 'Deslize para cima para excluir este tipo',
-      nothing: 'Nenhum dado para enviar ainda. Toque em „Adicionar tipo”.',
+      nothing: 'Nenhum dado para enviar ainda. Toque em “Adicionar tipo”.',
       lock: (provider: string) => `Enviar para ${provider}`,
       lockBusy: 'Preparando arquivo…',
       freeIntent: 'Pergunta livre',
@@ -2824,7 +2824,7 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
           s2: 'Puxe para atualizar no app Zepp do celular antes de sincronizar: os dados do relógio precisam chegar à nuvem primeiro.',
         },
         overview: {
-          s1: 'Mantenha aqui as 3–4 métricas que você mais acompanha; „Ajustar” permite trocá-las.',
+          s1: 'Mantenha aqui as 3–4 métricas que você mais acompanha; “Ajustar” permite trocá-las.',
           s2: 'Compara com o seu próprio padrão recente, não com o de outras pessoas.',
           s3: 'Organize a visão geral de acordo com as suas prioridades.',
         },
@@ -2860,7 +2860,7 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
           s1: 'Revise aqui antes de enviar: tudo o que será compartilhado está listado; desmarque o que preferir não incluir.',
         },
         planFirst: {
-          s1: 'Clique em um dia para ajustar; segure „Enviar para o relógio” para transmitir. No relógio, escolha o esporte ao iniciar.',
+          s1: 'Clique em um dia para ajustar; segure “Enviar ao relógio” para transmitir. No relógio, escolha o esporte ao iniciar.',
         },
       },
       next: 'Avançar',
