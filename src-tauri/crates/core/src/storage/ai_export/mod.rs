@@ -432,7 +432,7 @@ impl Database {
                     "training_load_balance".into(),
                     serde_json::json!({
                         "source": "workouts.training_load",
-                        "note": "按运动开始时间的本地日期汇总单次负荷；acute = 最近 7 天负荷之和；chronic = 最近 28 天之和；ratio = acute ÷ (chronic ÷ 4)。仅运动列表完整同步且每次负荷有效的完整本地日计入覆盖；确认无运动才为 0。7 天或 28 天窗口不完整时对应负荷为 null；仅两个窗口完整且慢性负荷大于 0 时给出 ratio。",
+                        "note": "Per-workout load summed by the local date of each workout start. acute = sum of the last 7 days; chronic = sum of the last 28 days; ratio = acute / (chronic / 4). A local day counts as covered only when the workout list is fully synced and every workout on it has a valid load; 0 means no workouts were confirmed. A load is null when its 7- or 28-day window is incomplete; ratio is given only when both windows are complete and chronic load is above 0.",
                         "days": balance,
                     }),
                 );

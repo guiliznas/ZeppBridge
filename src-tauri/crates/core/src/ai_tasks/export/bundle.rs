@@ -156,10 +156,18 @@ impl Database {
         );
         document.insert("task".into(), Value::Object(task_meta));
 
-        // 锚点运动：按 detail_level 决定深度。
+        // 锚点运动：按 detail_level 决定深度。没开「运动」类别时锚点只用来定日期窗，
+        // 连 id / 类型 / 开始日都不给（用户 2026-10-13 定）：`workouts` 为空，
+        // 日行的 `linked_workout_ids` 为空，覆盖行的 `workout_id` 抹成合并视图。
+        let workouts_shared = task
+            .categories
+            .iter()
+            .any(|range| range.category == AiTaskCategory::Workout && range.enabled);
         let mut workouts = Vec::with_capacity(anchors.len());
-        for anchor in anchors {
-            workouts.push(self.anchor_workout_json(&anchor.workout, task)?);
+        if workouts_shared {
+            for anchor in anchors {
+                workouts.push(self.anchor_workout_json(&anchor.workout, task)?);
+            }
         }
         document.insert("workouts".into(), Value::Array(workouts));
 
@@ -172,10 +180,12 @@ impl Database {
             for (date, acc) in days {
                 let mut entry = Map::new();
                 entry.insert("date".into(), json!(date));
-                entry.insert(
-                    "linked_workout_ids".into(),
-                    json!(acc.linked.into_iter().collect::<Vec<_>>()),
-                );
+                let linked: Vec<String> = if workouts_shared {
+                    acc.linked.into_iter().collect()
+                } else {
+                    Vec::new()
+                };
+                entry.insert("linked_workout_ids".into(), json!(linked));
                 if !acc.metrics.is_empty() {
                     entry.insert("metrics".into(), Value::Array(acc.metrics));
                 }
@@ -194,7 +204,14 @@ impl Database {
         }
         document.insert("context".into(), Value::Array(context));
 
-        document.insert("coverage".into(), serde_json::to_value(coverage)?);
+        if workouts_shared {
+            document.insert("coverage".into(), serde_json::to_value(coverage)?);
+        } else {
+            document.insert(
+                "coverage".into(),
+                serde_json::to_value(coverage_without_anchors(coverage))?,
+            );
+        }
         if task
             .categories
             .iter()
@@ -303,30 +320,17 @@ impl Database {
     }
 
     /// 锚点运动的出仓对象。从 [`Workout`] 逐字段挑——`device_id`、
-    /// `synced_at`、`zepp_*` 这类内部列不带出去。
+    /// `synced_at`、`zepp_*` 这类内部列不带出去。只在开了「运动」类别时调用
+    /// （没开时锚点一个字段都不出去，见 [`Self::build_task_document`]）。
     pub(super) fn anchor_workout_json(&self, workout: &Workout, task: &AiTask) -> Result<Value> {
-        // 没开「运动」类别：锚点只用来定日期窗，只写日期和类型，不带任何运动
-        // 数字（用户 2026-09-30 定；与 MCP「锚点不可读」一致）。
-        let Some(range) = task
+        let excluded = task
             .categories
             .iter()
             .find(|range| range.category == AiTaskCategory::Workout && range.enabled)
-        else {
-            let mut object = Map::new();
-            object.insert("workout_id".into(), json!(workout.workout_id));
-            object.insert("workout_type".into(), json!(workout.effective_type));
-            object.insert(
-                "start_date".into(),
-                json!(workout
-                    .start_time
-                    .with_timezone(&Local)
-                    .date_naive()
-                    .to_string()),
-            );
-            return Ok(Value::Object(object));
-        };
+            .map(|range| range.excluded_metrics.as_slice())
+            .unwrap_or_default();
         let mut object = self.anchor_workout_full(workout, task)?;
-        strip_excluded_workout_fields(&mut object, &range.excluded_metrics);
+        strip_excluded_workout_fields(&mut object, excluded);
         Ok(Value::Object(object))
     }
 
@@ -440,4 +444,22 @@ fn strip_excluded_workout_fields(object: &mut Map<String, Value>, excluded: &[St
     {
         summary.retain(|key, _| !key.contains("hr") && !key.contains("heart"));
     }
+}
+
+/// 没开「运动」类别时导出的覆盖行：不带锚点运动 id。一个类别有多个锚点窗口时
+/// 已有一行 `workout_id: null` 的合并视图，只留它；只有一个窗口时把那一行的 id 抹掉。
+fn coverage_without_anchors(coverage: &[AiTaskCoverage]) -> Vec<AiTaskCoverage> {
+    let merged: BTreeSet<AiTaskCategory> = coverage
+        .iter()
+        .filter(|row| row.workout_id.is_none())
+        .map(|row| row.category)
+        .collect();
+    coverage
+        .iter()
+        .filter(|row| row.workout_id.is_none() || !merged.contains(&row.category))
+        .map(|row| AiTaskCoverage {
+            workout_id: None,
+            ..row.clone()
+        })
+        .collect()
 }

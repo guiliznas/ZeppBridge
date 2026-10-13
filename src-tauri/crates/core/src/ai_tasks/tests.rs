@@ -446,7 +446,11 @@ fn coverage_dedups_overlapping_windows_and_links_anchors() {
 
     let mut t = task();
     t.workout_ids = vec!["w1".into(), "w2".into()];
-    t.categories = vec![range(AiTaskCategory::Recovery, 3, true)];
+    // 开着「运动」类别：锚点 id 才会出现在日行的 linked_workout_ids 里。
+    t.categories = vec![
+        range(AiTaskCategory::Recovery, 3, true),
+        range(AiTaskCategory::Workout, 0, true),
+    ];
 
     let preview = db.ai_task_preview(&t).unwrap();
     let rows: Vec<_> = preview

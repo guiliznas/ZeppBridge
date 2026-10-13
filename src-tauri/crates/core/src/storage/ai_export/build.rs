@@ -577,7 +577,7 @@ impl Database {
                         serde_json::json!({
                             "status": "excluded_by_scope",
                             "rows_in_export": 0,
-                            "note": "这是按天记录的数据，不属于「一条运动」的范围，因此没有包含在这次导出里。需要它请改用日期范围导出。",
+                            "note": "This stream is recorded per day, so it falls outside a single-workout export and is not included. Export a date range to get it.",
                         }),
                     );
                 }
@@ -603,16 +603,16 @@ impl Database {
                         "status": "raw_pending",
                         "rows_in_export": 0,
                         "raw_records": raw_records,
-                        "note": "已从云端抓取并保留原始报文，但字段解析尚未在真实响应上验证，因此没有派生出结构化记录",
+                        "note": "Fetched from the cloud and kept as raw payloads, but the field mapping has not been verified against real responses, so no structured records were derived.",
                     })
                 } else if count == 0 {
                     serde_json::json!({
                         "status": "empty_in_range",
                         "records": 0,
                         "note": if single_workout {
-                            "该数据流已接入，但这条运动进行期间没有记录"
+                            "This stream is connected, but nothing was recorded during this workout."
                         } else {
-                            "该数据流已接入，但这段时间没有记录"
+                            "This stream is connected, but nothing was recorded in this date range."
                         },
                     })
                 } else {
@@ -655,9 +655,9 @@ impl Database {
             + workouts.len()
             + life_events.len();
         let detail_note = if full {
-            "detail=full：逐秒运动序列与逐条心率原样导出。"
+            "detail=full: per-second workout series and every heart-rate reading are exported as recorded."
         } else {
-            "detail=summary：心率按小时聚合为 min/avg/max，逐秒运动序列省略（sample_count 说明有多少条）；结构化指标全部完整。需要原始序列请用 detail=full 重新导出。"
+            "detail=summary: heart rate is aggregated per hour as min/avg/max and per-second workout series are omitted (sample_count says how many exist); all structured metrics are complete. Export again with detail=full for the raw series."
         };
         // 范围要能被读到的人核对。日期区间就写日期区间；单条运动就写这条运动的
         // 真实起止时刻，别再让读者以为自己拿到的是一整天。
@@ -671,7 +671,7 @@ impl Database {
                 "note": if selected.contains("life_events") {
                     "Only this workout and samples during it, plus explicitly selected user-authored calendar context. Daily sensor summaries remain excluded."
                 } else {
-                    "只包含这一条运动，以及它进行期间的逐点指标；按天记录的数据流不在范围内。"
+                    "Only this workout and samples recorded during it. Daily streams are outside this scope."
                 },
             }),
             _ => serde_json::json!({
