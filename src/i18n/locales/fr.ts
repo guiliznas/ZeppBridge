@@ -1953,7 +1953,6 @@ Si tu as besoin d’informations de ma part (quel client j’utilise, où se tro
       routeTitle: 'Trace GPS',
       routeAria: 'Trace GPS',
       routeSvgAria: 'Trace GPS en local, colorée par le temps et l’échantillon d’allure le plus proche',
-      routeNote: 'Canvas local · aucune tuile de carte demandée',
       routeLegendPace: (count: number) => `${count} points d’allure valides · P10–P90`,
       routeLegendNoPace: 'Moins de 3 points d’allure valides · pas de coloration par la vitesse',
       legendSlow: 'Lent',

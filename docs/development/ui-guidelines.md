@@ -35,8 +35,12 @@ mode**. See "Dual theme" below.
   - a package over 2 MiB (`AI_HANDOFF_INLINE_LIMIT_BYTES`) is written to
     `zeppbridge-ai-handoff.json` on the desktop, and the clipboard gets only the
     drag-in instructions;
-  - GPS tracks are drawn locally with inline SVG (`routeCanvas` in
-    `WorkoutDetail.vue`) and never request third-party online map tiles.
+  - GPS tracks are drawn locally with inline SVG by default
+    (`lib/workoutRoute.ts` + `WorkoutRouteCard.vue`), with no outside requests.
+    The online map (OpenStreetMap tiles, `WorkoutRouteMap.vue`) is an optional
+    layer: Leaflet and tiles load only after the user switches the route card to
+    "Map" and agrees, and it falls back to the local drawing on failure. The tile
+    source lives only in `lib/mapTiles.ts`; the CSP allows just that one host.
 - **Progressive disclosure**: everyday use shows core metrics and quick export;
   interface scale lives in the "Display and language" settings card; the data
   folder, clearing credentials and sync diagnostics live in "Advanced and

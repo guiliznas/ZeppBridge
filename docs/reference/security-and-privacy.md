@@ -239,6 +239,10 @@ limited to:
 - the Zepp region service you configured, after host validation;
 - the official Zepp / Huami pages the sign-in window visits;
 - the ZeppBridge Cloudflare Pages Function, for voluntary problem reports;
+- `tile.openstreetmap.org`, **only** after you switch a workout's route card to
+  "Map" and agree (off by default; "Just this once" or "Always"). Loading the
+  visible tiles tells OpenStreetMap roughly where that workout was; no tiles are
+  prefetched or stored offline, and the route itself is drawn locally;
 - the app's own local Tauri IPC.
 
 While ZeppBridge is running it can expose a read-only local API.

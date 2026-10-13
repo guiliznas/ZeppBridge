@@ -16,7 +16,7 @@
 - **隐私底线**：
   - 导出到 AI 时默认执行不可逆脱敏（`redact_ai_export`，抹除 device_id、MAC、IMEI、精确 GPS 等字段，并在 JSON 里回写 `redactions` 清单）；精确轨迹需用户显式勾选 `include_precise_route` 才注入；
   - 数据包 > 2 MiB（`AI_HANDOFF_INLINE_LIMIT_BYTES`）时自动写入系统桌面 `zeppbridge-ai-handoff.json`，剪贴板只放拖入提示；
-  - GPS 轨迹仅在本地用内联 SVG 绘制（`WorkoutDetail.vue` 的 `routeCanvas`），绝不请求第三方在线地图瓦片。
+  - GPS 轨迹默认在本地用内联 SVG 绘制（`lib/workoutRoute.ts` + `WorkoutRouteCard.vue`），零外部请求。在线地图（OpenStreetMap 瓦片，`WorkoutRouteMap.vue`）是可选图层：用户在路线卡切到「地图」并同意后才异步加载 Leaflet 和瓦片，失败自动退回本地画布；瓦片源只在 `lib/mapTiles.ts` 一处，CSP 只放行那一个域名。
 - **渐进披露**：日常使用展示核心指标与快捷导出；界面缩放放在设置的「显示与语言」卡，数据文件夹、清除认证、同步诊断收进「高级与维护」卡。
 
 ## 设计 token

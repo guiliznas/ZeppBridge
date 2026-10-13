@@ -117,6 +117,7 @@ ZeppBridge 当前没有自动产品遥测、使用统计或后台崩溃上报，
 - 用户配置并通过 host 校验的 Zepp 区域服务；
 - 登录窗口访问的 Zepp / Huami 官方页面；
 - 主动错误报告访问的 ZeppBridge Cloudflare Pages Function；
+- `tile.openstreetmap.org`：**只有**在运动详情的路线卡切到「地图」并同意（「只这次」或「一直开」）之后才请求，默认关闭。加载看得见的那几张瓦片会让 OpenStreetMap 知道这次运动大致在哪；不预取、不离线缓存，轨迹本身仍在本地绘制；
 - 应用自身的本地 Tauri IPC。
 
 ZeppBridge 运行期间会开启只读本机 API。`GET /workouts/{id}/series` 不返回认证字段，但可能包含心率、步态和精确 GPS；电脑上的其他本机进程可访问，因此只应运行可信程序。退出托盘进程后监听器停止。

@@ -2165,7 +2165,6 @@ Regels: vergelijk me alleen met mijn eigen historie, niet met populatiegemiddeld
       routeAria: 'Volledige GPS-track',
       eyebrowRoute: 'Route',
       routeTitle: 'Volledige GPS-track',
-      routeNote: 'Lokaal getekend · geen kaarttegels opgevraagd',
       routeSvgAria:
         'Lokale GPS-track gekleurd naar tijd en het dichtstbijzijnde tempomeetpunt',
       routeLegendPace: (count: number) =>

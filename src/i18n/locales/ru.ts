@@ -2102,7 +2102,6 @@ export default {
       routeAria: 'Полный трек GPS',
       eyebrowRoute: 'Маршрут',
       routeTitle: 'Полный трек GPS',
-      routeNote: 'Отрисовано локально без сетевых запросов карт',
       routeSvgAria: 'Локальный трек GPS с цветовой шкалой темпа',
       routeLegendPace: (count: number) =>
         `${plural(count, { one: `${count} точка с темпом`, few: `${count} точки с темпом`, many: `${count} точек с темпом`, other: `${count} точки с темпом` })} · P10–P90`,

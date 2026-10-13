@@ -1497,7 +1497,6 @@ Regras: compare-me apenas com meu próprio histórico, não com médias populaci
       routeAria: 'Trajeto de GPS',
       eyebrowRoute: 'Trajeto',
       routeTitle: 'Trajeto de GPS',
-      routeNote: 'Renderizado localmente · sem consultas a servidores de mapas',
       routeSvgAria: 'Trajeto de GPS renderizado com escala de cores por ritmo',
       routeLegendPace: (count: number) => `${count} pontos de ritmo válidos · P10–P90`,
       routeLegendNoPace: 'Menos de 3 pontos de ritmo válidos · trajeto sem cores de ritmo',

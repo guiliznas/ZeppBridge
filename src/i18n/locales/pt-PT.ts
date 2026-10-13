@@ -1946,7 +1946,6 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
       routeAria: 'Percurso GPS',
       eyebrowRoute: 'Percurso',
       routeTitle: 'Percurso GPS completo',
-      routeNote: 'Processado localmente · sem recurso a mapas externos',
       routeSvgAria:
         'Percurso GPS com indicação de ritmo',
       routeLegendPace: (count: number) =>

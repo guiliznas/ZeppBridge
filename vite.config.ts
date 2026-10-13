@@ -83,6 +83,8 @@ export default defineConfig(async ({ mode }) => ({
           // ECharts 是整个前端里最大的一块，而且只有图表页会用到。
           // 把它和首屏绑在一起，等于让每次冷启动都付一遍这个代价。
           if (id.includes('echarts') || id.includes('zrender')) return 'charts';
+          // Leaflet 只给运动详情的在线地图用，而且要用户手动打开；默认的 vendor 块是首屏就加载的。
+          if (id.includes('/leaflet/')) return 'map';
           if (id.includes('/vue/') || id.includes('vue-router') || id.includes('@vue/')) {
             return 'vue';
           }

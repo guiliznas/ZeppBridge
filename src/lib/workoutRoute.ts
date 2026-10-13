@@ -34,7 +34,7 @@ export interface RouteCanvas {
   ghosts: GhostRoad[];
   glow: string;
   segments: RouteSegment[];
-  pauseMarkers: { x: number; y: number }[];
+  pauseMarkers: { x: number; y: number; latitude: number; longitude: number }[];
   start: RouteCanvasPoint;
   end: RouteCanvasPoint;
   validPaceCount: number;
@@ -207,7 +207,7 @@ export const buildRouteCanvas = (series: WorkoutSeries | null | undefined): Rout
       const distance = Math.abs(new Date(point.timestamp).getTime() - pause.start);
       return distance < best.distance ? { point, distance } : best;
     }, { point: canvasPoints[0], distance: Infinity }).point;
-    return { x: target.x, y: target.y };
+    return { x: target.x, y: target.y, latitude: target.latitude, longitude: target.longitude };
   });
   return {
     viewBox: `0 0 ${viewW} ${viewH}`,
@@ -220,4 +220,25 @@ export const buildRouteCanvas = (series: WorkoutSeries | null | undefined): Rout
     validPaceCount: validPaces.length,
     enoughPace,
   };
+};
+
+/** 地图图层用的折线：相邻且同色的段并成一条，点数还是画布那份（已抽稀到 ≤800），断开处照样断开。 */
+export interface RouteRun {
+  color: string;
+  points: Array<[number, number]>;
+}
+
+export const buildRouteRuns = (segments: RouteSegment[]): RouteRun[] => {
+  const runs: RouteRun[] = [];
+  let previous: RouteSegment | null = null;
+  for (const segment of segments) {
+    const current = runs[runs.length - 1];
+    if (current && previous && previous.to === segment.from && current.color === segment.color) {
+      current.points.push([segment.to.latitude, segment.to.longitude]);
+    } else {
+      runs.push({ color: segment.color, points: [[segment.from.latitude, segment.from.longitude], [segment.to.latitude, segment.to.longitude]] });
+    }
+    previous = segment;
+  }
+  return runs;
 };
