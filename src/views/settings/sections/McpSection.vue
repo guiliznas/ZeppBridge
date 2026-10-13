@@ -8,6 +8,7 @@ import { computed, ref } from 'vue';
 import Icon from '../../../components/Icon.vue';
 import McpConnectRow from './McpConnectRow.vue';
 import McpPublishRow from './McpPublishRow.vue';
+import AutoPasteRow from './AutoPasteRow.vue';
 import McpTaskScopes from './McpTaskScopes.vue';
 import type { McpSidecar } from '../../../lib/bridge/types';
 import { genericMcpConfig } from '../../../lib/mcpClients';
@@ -95,6 +96,7 @@ const copyMcpConfig = () => copy(
           <code v-for="tool in MCP_TOOLS" :key="tool.name" class="chip" :title="tool.detail">{{ tool.name }}</code>
         </div>
       </details>
+      <AutoPasteRow />
       <McpPublishRow />
       <McpTaskScopes />
     </div>

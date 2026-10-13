@@ -442,6 +442,11 @@ export interface BridgeBackend {
    */
   aiTaskPrepare(task: AiTask, coverageNote: string, directionText?: string | null, options?: AiTaskPrepareOptions): Promise<AiTaskPrepareResult>;
   aiTaskAttachmentStat(paths: string[]): Promise<AiTaskAttachmentStat[]>;
+  /** 交出去的 `.md` 以「文件」放进系统剪贴板（任何浏览器里 Ctrl+V 就附上）；只有 Windows 实现。 */
+  aiHandoffCopyFile(mdPath: string): Promise<void>;
+  /** 全自动：文件进剪贴板，等 AI 网页到前台后替用户粘贴、回车。返回这一次的编号，进度走 `ai-handoff://auto`。 */
+  aiHandoffAutopaste(request: { provider: string; mdPath: string; kickoff: string; send: boolean }): Promise<number>;
+  aiHandoffCancel(): Promise<void>;
 
   cleanupOldData(days: number): Promise<Record<string, unknown>>;
   openDataFolder(): Promise<void>;

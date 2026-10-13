@@ -492,6 +492,15 @@ export const tauriBackend: BridgeBackend = {
   aiTaskAttachmentStat(paths: string[]) {
     return call<AiTaskAttachmentStat[]>('ai_task_attachment_stat', { paths });
   },
+  aiHandoffCopyFile(mdPath: string) {
+    return call<void>('ai_handoff_copy_file', { mdPath });
+  },
+  aiHandoffAutopaste(request) {
+    return call<number>('ai_handoff_autopaste', { request });
+  },
+  aiHandoffCancel() {
+    return call<void>('ai_handoff_cancel');
+  },
 
   cleanupOldData(days: number) {
     return call<Record<string, unknown>>('cleanup_old_data', { days });

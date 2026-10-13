@@ -5,7 +5,7 @@
  *   [这家 AI 的图标]  已交给 ChatGPT          改问题
  *                     问的那一句
  *   ┌ 交出去的 .md 文件（按住拖进对话框；⋯ = 在资源管理器里选中）┐
- *   一行提示 · 有问题才多一行
+ *   一行提示（文件已在剪贴板 → Ctrl+V；全自动时是进度）· 有问题才多一行
  *   [ 再复制开场白 ] [ 再打开 ChatGPT ]
  *   [              接回定稿              ]
  *
@@ -23,6 +23,7 @@ import type { AiTaskPrepareResult } from '../../../lib/bridge/types';
 import type { HandoffStep, HandoffStepId } from '../../../composables/useAiTaskHandoff';
 import { useHandoffText } from '../HandoffDock.i18n';
 import { useStageText } from './stage.i18n';
+import { useHandoffLead } from './useHandoffLead';
 
 const props = defineProps<{
   ready: AiTaskPrepareResult | null; provider: string; providerIcon: string; stale: boolean; recalled: boolean;
@@ -37,6 +38,7 @@ const dragFailed = ref(false);
 const failed = computed(() => Object.values(props.steps).some((step) => step.state === 'failed'));
 /** 只留一句最要紧的提醒：收回了 > 文件旧了 > 拖不出去 > 任务没存上。 */
 const note = computed(() => (props.recalled ? s.value.notOpened : props.stale ? t.value.stale : dragFailed.value ? t.value.dragFailed : props.saveError));
+const lead = useHandoffLead(() => props.provider);
 const onFileDrag = (event: MouseEvent) => {
   const path = props.ready?.md_path;
   if (!desktop || !path || event.button !== 0 || (event.target as HTMLElement).closest('.reveal')) return;
@@ -65,7 +67,7 @@ const onFileDrag = (event: MouseEvent) => {
       <span class="sheet-copy"><strong>{{ fileName }}</strong><small>{{ t.fileMeta(formatBytes(ready.byte_len), formatTokens(ready.markdown?.approx_tokens ?? 0)) }}</small></span>
     </div>
     <p v-else-if="ready" class="hint">{{ t.outputAt(ready.output_dir) }}</p>
-    <p class="hint lead">{{ s.receiptLead }}</p>
+    <p class="hint lead" role="status">{{ lead }}</p>
     <p v-if="note" class="note" role="status">{{ note }}</p>
     <HandoffSteps v-if="failed" class="steps" :steps="steps" :provider-label="provider" @retry="emit('retry', $event)" />
 

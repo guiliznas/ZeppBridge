@@ -23,6 +23,9 @@ export const aiCardMessages = defineMessages(
     staleClients: (names: string) => `${names} 里连的是另一份 zeppbridge-mcp，多半是旧版、读不了现在的库：点对应按钮重新连一次`,
     otherClients: '其他客户端',
     configReady: '配置已复制，路径已经填好',
+    autoTitle: '全自动交给 AI',
+    autoOff: '关着：文件放进剪贴板，你在 AI 对话框里按 Ctrl+V 粘贴、回车发送',
+    autoOn: '开着：打开 AI 网站后替你粘贴文件和开场白并发送，按 Esc 随时停下',
   },
   {
     lead: 'Let AI tools on this computer (Claude Code, Codex and the like) query your data directly',
@@ -45,6 +48,9 @@ export const aiCardMessages = defineMessages(
     staleClients: (names: string) => `${names} still point to another zeppbridge-mcp, probably an old one that can't read this library: use the matching button to reconnect`,
     otherClients: 'Other clients',
     configReady: 'Config copied with the path filled in',
+    autoTitle: 'Hand off to AI automatically',
+    autoOff: 'Off: the file goes to the clipboard; press Ctrl+V in the AI chat box, then Enter',
+    autoOn: 'On: once the AI site opens, the file and opening line are pasted and sent for you; press Esc to stop',
   },
   {
     lead: 'Permite que las herramientas de IA de este equipo (Claude Code, Codex y similares) consulten tus datos directamente',
@@ -67,6 +73,9 @@ export const aiCardMessages = defineMessages(
     staleClients: (names: string) => `${names} siguen apuntando a otro zeppbridge-mcp, probablemente uno antiguo que no puede leer esta biblioteca: usa el botón correspondiente para volver a conectar`,
     otherClients: 'Otros clientes',
     configReady: 'Configuración copiada con la ruta ya puesta',
+    autoTitle: 'Pasar a la IA automáticamente',
+    autoOff: 'Desactivado: el archivo va al portapapeles; pulsa Ctrl+V en el chat de la IA y luego Intro',
+    autoOn: 'Activado: al abrirse el sitio de la IA se pegan y envían el archivo y el mensaje inicial; Esc para parar',
   },
   'views/settings/sections/ai',
 );

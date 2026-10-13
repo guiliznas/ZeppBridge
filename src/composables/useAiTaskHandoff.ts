@@ -3,11 +3,12 @@
  *
  *   1. `prepare` 后端把提示词 + 读法 + 数据写成**一个** `.md`（批次 ⑦；附件原件另放 attachments/）
  *                到桌面 `ZeppBridge AI\<任务名>_<时间>\`（ai_task_prepare）。
- *   2. `copy`    前端把一句开场白写进剪贴板（提示词已在文件里，不用再粘一遍）。
- *   3. `open`    打开所选 AI 的网站；文件卡可以直接拖进对话框，也能在资源管理器里选中它。
+ *   2. `copy`    把那个 `.md` 以「文件」放进系统剪贴板（10-13，计划 12.1）：对话框里 Ctrl+V 就附上；
+ *                放不进去（非 Windows）才退回复制一句开场白、拖文件。
+ *   3. `open`    打开所选 AI 的网站。打开「全自动」时先交代后端：等网页到前台替用户粘贴、回车
+ *                （useAutoHandoff）；文件卡照样可以直接拖进对话框，也能在资源管理器里选中它。
  *
- * 没有任何一步叫「已发送」或「已上传」：打开的只是那个网站，文件要用户
- * 自己从桌面拖进对话框。
+ * 这里没有一步叫「已发送」：全自动发没发出去，以后端报回来的进度为准（回执卡上显示）。
  */
 import { ref } from 'vue';
 import { backend, toUserMessage } from '../lib/bridge';
@@ -18,6 +19,7 @@ import { copyTextToClipboard, openProviderSite, revealInFolder } from './useAiHa
 import { AI_PROVIDER_BY_ID, type AiProvider, type AiProviderId } from '../lib/aiProviders';
 import { defineMessages, messagesOf } from '../i18n';
 import { useCardCollection } from './useCardCollection';
+import { copyFileToClipboard, resetAutoPaste, startAutoPaste } from './ai/useAutoHandoff';
 
 export type HandoffStepId = 'prepare' | 'copy' | 'open';
 export type HandoffStepState = 'idle' | 'doing' | 'done' | 'failed' | 'blocked' | 'skipped';
@@ -91,6 +93,7 @@ export function useAiTaskHandoff() {
 
   const runPrepare = async (task: AiTask, direction: string | null = null, options?: AiTaskPrepareOptions) => {
     steps.value = { ...freshSteps(), prepare: { state: 'doing', errorText: null } };
+    resetAutoPaste();
     try {
       const result = await backend.aiTaskPrepare(task, coverageNoteText(), direction, options);
       prepareResult.value = result;
@@ -110,7 +113,8 @@ export function useAiTaskHandoff() {
     if (!result || result.status !== 'ready') return false;
     setStep('copy', 'doing');
     try {
-      // 单个 .md 时提示词已在文件里：只复制一句开场白，免得「上传一遍又粘贴一遍」。
+      // 单个 .md：文件本身进剪贴板，对话框里 Ctrl+V 就附上（提示词已在文件里）。放不进去才复制一句开场白。
+      if (result.md_path && await copyFileToClipboard(result.md_path)) { setStep('copy', 'done'); return true; }
       await copyTextToClipboard(result.md_path ? copy().kickoff : result.prompt_text);
       setStep('copy', 'done');
       return true;
@@ -131,6 +135,9 @@ export function useAiTaskHandoff() {
     storeLastProvider(provider);
     setStep('open', 'doing');
     try {
+      const md = prepareResult.value?.status === 'ready' ? prepareResult.value.md_path : null;
+      // 全自动：先让后端开始等这个网页到前台，再打开它（顺序反了会错过它刚到前台的那一下）。
+      if (md) await startAutoPaste(provider, md, copy().kickoff);
       const outcome = await openProviderSite(provider);
       setStep('open', outcome === 'opened' ? 'done' : 'skipped');
       return true;

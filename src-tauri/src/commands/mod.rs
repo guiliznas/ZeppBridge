@@ -1,4 +1,5 @@
 mod ai_clients;
+mod ai_handoff;
 mod ai_tasks;
 mod auth;
 mod backup;
@@ -152,6 +153,7 @@ where
 }
 
 pub(crate) use ai_clients::{get_mcp_sidecar, save_mcp_bundle};
+pub(crate) use ai_handoff::{ai_handoff_autopaste, ai_handoff_cancel, ai_handoff_copy_file};
 pub(crate) use ai_tasks::{
     ai_exchange_delete, ai_exchange_list, ai_exchange_rename, ai_profile_save,
     ai_task_attachment_stat, ai_task_day_strip, ai_task_delete, ai_task_delete_many, ai_task_get,

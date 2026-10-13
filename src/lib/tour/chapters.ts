@@ -72,6 +72,8 @@ export const TOUR_STEPS: Record<TourChapterId, TourStep[]> = {
   handoff: [
     { route: '/ai', target: '.ai-stage-page .cloud .slot', all: true, interactive: true },
     { route: '/ai', target: '.ai-stage-page .future' },
+    // 交出去以后怎么放进 AI：文件进剪贴板、Ctrl+V；全自动的开关在设置卡（10-13，计划 12.1）。
+    { route: '/ai', target: '.ai-stage-page .bridge-lock' },
   ],
   plan: [
     { route: '/ai/plan', target: '.ai-plan-week .future-days' },

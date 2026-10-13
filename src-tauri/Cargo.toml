@@ -73,7 +73,12 @@ zip = { version = "4.6", default-features = false }
 # （tauri 在 Windows 上依赖它），这里只是把它变成直接依赖。
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61", features = [
+    "Win32_Foundation",
     "Win32_Globalization",
+    # 交给 AI：把 .md 以文件放进剪贴板、全自动时读前台窗口标题和替用户按键（src/clipboard_files.rs）。
+    "Win32_System_DataExchange",
+    "Win32_System_Memory",
+    "Win32_UI_Input_KeyboardAndMouse",
     # 启动失败时那个原生对话框（MessageBoxW）。没有它，Windows 上起不来就是
     # 完全无声的——见 src/diagnostics.rs 顶部。
     "Win32_UI_WindowsAndMessaging",

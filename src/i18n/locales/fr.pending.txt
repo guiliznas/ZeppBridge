@@ -1,2 +1,16 @@
 # 尚未覆盖的键（i18n:check --write-pending 生成；W4 翻译一行删一行）。
 # 格式：moduleId.键路径。
+components/ai/stage/stage.autoFilled
+components/ai/stage/stage.autoFilling
+components/ai/stage/stage.autoSent
+components/ai/stage/stage.autoStopped
+components/ai/stage/stage.autoWaiting
+components/ai/stage/stage.receiptPaste
+components/tour/tour.steps.handoff.s3
+i18n/errors.err.ai_handoff.clipboard
+i18n/errors.err.ai_handoff.file
+i18n/errors.err.ai_handoff.provider
+i18n/errors.err.ai_handoff.unsupported
+views/settings/sections/ai.autoOff
+views/settings/sections/ai.autoOn
+views/settings/sections/ai.autoTitle

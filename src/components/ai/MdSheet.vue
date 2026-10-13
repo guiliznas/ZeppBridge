@@ -13,6 +13,7 @@ import { aiTaskIssueText } from '../../lib/aiTask/copy';
 import type { AiTaskPrepareResult } from '../../lib/bridge/types';
 import { useHandoffText } from './HandoffDock.i18n';
 import { useStageText } from './stage/stage.i18n';
+import { useHandoffLead } from './stage/useHandoffLead';
 
 const props = defineProps<{
   busy: boolean;
@@ -24,6 +25,7 @@ const props = defineProps<{
 const emit = defineEmits<{ copy: []; open: []; reveal: [] }>();
 const t = useHandoffText();
 const s = useStageText();
+const lead = useHandoffLead(() => props.provider);
 const desktop = isDesktop();
 const fileName = computed(() => props.result?.md_path?.split(/[\\/]/).pop() ?? '');
 const dragFailed = ref(false);
@@ -68,7 +70,7 @@ const onFileDrag = (event: MouseEvent) => {
         <span class="sheet-tag" aria-hidden="true">.md</span>
         <span class="sheet-copy"><strong>{{ fileName }}</strong><small>{{ t.fileMeta(formatBytes(ready.byte_len), formatTokens(ready.markdown?.approx_tokens ?? 0)) }}</small></span>
       </div>
-      <p class="md-hint" data-pop-item>{{ s.receiptLead }}</p>
+      <p class="md-hint" data-pop-item role="status">{{ lead }}</p>
     </template>
     <p v-if="error || dragFailed" class="md-note" role="status" data-pop-item>{{ dragFailed ? t.dragFailed : error }}</p>
     <div v-if="ready" class="md-actions" data-pop-item>

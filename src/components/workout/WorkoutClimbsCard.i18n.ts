@@ -49,11 +49,13 @@ export const workoutClimbsMessages = defineMessages(
     flat: 'Sin subidas notables: ningún tramo alcanzó los umbrales de desnivel y pendiente de abajo.',
     climb: 'Subida',
     descent: 'Bajada',
+    range: (from: string, to: string) => `${from}–${to}`,
     grade: 'Pendiente',
     vertical: 'Velocidad vertical',
     heartRate: 'Frecuencia cardiaca',
     pace: 'Ritmo',
     speed: 'Velocidad',
+    perHour: (unit: string) => `${unit}/h`,
     howTitle: 'Cómo se calcula',
     how: (window: number, reversal: number, change: number, grade: number, moving: number) =>
       `La altitud se suaviza con una media móvil de ${window} segundos; un tramo termina cuando baja (o sube) más de ${reversal} m desde su punto más alto (bajo). ` +

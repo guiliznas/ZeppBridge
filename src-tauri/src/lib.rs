@@ -1,4 +1,5 @@
 mod app_state;
+mod clipboard_files;
 mod commands;
 mod diagnostics;
 mod ipc_error;
@@ -19,18 +20,19 @@ pub use zeppbridge_core::{
 
 use app_state::AppState;
 use commands::{
-    ai_exchange_delete, ai_exchange_list, ai_exchange_rename, ai_profile_save,
-    ai_task_attachment_stat, ai_task_day_strip, ai_task_delete, ai_task_delete_many, ai_task_get,
-    ai_task_list, ai_task_prepare, ai_task_preview, ai_task_save, ai_task_set_pinned,
-    ai_template_delete, ai_template_list, ai_template_save, cancel_official_login,
-    cancel_pending_restore, cancel_sync, cancel_web_login, card_collection_get,
-    card_collection_set, cleanup_old_data, clear_auth, compact_raw_payloads, create_manual_backup,
-    delete_life_event, disconnect_official, get_app_status, get_capability_overview,
-    get_coverage_ledger, get_daily_heart_rate_extremes, get_data_health, get_device_profile,
-    get_device_profiles, get_health_overview, get_heart_rate_series, get_heart_rate_zones,
-    get_hourly_steps, get_login_status, get_mcp_sidecar, get_metric_baselines, get_metric_series,
-    get_official_status, get_pending_restore, get_recent_sleep, get_recent_workouts,
-    get_restore_preview, get_sleep_detail, get_sleep_page, get_storage_estimate, get_stress_series,
+    ai_exchange_delete, ai_exchange_list, ai_exchange_rename, ai_handoff_autopaste,
+    ai_handoff_cancel, ai_handoff_copy_file, ai_profile_save, ai_task_attachment_stat,
+    ai_task_day_strip, ai_task_delete, ai_task_delete_many, ai_task_get, ai_task_list,
+    ai_task_prepare, ai_task_preview, ai_task_save, ai_task_set_pinned, ai_template_delete,
+    ai_template_list, ai_template_save, cancel_official_login, cancel_pending_restore, cancel_sync,
+    cancel_web_login, card_collection_get, card_collection_set, cleanup_old_data, clear_auth,
+    compact_raw_payloads, create_manual_backup, delete_life_event, disconnect_official,
+    get_app_status, get_capability_overview, get_coverage_ledger, get_daily_heart_rate_extremes,
+    get_data_health, get_device_profile, get_device_profiles, get_health_overview,
+    get_heart_rate_series, get_heart_rate_zones, get_hourly_steps, get_login_status,
+    get_mcp_sidecar, get_metric_baselines, get_metric_series, get_official_status,
+    get_pending_restore, get_recent_sleep, get_recent_workouts, get_restore_preview,
+    get_sleep_detail, get_sleep_page, get_storage_estimate, get_stress_series,
     get_training_balance, get_unknown_workout_codes, get_user_prefs, get_weekly_report,
     get_workout_detail, get_workout_insight, get_workout_page, get_workout_series,
     get_workout_type_options, list_backups, list_life_events, manual_auth, open_data_folder,
@@ -687,6 +689,9 @@ pub fn run() {
             ai_task_preview,
             ai_task_prepare,
             ai_task_attachment_stat,
+            ai_handoff_copy_file,
+            ai_handoff_autopaste,
+            ai_handoff_cancel,
             set_user_prefs,
             get_user_prefs,
             get_storage_estimate,
