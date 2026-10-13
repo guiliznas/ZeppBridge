@@ -21,6 +21,16 @@ if (isLandingMode()) applyLandingTheme();
 else initializeTheme();
 
 const demo = window.__ZB_DEMO__?.demo === true;
+/* 新手引导的示例沙盒（lib/tour/sandbox.ts）：也是演示模式，但不和落地页通消息、不放演示对话。 */
+const tourSandbox = demo && window.__ZB_DEMO__?.tour !== undefined;
+/* 沙盒的底线：后端必须真的换成了演示运行时。桌面里 Tauri 先注入了真的那份，万一没盖掉，
+   引导里的每一步就会落到真实库上——宁可不看引导，立刻回到真实应用。 */
+const demoRuntimeInstalled = () =>
+  (window as Window & { __TAURI_INTERNALS__?: { __zbDemo?: boolean } }).__TAURI_INTERNALS__?.__zbDemo === true;
+const abandonSandbox = () => {
+  const ret = window.__ZB_DEMO__?.ret;
+  window.location.replace(ret && ret.startsWith('/') && !ret.startsWith('//') ? ret : '/');
+};
 
 const mount = () => {
   const app = createApp(App);
@@ -28,7 +38,7 @@ const mount = () => {
   if (!demo && '__TAURI_INTERNALS__' in window) void import("./lib/bridge").then(async ({ backend }) => {
     if ((await backend.getUserPrefs()).demo_mode) await router.replace('/ai');
   }).catch(() => undefined);
-  if (demo) void import("./demo/bootstrap").then((module) => module.startDemoHost(router));
+  if (demo && !tourSandbox) void import("./demo/bootstrap").then((module) => module.startDemoHost(router));
 };
 
 // 语言要在第一次渲染之前定下来，否则界面会先闪一下另一种语言。nl/de/fr/ru/pt/hi
@@ -47,8 +57,16 @@ const ready = demo
     .then(() => import("./demo/bootstrap"))
     .then((module) => module.prepareDemoAppearance())
   : Promise.resolve();
-void ready.then(() => initializeLocale()).then(mountOnce, mountOnce);
-window.setTimeout(mountOnce, demo ? 6000 : 800);
+if (tourSandbox) {
+  // 沙盒不走兜底挂载：演示运行时没装上就绝不挂载应用。
+  void ready.then(() => {
+    if (!demoRuntimeInstalled()) { abandonSandbox(); return; }
+    void initializeLocale().then(mountOnce, mountOnce);
+  }, abandonSandbox);
+} else {
+  void ready.then(() => initializeLocale()).then(mountOnce, mountOnce);
+  window.setTimeout(mountOnce, demo ? 6000 : 800);
+}
 
 /* 窗口真的看不见（最小化 / 被完全挡住）时给 <html> 挂一个类，material.css 据此暂停动画。
    不再看焦点：以前窗口可见但没焦点（第二屏、系统另存为对话框、启动瞬间 WebView2 还没

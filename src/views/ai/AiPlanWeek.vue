@@ -5,7 +5,8 @@
  * 已经发出去的计划也能直接拖、直接改：第一下改动时把它拿回来变成草稿，按钮变成「有 N 处改动 · 重新同步到手表」。
  * 已经过去的日子不在这里，改不到。
  */
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { offerInline } from '../../composables/useTour';
 import { gatherCards } from '../../lib/motion/cards/gather';
 import PageHeader from '../../components/PageHeader.vue';
 import Icon from '../../components/Icon.vue';
@@ -25,6 +26,8 @@ import '../../styles/ai-task.css';
 
 defineOptions({ name: 'AiPlanWeek' });
 const hub = useAiHub();
+/* 第一次看到一周计划：就地说一句怎么改、怎么发（新手引导的就地一章）。没有计划时不说。 */
+watch(() => !!hub.future.value, (has) => { if (has) window.setTimeout(() => offerInline('planFirst'), 900); }, { immediate: true });
 const plan = useTrainingPlan();
 const history = useExchanges();
 const t = useBridgeText();

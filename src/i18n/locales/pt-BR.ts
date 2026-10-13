@@ -2248,8 +2248,6 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
       boxedAria: (date: string) => `${date} está na caixa; pressione para retirar`,
       boxEmptyLabel: 'Caixa · vazia',
       boxDropHere: 'Solte para colocar aqui',
-      gotIt: 'Entendi',
-      tipBox: 'Deslize um cartão para cima ou toque em × para tirá-lo; toque em um cartão de mês para abrir esse mês. Toque na seta para iniciar uma tarefa com estes dias.',
       close: 'Recolher as cartas', back: 'Voltar um nível', range7: '7 dias', range30: '1 mês', range180: '6 meses', rangeAria: 'Período da mesa de cartas',
       picked: 'Para a IA', noRecord: 'Sem registro', recorded: 'Com registro', recordedOf: (recorded: number, total: number) => `${recorded} de ${total} dias com registros`,
       average: (value: string) => `média ${value}`, pickedOf: (picked: number, total: number) => `${picked}/${total} escolhidos`,

@@ -13,6 +13,7 @@ import DevicesSection from './sections/DevicesSection.vue';
 import DisplayPrefsSection from './sections/DisplayPrefsSection.vue';
 import ExportDefaultsSection from './sections/ExportDefaultsSection.vue';
 import FeedbackSection from './sections/FeedbackSection.vue';
+import GuideSection from './sections/GuideSection.vue';
 import McpSection from './sections/McpSection.vue';
 import PrivacySection from './sections/PrivacySection.vue';
 
@@ -34,6 +35,7 @@ defineProps<{ id: string }>();
     </template>
     <DisplayPrefsSection v-else-if="id === 'display'" />
     <FeedbackSection v-else-if="id === 'feedback'" />
+    <GuideSection v-else-if="id === 'guide'" />
     <PrivacySection v-else-if="id === 'privacy'" />
     <AdvancedSection v-else-if="id === 'advanced'" />
   </div>

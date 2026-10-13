@@ -2400,8 +2400,6 @@ export default {
       keyboardTip: 'Пробел переворачивает карточку; повторное нажатие добавляет её в коробку. Enter раскрывает стопку; Shift+Enter добавляет всю группу; Esc возвращает назад.',
       inBox: 'В коробке', putBack: 'Вернуть', confirmAria: (date: string) => `${date}, нажмите ещё раз, чтобы добавить в коробку`, boxedAria: (date: string) => `${date} в коробке; нажмите, чтобы вернуть`,
       boxEmptyLabel: 'Сборник · пуст', boxDropHere: 'Отпустите, чтобы добавить',
-      gotIt: 'Понятно',
-      tipBox: 'Смахните карточку вверх или нажмите ×, чтобы убрать её; нажмите карточку месяца, чтобы развернуть этот месяц. Нажмите стрелку, чтобы создать задачу с этими днями.',
       close: 'Закрыть стол', back: 'Назад', range7: '7 дней', range30: '1 месяц', range180: '6 месяцев', rangeAria: 'Период карточного стола', picked: 'Передать ИИ', noRecord: 'Нет записей', recorded: 'Есть запись',
       recordedOf: (recorded: number, total: number) => `Дней с записями: ${recorded} из ${total}`, average: (value: string) => `Среднее ${value}`, pickedOf: (picked: number, total: number) => `Выбрано ${picked}/${total}`,
       holdToPick: 'Удерживайте, чтобы добавить всю стопку', holdToUnpick: 'Удерживайте, чтобы убрать всю стопку', holdPile: 'Удерживать', weekRange: (start: string, end: string) => `${start}–${end}`,

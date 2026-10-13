@@ -7,7 +7,8 @@
  *   2. 把 `theme` / `lang` 参数存起来，等主题和语言层起来以后再应用；
  *   3. 如果带了 `route`，在路由器创建之前把地址改成它——应用一开始就落在那一页，不会先闪一下概览。
  */
-interface DemoFlags { demo: boolean; theme: string | null; lang: string | null; showcase: boolean }
+/** `tour` / `welcome` / `ret`：新手引导的示例沙盒（lib/tour/sandbox.ts）——要看的章节、要不要先出语言轮、结束回哪一页。 */
+interface DemoFlags { demo: boolean; theme: string | null; lang: string | null; showcase: boolean; tour?: string; welcome?: boolean; ret?: string }
 
 declare global {
   interface Window { __ZB_DEMO__?: DemoFlags }
@@ -20,7 +21,11 @@ const read = (): DemoFlags | undefined => {
     if (value === null || value === '0' || value === 'false') return undefined;
     const route = params.get('route');
     if (route && route.startsWith('/') && !route.startsWith('//')) window.history.replaceState(null, '', route);
-    return { demo: true, theme: params.get('theme'), lang: params.get('lang'), showcase: params.get('showcase') === '1' };
+    const tour = params.get('tour') ?? undefined;
+    return {
+      demo: true, theme: params.get('theme'), lang: params.get('lang'), showcase: params.get('showcase') === '1',
+      tour, welcome: params.get('welcome') === '1', ret: params.get('ret') ?? undefined,
+    };
   } catch {
     return undefined;
   }
@@ -38,6 +43,10 @@ if (typeof window !== 'undefined' && window.__ZB_DEMO__ === undefined) {
       getItem: key => values.get(key) ?? null, setItem: (key, value) => { values.set(key, String(value)); },
       removeItem: key => { values.delete(key); }, key: index => [...values.keys()][index] ?? null,
     };
+    // 引导沙盒要把「看过哪几章」记进真实的那份（lib/tour/sandbox.ts），换掉之前先留个手。
+    if (flags.tour !== undefined) {
+      try { window.__ZB_REAL_STORAGE__ = window.localStorage; } catch { /* 读不到就只在这次记 */ }
+    }
     Object.defineProperty(window, 'localStorage', { configurable: true, value: memory });
     Object.defineProperty(window, 'sessionStorage', { configurable: true, value: memory });
     values.set('zeppbridge-theme', flags.theme ?? 'light');

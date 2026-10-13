@@ -17,7 +17,7 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import Icon from '../Icon.vue';
-import CoachTip from './CoachTip.vue';
+import { offerInline } from '../../composables/useTour';
 import { useCardsText } from './cards.i18n';
 import { useCardCollection } from '../../composables/useCardCollection';
 import { useAiTaskDraft } from '../../composables/useAiTaskDraft';
@@ -37,6 +37,8 @@ const box = useCardCollection();
 const ctl = useAiTaskDraft();
 const router = useRouter();
 const open = ref(false);
+/* 第一次铺开收集箱：就地说一句怎么拿牌、怎么开任务（新手引导的就地一章，取代以前的 CoachTip）。 */
+watch(open, (value) => { if (value) window.setTimeout(() => offerInline('box'), 800); });
 /** 想要的状态：展开（或正在展开）。中途再点箱子 / Esc 就是朝反方向从此刻起放。 */
 const showing = ref(false);
 const chromeIn = ref(false);
@@ -337,7 +339,6 @@ onBeforeUnmount(() => {
         </div>
       </div>
       <footer class="spread-foot">
-        <CoachTip id="collection-box" :text="t.tipBox" />
         <p v-if="layout.more > 0" class="spread-more">{{ t.more(layout.more) }}</p>
         <div class="foot-row">
           <button type="button" class="foot-button" @click="clearAll"><Icon name="trash" :size="14" />{{ t.boxClear }}</button>

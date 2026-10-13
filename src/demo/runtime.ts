@@ -197,6 +197,8 @@ export const installDemoRuntime = (now: Date = new Date()): DemoData => {
   } catch { /* 改不了就算了，最多多一次权限提示 */ }
 
   const internals = {
+    /** 认得出这是演示运行时：引导沙盒挂载前要核对真的换上了它（main.ts）。 */
+    __zbDemo: true,
     metadata: { currentWindow: { label: 'main' }, currentWebview: { label: 'main', windowLabel: 'main' } },
     transformCallback(callback: Callback) {
       const id = nextId++;

@@ -2680,8 +2680,6 @@ Regels: vergelijk me alleen met mijn eigen historie, niet met populatiegemiddeld
       boxedAria: (date: string) => `${date} ligt in de box; druk om die terug te halen`,
       boxEmptyLabel: 'Verzamelbox · leeg',
       boxDropHere: 'Laat los om toe te voegen',
-      gotIt: 'Begrepen',
-      tipBox: 'Veeg een kaart omhoog of tik op × om hem eruit te halen; tik op een maandkaart om die maand uit te vouwen. Tik op de pijl om een taak te starten met deze dagen.',
       close: 'Kaarten opruimen', back: 'Eén niveau terug', range7: '7 dagen', range30: '1 maand', range180: '6 maanden', rangeAria: 'Kaartbereik',
       picked: 'Voor AI', noRecord: 'Geen registratie', recorded: 'Geregistreerd',
       noWorkouts: 'Geen trainingen in deze periode',

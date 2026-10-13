@@ -41,6 +41,11 @@ const SKIP_FILES = [
  */
 const ALLOWED = [
   {
+    file: 'components/tour/TourWelcome.vue',
+    text: "const GREETINGS = ['你好'",
+    why: '新手引导第一屏的多语问候轮播：每种语言说它自己的那一句，本来就不跟界面语言走。',
+  },
+  {
     file: 'lib/aiTask/metrics.ts',
     text: "'分钟': 'unit_min'",
     why: '后端 storage/metric_spec.rs 的单位键本身是中文（稳定键，CLI / MCP 契约，不随界面语言变）；这一行是「键 → 各语言说法」的查表，不是文案。',

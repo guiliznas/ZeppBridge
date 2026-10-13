@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /* 设置页：钱包式卡叠。
  *
- * 总览（/settings）是九张叠着的卡，每张只露出卡头和一句实时状态；点开（/settings/:card）
+ * 总览（/settings）是十张叠着的卡，每张只露出卡头和一句实时状态；点开（/settings/:card）
  * 那张升到最上面摊开，展开后可以左右拖、按按钮或方向键翻到相邻的一张，Esc 回到总览。
  * 各区块的界面和逻辑在 views/settings/sections/，共享状态在 composables/settings/context.ts。 */
 import GlassSwitch from '../components/GlassSwitch.vue';
@@ -22,6 +22,9 @@ import { locale, LOCALE_LABELS, useMessages } from '../i18n';
 import { settingsMessages } from './Settings.i18n';
 import { deckMessages } from './settings/deck.i18n';
 import { syncCardMessages } from './settings/sections/sync.i18n';
+import { useTourText } from '../components/tour/tour.i18n';
+import { FULL_TOUR } from '../lib/tour/chapters';
+import { seenChapters } from '../lib/tour/sandbox';
 import {
   SETTINGS_CARD_ICONS,
   SETTINGS_CARD_TONES,
@@ -36,6 +39,7 @@ defineOptions({ name: 'Settings' });
 const t = useMessages(settingsMessages);
 const d = useMessages(deckMessages);
 const syncCard = useMessages(syncCardMessages);
+const tour = useTourText();
 const route = useRoute();
 const router = useRouter();
 const { statusError, refreshStatus, autoSyncEnabled, autoSyncInterval, setAutoSyncEnabled } = useSyncController();
@@ -60,6 +64,7 @@ const titles = computed<Record<SettingsCardId, string>>(() => ({
   ai: d.value.cardAi,
   display: d.value.cardDisplay,
   feedback: d.value.secFeedback,
+  guide: tour.value.cardTitle,
   privacy: d.value.cardPrivacy,
   advanced: d.value.cardAdvanced,
 }));
@@ -79,6 +84,7 @@ const summaries = computed<Record<SettingsCardId, string>>(() => {
     ai: d.value.sumAi(exportFormat.value.toUpperCase()),
     display: d.value.sumDisplay(LOCALE_LABELS[locale.value], distanceUnitOptionLabel(distanceUnit.value), scale.value),
     feedback: d.value.sumFeedback,
+    guide: tour.value.cardSummary(FULL_TOUR.filter((id) => seenChapters().has(id)).length, FULL_TOUR.length),
     privacy: d.value.sumPrivacy,
     advanced: d.value.sumAdvanced,
   };
@@ -86,7 +92,7 @@ const summaries = computed<Record<SettingsCardId, string>>(() => {
 
 const toneColor = (tone: string) => (tone === 'neutral' ? 'var(--glyph-neutral)' : `var(--${tone})`);
 /** 内容只有几行的卡：展开后收窄（CardDeck 的 is-narrow）。 */
-const NARROW_CARDS: readonly SettingsCardId[] = ['display', 'feedback', 'privacy'];
+const NARROW_CARDS: readonly SettingsCardId[] = ['display', 'feedback', 'guide', 'privacy'];
 const cards = computed(() => SETTINGS_CARD_IDS.map((id) => ({
   id,
   narrow: NARROW_CARDS.includes(id),
@@ -184,7 +190,7 @@ onUnmounted(() => {
       </template>
 
       <template #body="{ card }">
-        <KeepAlive :max="9">
+        <KeepAlive :max="10">
           <CardBody :key="card.id" :id="card.id" />
         </KeepAlive>
       </template>

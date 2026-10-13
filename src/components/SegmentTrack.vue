@@ -719,6 +719,7 @@ onBeforeUnmount(() => {
       :key="String(item.value)"
       type="button"
       role="radio"
+      :data-value="String(item.value)"
       :class="['segment-item', { 'is-lensed': lensValue !== null && item.value === lensValue, 'is-offrow': offRow(index) }]"
       :style="itemLeft(index)"
       :aria-checked="item.value === modelValue"

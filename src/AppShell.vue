@@ -26,6 +26,8 @@ import { formatBytes } from './lib/format';
 const LifeEventEditor = defineAsyncComponent(() => import('./components/LifeEventEditor.vue'));
 /* 收集箱（精修批次 7.3）：全局悬浮在右下角，空的时候不出现；后端就绪后才挂（它要读上次留下的牌）。 */
 const CollectionBox = defineAsyncComponent(() => import('./components/cards/CollectionBox.vue'));
+/* 新手引导（聚光框、沙盒第一屏、首次启动的判断）：后端就绪后才挂，见 components/tour/TourLayer.vue。 */
+const TourLayer = defineAsyncComponent(() => import('./components/tour/TourLayer.vue'));
 
 const t = useMessages(messages);
 
@@ -242,6 +244,7 @@ onUnmounted(() => {
 <template>
   <LifeEventEditor />
   <CollectionBox v-if="backendReady" />
+  <TourLayer v-if="backendReady" />
   <a class="skip-link" href="#main-content">{{ t.skipToContent }}</a>
 
   <div class="app-body">

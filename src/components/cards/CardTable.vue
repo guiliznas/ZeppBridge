@@ -15,7 +15,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from 
 import Icon from '../Icon.vue';
 import SegmentTrack from '../SegmentTrack.vue';
 import PlayingCard from './PlayingCard.vue';
-import CoachTip from './CoachTip.vue';
+import { offerInline } from '../../composables/useTour';
 import { useCardsText } from './cards.i18n';
 import { useCardCollection } from '../../composables/useCardCollection';
 import { useCardPicking } from '../../composables/useCardPicking';
@@ -360,6 +360,8 @@ const measure = () => {
   if (drag.piles.value.length) void nextTick(() => drag.layoutPiles(false));
 };
 onMounted(() => {
+  // 第一次打开牌桌：牌摊开以后就地说一句怎么玩（新手引导的就地一章，取代以前的 CoachTip）。
+  window.setTimeout(() => offerInline('cards'), 800);
   returnFocus = document.activeElement as HTMLElement | null;
   releaseEscape = onMotionEscape(() => {
     if (drag.cancel()) return true;
@@ -431,8 +433,7 @@ defineExpose({ reopen, isClosing: () => closing.value });
         </template>
       </div>
       <footer ref="foot" class="table-foot">
-        <CoachTip id="card-table" :text="hint" />
-        <p :id="`${titleId}-keys`" class="sr-only">{{ hint }} {{ t.keyboardTip }}</p>
+          <p :id="`${titleId}-keys`" class="sr-only">{{ hint }} {{ t.keyboardTip }}</p>
       </footer>
     </div>
   </Teleport>

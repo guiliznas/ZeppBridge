@@ -2350,8 +2350,6 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
       boxedAria: (date: string) => `${date} está na caixa; prime para a retirar`,
       boxEmptyLabel: 'Caixa · vazia',
       boxDropHere: 'Larga para colocar aqui',
-      gotIt: 'Percebi',
-      tipBox: 'Desliza um cartão para cima ou toca em × para o retirar; toca num cartão de mês para expandir esse mês. Toca na seta para iniciar uma tarefa com estes dias.',
       close: 'Recolher as cartas', back: 'Voltar um nível', range7: '7 dias', range30: '1 mês', range180: '6 meses',
       rangeAria: 'Intervalo da mesa de cartas', picked: 'Para a IA', noRecord: 'Sem registo', recorded: 'Com registo',
       recordedOf: (recorded: number, total: number) => `${recorded} de ${total} dias com registos`,
