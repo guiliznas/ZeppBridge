@@ -513,3 +513,81 @@ fn pruning_keeps_five_migration_backups_and_never_deletes_pinned_or_manual_ones(
         .count();
     assert_eq!(kept_migrations, MIGRATION_BACKUP_KEEP);
 }
+
+/// 另一个进程里的写者：只在父测试用环境变量叫它时才干活（单独 `--ignored` 跑它什么都不做）。
+/// 拿到写锁后打一行暗号，然后一直攥着，等父进程把它杀掉。
+const LOCK_CHILD_DIR: &str = "ZEPPBRIDGE_TEST_LOCK_CHILD_DIR";
+const LOCK_CHILD_HELD: &str = "ZB-LOCK-HELD";
+
+#[test]
+#[ignore = "只由 a_writer_killed_in_another_process_frees_the_lock_and_the_queued_restore_runs 启动"]
+fn cross_process_lock_holder() {
+    let Some(dir) = std::env::var_os(LOCK_CHILD_DIR) else {
+        return;
+    };
+    let _held = write_lock::try_acquire(Path::new(&dir), WritePurpose::Sync).unwrap();
+    println!("{LOCK_CHILD_HELD}");
+    use std::io::Write as _;
+    std::io::stdout().flush().unwrap();
+    std::thread::sleep(std::time::Duration::from_secs(120));
+}
+
+/// 真的两个进程：另一个进程攥着写锁时，排队的恢复不动库、留着排队文件，并说得出谁在写；
+/// 那个进程被强行结束（崩溃、任务管理器）后，锁立刻就能拿到，不留需要人工删的锁文件，
+/// 排队的恢复下一次就执行成功。进程内的同类用例证明不了「换了进程、进程死了」这两件事。
+#[test]
+fn a_writer_killed_in_another_process_frees_the_lock_and_the_queued_restore_runs() {
+    use std::io::BufRead as _;
+    let dir = temp_dir("cross-process");
+    drop(seed(&dir, 3));
+    let backup = create_backup(&dir, BackupKind::Manual, "1.0.0").unwrap();
+    stage_restore(&dir, &backup.id, "1.0.0").unwrap();
+
+    let mut child = std::process::Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--exact",
+            "storage::backup::tests::cross_process_lock_holder",
+            "--ignored",
+            "--nocapture",
+            "--test-threads=1",
+        ])
+        .env(LOCK_CHILD_DIR, &dir)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .unwrap();
+    let mut lines = std::io::BufReader::new(child.stdout.take().unwrap()).lines();
+    assert!(
+        lines.any(|line| line.is_ok_and(|line| line.contains(LOCK_CHILD_HELD))),
+        "子进程没拿到写锁就退出了"
+    );
+
+    match write_lock::try_acquire(&dir, WritePurpose::Metadata) {
+        Err(write_lock::WriteLockError::Busy { holder }) => {
+            assert!(holder.is_some(), "等锁的一方要说得出另一个进程在做什么")
+        }
+        other => panic!("另一个进程攥着锁时必须是 Busy：{:?}", other.map(|_| ())),
+    }
+    let outcome = apply_pending_restore(&dir).expect("有排队的恢复");
+    assert!(!outcome.succeeded, "{outcome:?}");
+    assert_eq!(
+        outcome.message_code.as_deref(),
+        Some("err.backup.restore_busy")
+    );
+    assert!(pending_restore(&dir).is_some());
+
+    child.kill().unwrap();
+    child.wait().unwrap();
+    drop(
+        write_lock::acquire_with_timeout(
+            &dir,
+            WritePurpose::Metadata,
+            std::time::Duration::from_secs(2),
+        )
+        .expect("被结束的进程不能留下锁"),
+    );
+    let outcome = apply_pending_restore(&dir).expect("排队文件还在");
+    assert!(outcome.succeeded, "{outcome:?}");
+    assert!(pending_restore(&dir).is_none());
+    let _ = std::fs::remove_dir_all(&dir);
+}
