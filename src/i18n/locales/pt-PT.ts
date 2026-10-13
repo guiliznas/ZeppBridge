@@ -174,6 +174,7 @@ export default {
       privacyReportTitle: 'Dispositivo ou treino não reconhecido?',
       privacyReportBody:
         'Sem conta GitHub nem cópia de dados. Ao confirmar, vão apenas a estrutura de campos, o firmware, códigos de modelo (inteiros — que modelo, não que unidade) e códigos de treino desconhecidos com contagens para o repositório privado de relatórios do ZeppBridge. Nunca conta, tokens, série, ID de dispositivo, MAC, GPS, valores de saúde, respostas em bruto ou caminhos locais.',
+      mcpBadge: 'Dados de saúde só de leitura · não escuta em portas de rede',
       mcpCopyPrompt: 'Copiar instrução para a IA',
       mcpCopyConfig: 'Copiar apenas excerto de configuração',
       mcpPromptCopied:
@@ -2293,6 +2294,7 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
       sumData: (available: number, total: number) =>
         `${available} de ${total} fluxos de dados guardados nesta máquina`,
       sumDataLoading: 'A verificar fluxos disponíveis…',
+      sumAi: (format: string) => `Acesso MCP · exportação em ${format}`,
       sumDisplay: (language: string, unit: string, scale: number) =>
         `${language} · ${unit} · ${scale}%`,
       sumPrivacy: 'Os teus dados permanecem apenas neste computador',

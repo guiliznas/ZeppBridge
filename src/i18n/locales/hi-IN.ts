@@ -173,6 +173,7 @@ export default {
       privacyReportBody: 'GitHub खाता या डेटा कॉपी करना ज़रूरी नहीं। पुष्टि के बाद ZeppBridge के निजी एरर रिपोर्ट स्टोर में सिर्फ़ प्रोडक्ट-स्तरीय फ़ील्ड संरचना, फ़र्मवेयर वर्ज़न, मॉडल नंबर (पूर्णांक, केवल घड़ी का मॉडल), अज्ञात वर्कआउट कोड और संख्या जाते हैं। खाता, टोकन, सीरियल नंबर, डिवाइस ID, MAC, GPS, स्वास्थ्य मान, मूल रिस्पॉन्स या लोकल पाथ कभी नहीं जाते।',
 
       // ── 5. MCP ──
+      mcpBadge: 'स्वास्थ्य डेटा रीड-ओनली · कोई ओपन पोर्ट नहीं',
       mcpCopyPrompt: 'यह कॉपी करके AI से पूछें',
       mcpCopyConfig: 'कॉन्फ़िग स्निपेट कॉपी करें',
       mcpPromptCopied: 'कॉपी हो गया। अपनी AI चैट में पेस्ट करें, वह सेटअप गाइड देगा।',
@@ -2281,6 +2282,7 @@ Markdown में उत्तर दें।`,
       sumArchiveOff: (days: number) => plural(days, { one: `पिछले ${days} दिन का डेटा रखें · इससे पुराना डेटा अपने-आप साफ़ होगा`, other: `पिछले ${days} दिनों का डेटा रखें · इससे पुराना डेटा अपने-आप साफ़ होगा` }),
       sumData: (available: number, total: number) => `${available} / ${total} डेटा स्ट्रीम उपलब्ध`,
       sumDataLoading: 'डेटा जाँचा जा रहा है…',
+      sumAi: (format: string) => `MCP ऐक्सेस · डिफ़ॉल्ट ${format}`,
       sumDisplay: (language: string, unit: string, scale: number) => `${language} · ${unit} · ${scale}%`,
       sumPrivacy: 'डेटा केवल इस कंप्यूटर पर रहता है',
       sumAdvanced: "बैकअप और पुनर्स्थापना · लोकल API · डेटा की सेहत",

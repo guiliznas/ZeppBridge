@@ -360,6 +360,7 @@ export default {
         'Kein GitHub-Konto nötig. Nach deiner Bestätigung gehen nur Produkt-Feldstrukturen, Firmware, Modellnummern (Ganzzahlen – nur welches Modell) und unbekannte Trainings-Codes samt Anzahl an den privaten Berichtsspeicher von ZeppBridge. Nie raus: Konto, Token, Seriennummern, Geräte-IDs, MAC-Adressen, GPS, Gesundheitswerte, Rohantworten oder lokale Pfade.',
 
       // ── 5. MCP ──
+      mcpBadge: 'Gesundheitsdaten nur lesend · kein offener Port',
       mcpCopyPrompt: 'Kopieren und deine KI fragen',
       mcpCopyConfig: 'Nur Config kopieren',
       mcpPromptCopied:
@@ -2681,6 +2682,7 @@ Antworte in Markdown.`,
       sumData: (available: number, total: number) =>
         `${available} von ${total} Datenströmen auf diesem Rechner`,
       sumDataLoading: 'Verfügbare Daten werden gelesen…',
+      sumAi: (format: string) => `MCP-Zugriff · Standard-Export ${format}`,
       sumDisplay: (language: string, unit: string, scale: number) =>
         `${language} · ${unit} · ${scale} %`,
       sumPrivacy: 'Deine Daten bleiben auf diesem Rechner',
