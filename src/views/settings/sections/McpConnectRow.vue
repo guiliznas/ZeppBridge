@@ -6,12 +6,12 @@
  * 能直接跑的命令；Claude Desktop 则存一个 .mcpb 让用户双击安装。
  * 开发构建、浏览器预览里没有 sidecar，三个按钮不可点，退回下面的提示词 / 配置。
  */
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import Icon from '../../../components/Icon.vue';
 import { backend, isDesktop, toUserMessage } from '../../../lib/bridge';
 import type { McpSidecar } from '../../../lib/bridge/types';
-import { claudeCodeCommands, codexCommands } from '../../../lib/mcpClients';
-import { useMessages } from '../../../i18n';
+import { claudeCodeCommands, codexCommands, MCP_CLIENT_NAMES } from '../../../lib/mcpClients';
+import { locale, useMessages } from '../../../i18n';
 import { aiCardMessages } from './ai.i18n';
 
 const a = useMessages(aiCardMessages);
@@ -19,6 +19,10 @@ const emit = defineEmits<{ sidecar: [McpSidecar | null] }>();
 const sidecar = ref<McpSidecar | null>(null);
 const note = ref<{ text: string; ok: boolean } | null>(null);
 const busy = ref(false);
+/** 登记了旧版 MCP 的客户端（产品名不翻译）：中文用顿号，其他语言用逗号。 */
+const staleNames = computed(() => (sidecar.value?.stale_clients ?? [])
+  .map((client) => MCP_CLIENT_NAMES[client])
+  .join(locale.value.startsWith('zh') ? '、' : ', '));
 
 onMounted(async () => {
   if (!isDesktop()) return;
@@ -77,6 +81,7 @@ const saveBundle = async () => {
         <Icon name="export" :size="14" />Claude Desktop
       </button>
     </div>
+    <p v-if="staleNames" class="hint-line stale-line" role="status">{{ a.staleClients(staleNames) }}</p>
     <p v-if="note" class="hint-line" :class="{ ok: note.ok }" :role="note.ok ? 'status' : 'alert'">{{ note.text }}</p>
   </div>
 </template>
@@ -84,4 +89,5 @@ const saveBundle = async () => {
 <style scoped src="../settings-local.css"></style>
 <style scoped>
 .connect-actions { margin-top: 10px; }
+.stale-line { color: var(--warning); }
 </style>

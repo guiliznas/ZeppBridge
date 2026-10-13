@@ -8,7 +8,16 @@
  *   和 cmd 里都原样传下去。
  * - 路径可能带空格，一律加双引号。
  */
-import type { McpSidecar } from './bridge/types';
+import type { McpClientId, McpSidecar } from './bridge/types';
+
+/** 客户端的名字是产品名，不翻译。 */
+export const MCP_CLIENT_NAMES: Record<McpClientId, string> = {
+  claude_desktop: 'Claude Desktop',
+  claude_code: 'Claude Code',
+  codex: 'Codex',
+};
+
+const isStale = (sidecar: McpSidecar, client: McpClientId) => !!sidecar.stale_clients?.includes(client);
 
 /** 插件市场所在的分支。v3 还没合进 main，发 3.0 时改成 main（见计划 5F）。 */
 export const PLUGIN_MARKETPLACE_REF = 'v3';
@@ -28,6 +37,8 @@ const serverLaunch = (path: string) => [quote('--'), quote(path), ...SERVER_ARGS
 export const claudeCodeCommands = (sidecar: McpSidecar): string | null => {
   if (!sidecar.path) return null;
   return [
+    // 登记过旧版时先删掉同名的那条，否则 add 会报「已存在」。
+    ...(isStale(sidecar, 'claude_code') ? ['claude mcp remove zeppbridge --scope user'] : []),
     // -e 是可变长参数，放在 --scope 前面，由 --scope 截断，不会吞掉服务名。
     ['claude', 'mcp', 'add', ...envFlag('-e', sidecar), '--scope', 'user', 'zeppbridge', ...serverLaunch(sidecar.path)].join(' '),
     `claude plugin marketplace add ${PLUGIN_REPO}#${PLUGIN_MARKETPLACE_REF}`,
@@ -39,6 +50,7 @@ export const claudeCodeCommands = (sidecar: McpSidecar): string | null => {
 export const codexCommands = (sidecar: McpSidecar): string | null => {
   if (!sidecar.path) return null;
   return [
+    ...(isStale(sidecar, 'codex') ? ['codex mcp remove zeppbridge'] : []),
     ['codex', 'mcp', 'add', ...envFlag('--env', sidecar), 'zeppbridge', ...serverLaunch(sidecar.path)].join(' '),
     `codex plugin marketplace add ${PLUGIN_REPO} --ref ${PLUGIN_MARKETPLACE_REF}`,
     `codex plugin add ${PLUGIN_ID}`,

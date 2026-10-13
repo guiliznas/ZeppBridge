@@ -84,3 +84,71 @@ fn bundle_carries_manifest_and_entry_point() {
     assert_eq!(config["args"], serde_json::json!(["--scope", "task"]));
     assert_eq!(config["env"]["ZEPPBRIDGE_DATA_DIR"], "D:\\data");
 }
+
+/// 2.x 升上来的用户在 AI 客户端里登记的是旧工具包里的 zeppbridge-mcp：三家各认一种写法，
+/// 指向当前 sidecar 的不算（大小写、斜杠方向不同也不算），没提到 zeppbridge-mcp 的项目路径不算。
+#[test]
+fn stale_clients_are_the_ones_pointing_at_another_mcp_program() {
+    use super::stale::{stale_clients, ClientConfigRoots};
+    let dir = Scratch::new("stale");
+    let home = dir.path().join("home");
+    let appdata = dir.path().join("appdata");
+    let sidecar = dir.path().join("app").join("zeppbridge-mcp.exe");
+    let roots = ClientConfigRoots {
+        home: Some(home.clone()),
+        appdata: Some(appdata.clone()),
+    };
+    assert!(stale_clients(&roots, &sidecar).is_empty(), "什么都没装");
+
+    // Claude Code：项目级登记的旧路径；用户级指向当前 sidecar（换了大小写和斜杠）。
+    std::fs::create_dir_all(&home).unwrap();
+    let current = sidecar.to_string_lossy().to_uppercase().replace('\\', "/");
+    let claude_json = serde_json::json!({
+        "mcpServers": { "zeppbridge": { "command": current, "args": ["--scope", "task"] } },
+        "projects": { "C:/work/zeppbridge": { "mcpServers": {
+            "zb": { "command": "cmd", "args": ["/c", "D:\\tools\\ZeppBridge-2.4\\zeppbridge-mcp.exe"] }
+        } } }
+    });
+    std::fs::write(home.join(".claude.json"), claude_json.to_string()).unwrap();
+    // Codex：只有项目信任表提到 zeppbridge，不算。
+    std::fs::create_dir_all(home.join(".codex")).unwrap();
+    std::fs::write(
+        home.join(".codex").join("config.toml"),
+        "[projects.'c:\\users\\me\\zeppbridge']\ntrust_level = \"trusted\"\n",
+    )
+    .unwrap();
+    assert_eq!(stale_clients(&roots, &sidecar), ["claude_code"]);
+
+    // Codex 登记了旧路径（TOML 双引号带转义）；Claude Desktop 装过指向旧路径的扩展。
+    std::fs::write(
+        home.join(".codex").join("config.toml"),
+        "[mcp_servers.zeppbridge]\ncommand = \"D:\\\\old\\\\zeppbridge-mcp.exe\"\nargs = [\"--scope\", \"task\"]\n",
+    )
+    .unwrap();
+    let extension = appdata
+        .join("Claude")
+        .join("Claude Extensions")
+        .join("local.mcpb.zeppbridge");
+    std::fs::create_dir_all(&extension).unwrap();
+    std::fs::write(
+        extension.join("manifest.json"),
+        serde_json::json!({ "server": { "mcp_config": { "command": "D:/old/zeppbridge-mcp.exe" } } })
+            .to_string(),
+    )
+    .unwrap();
+    assert_eq!(
+        stale_clients(&roots, &sidecar),
+        ["claude_desktop", "claude_code", "codex"]
+    );
+
+    // 都换成当前这份以后，一个都不报。
+    let toml_path = sidecar.to_string_lossy().replace('\\', "\\\\");
+    std::fs::write(
+        home.join(".codex").join("config.toml"),
+        format!("[mcp_servers.zeppbridge]\ncommand = \"{toml_path}\"\n"),
+    )
+    .unwrap();
+    std::fs::remove_dir_all(appdata.join("Claude")).unwrap();
+    std::fs::write(home.join(".claude.json"), "{\"mcpServers\":{}}").unwrap();
+    assert!(stale_clients(&roots, &sidecar).is_empty());
+}

@@ -33,6 +33,17 @@ describe('mcpClients', () => {
     });
   });
 
+  it('登记过旧版的客户端先删掉同名那条再加，别的客户端不受影响', () => {
+    const sidecar = { path, data_dir_env: null, stale_clients: ['codex' as const] };
+    expect(codexCommands(sidecar)!.split('\n').slice(0, 2)).toEqual([
+      'codex mcp remove zeppbridge',
+      `codex mcp add zeppbridge "--" "${path}" --scope task`,
+    ]);
+    expect(claudeCodeCommands(sidecar)!.split('\n')[0]).toMatch(/^claude mcp add /);
+    expect(claudeCodeCommands({ ...sidecar, stale_clients: ['claude_code'] })!.split('\n')[0])
+      .toBe('claude mcp remove zeppbridge --scope user');
+  });
+
   it('通用配置在没有 sidecar 时用占位路径', () => {
     expect(JSON.parse(genericMcpConfig(null, '<x>')).mcpServers.zeppbridge.command).toBe('<x>');
   });

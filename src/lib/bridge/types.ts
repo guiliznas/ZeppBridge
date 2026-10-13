@@ -449,4 +449,7 @@ export interface BridgeBackend {
 export interface McpSidecar {
   path: string | null;
   data_dir_env: string | null;
+  /** 本机 AI 客户端里登记了另一份 zeppbridge-mcp 的（多半是 2.x 的旧版，读不了升级后的库）。 */
+  stale_clients?: McpClientId[];
 }
+export type McpClientId = 'claude_desktop' | 'claude_code' | 'codex';

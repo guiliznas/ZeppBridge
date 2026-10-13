@@ -26,6 +26,9 @@ pub struct McpSidecar {
     /// （开发构建、`ZEPPBRIDGE_DATA_DIR`、安装目录不可写的回退），配置里要显式
     /// 带上这个环境变量，否则 AI 看到的是一个空库。
     pub data_dir_env: Option<String>,
+    /// 本机 AI 客户端里登记了**另一份** zeppbridge-mcp 的（多半是 2.x 工具包里的旧版）：
+    /// `claude_desktop` / `claude_code` / `codex`。没附带 sidecar 时为空。见 [`stale`]。
+    pub stale_clients: Vec<&'static str>,
 }
 
 pub(crate) fn locate_sidecar(exe_dir: &Path, data_dir: &Path) -> McpSidecar {
@@ -34,6 +37,7 @@ pub(crate) fn locate_sidecar(exe_dir: &Path, data_dir: &Path) -> McpSidecar {
         return McpSidecar {
             path: None,
             data_dir_env: None,
+            stale_clients: Vec::new(),
         };
     }
     let data_dir_env =
@@ -41,6 +45,7 @@ pub(crate) fn locate_sidecar(exe_dir: &Path, data_dir: &Path) -> McpSidecar {
     McpSidecar {
         path: Some(candidate.to_string_lossy().into_owned()),
         data_dir_env,
+        stale_clients: Vec::new(),
     }
 }
 
@@ -53,13 +58,23 @@ fn current_sidecar(data_dir: &Path) -> McpSidecar {
         None => McpSidecar {
             path: None,
             data_dir_env: None,
+            stale_clients: Vec::new(),
         },
     }
 }
 
 #[tauri::command]
 pub async fn get_mcp_sidecar(state: tauri::State<'_, AppState>) -> Result<McpSidecar, AppError> {
-    Ok(current_sidecar(&state.data_dir))
+    let mut sidecar = current_sidecar(&state.data_dir);
+    if let Some(path) = sidecar.path.clone() {
+        // .claude.json 可能有几 MB，读文件放到阻塞线程里。
+        sidecar.stale_clients = tokio::task::spawn_blocking(move || {
+            stale::stale_clients(&stale::ClientConfigRoots::from_env(), Path::new(&path))
+        })
+        .await
+        .unwrap_or_default();
+    }
+    Ok(sidecar)
 }
 
 /// `.mcpb` 的 manifest。
@@ -165,6 +180,8 @@ pub async fn save_mcp_bundle(
     })?;
     Ok(target.to_string_lossy().into_owned())
 }
+
+mod stale;
 
 #[cfg(test)]
 mod tests;
