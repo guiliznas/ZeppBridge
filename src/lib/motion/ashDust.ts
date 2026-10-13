@@ -42,6 +42,12 @@ void main() {
   gl_FragColor = vec4(v_color.rgb * a, a);
 }`;
 
+/**
+ * 只提交编译和链接，不问结果（性能审计 11）。一问 COMPILE / LINK_STATUS 主线程就得停下来等它编完（实测约 16ms）。
+ * 开了 KHR_parallel_shader_compile 时 Chromium 在后台编：灰要等换场的快照拍好、帧节奏平稳才开始画，第一次画之前
+ * （`setup`）问一下 COMPLETION_STATUS 就够了——实测（1× / 4× 降速各连拨 3 次）开画时一次都没有还在编。
+ * 没有这个扩展时要问才编，推迟到第一帧只会卡在动画里（试过：那一帧卡 45ms），所以照旧在建画布时就问。
+ */
 const compile = (gl: WebGLRenderingContext, vs: string, fs: string): WebGLProgram | null => {
   const program = gl.createProgram();
   if (!program) return null;
@@ -50,11 +56,10 @@ const compile = (gl: WebGLRenderingContext, vs: string, fs: string): WebGLProgra
     if (!shader) return null;
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) return null;
     gl.attachShader(program, shader);
   }
   gl.linkProgram(program);
-  return gl.getProgramParameter(program, gl.LINK_STATUS) ? program : null;
+  return program;
 };
 
 /** 一圈涟漪的灰：起点时刻等涟漪真正开跑（`anim.startTime`）才定，和圆的边严丝合缝。 */
@@ -86,20 +91,37 @@ const createDustLayer = (width: number, height: number): DustLayer | null => {
   });
   const gl = canvas.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: false });
   if (!gl) return null;
+  // 有这个扩展才真在后台编；没有的话第一次问状态时才同步编（那还不如在这里就编完）。
+  const parallel = gl.getExtension('KHR_parallel_shader_compile') as { COMPLETION_STATUS_KHR: number } | null;
   const program = compile(gl, GRAIN_VS, GRAIN_FS);
   if (!program) return null;
-  gl.useProgram(program);
-  gl.enable(gl.BLEND);
-  gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-  gl.viewport(0, 0, width, height);
-  const attrs = (['a_pos', 'a_color', 'a_seed', 'a_time'] as const).map((name) => gl.getAttribLocation(program, name));
+  if (!parallel && !gl.getProgramParameter(program, gl.LINK_STATUS)) return null;
   const sizes = [2, 4, 2, 2];
   const offsets = [0, 2, 6, 8];
-  attrs.forEach((loc) => { if (loc >= 0) gl.enableVertexAttribArray(loc); });
-  const uNow = gl.getUniformLocation(program, 'u_now');
-  const uSize = gl.getUniformLocation(program, 'u_size');
-  const uOrigin = gl.getUniformLocation(program, 'u_origin');
-  gl.uniform2f(gl.getUniformLocation(program, 'u_view'), width, height);
+  let attrs: number[] = [];
+  let uNow: WebGLUniformLocation | null = null;
+  let uSize: WebGLUniformLocation | null = null;
+  let uOrigin: WebGLUniformLocation | null = null;
+  /** 第一次画之前：确认编过了，再取属性和 uniform 的位置（这些调用也会等编译）。编不过返回 false。 */
+  let linked: boolean | null = null;
+  /** 还在编：这一帧先不画（返回 null）。 */
+  const setup = (): boolean | null => {
+    if (linked !== null) return linked;
+    if (parallel && !gl.getProgramParameter(program, parallel.COMPLETION_STATUS_KHR)) return null;
+    linked = !!gl.getProgramParameter(program, gl.LINK_STATUS);
+    if (!linked) return false;
+    gl.useProgram(program);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    gl.viewport(0, 0, width, height);
+    attrs = (['a_pos', 'a_color', 'a_seed', 'a_time'] as const).map((name) => gl.getAttribLocation(program, name));
+    attrs.forEach((loc) => { if (loc >= 0) gl.enableVertexAttribArray(loc); });
+    uNow = gl.getUniformLocation(program, 'u_now');
+    uSize = gl.getUniformLocation(program, 'u_size');
+    uOrigin = gl.getUniformLocation(program, 'u_origin');
+    gl.uniform2f(gl.getUniformLocation(program, 'u_view'), width, height);
+    return true;
+  };
 
   const batches: Batch[] = [];
   let raf = 0;
@@ -112,6 +134,15 @@ const createDustLayer = (width: number, height: number): DustLayer | null => {
   const tick = (ts: number) => {
     raf = 0;
     if (disposed) return;
+    const ready = setup();
+    if (ready === false) {
+      layer.dispose();
+      return;
+    }
+    if (ready === null) {
+      raf = requestAnimationFrame(tick);
+      return;
+    }
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     for (const batch of [...batches]) {
