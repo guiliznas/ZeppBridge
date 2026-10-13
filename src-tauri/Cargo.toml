@@ -71,6 +71,11 @@ zip = { version = "4.6", default-features = false }
 # 开机时问系统要用户的界面语言。这一句以前是派生 powershell.exe 去跑
 # `(Get-Culture).Name`，在启动路径上要 0.5~2 秒；windows-sys 本来就在依赖树里
 # （tauri 在 Windows 上依赖它），这里只是把它变成直接依赖。
+# 交给 AI：Mac / Linux 上把 .md 以文件放进剪贴板（src/clipboard_files.rs）。arboard 本来就在依赖树里
+# （tauri-plugin-clipboard-manager 带进来的），这里只是变成直接依赖。
+[target.'cfg(not(windows))'.dependencies]
+arboard = { version = "3.6", default-features = false, features = ["wayland-data-control"] }
+
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61", features = [
     "Win32_Foundation",

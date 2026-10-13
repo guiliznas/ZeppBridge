@@ -3006,7 +3006,8 @@ Réponds en Markdown.`,
         handoff: {
           s1: 'Vos données sélectionnées sont à gauche : touchez une carte pour modifier la période, ou écartez-la pour l’exclure.',
           s2: 'Rédigez votre question à droite ; elle est condensée dans un fichier .md unique pour l’IA.',
-          s3: 'Maintenez le cadenas au centre pour transmettre : le fichier va automatiquement dans le presse-papiers ; appuyez sur Ctrl+V dans la conversation avec l’IA pour le joindre. Vous souhaitez vous épargner aussi le collage et l’envoi ? Activez « Passer à l’IA automatiquement » sur la carte Outils IA des Paramètres.',
+          s3: 'Maintenez le cadenas au centre pour transmettre : le fichier va automatiquement dans le presse-papiers ; appuyez sur Ctrl+V dans la conversation avec l’IA pour le joindre.',
+          s3Auto: 'Vous souhaitez vous épargner aussi le collage et l’envoi ? Activez « Passer à l’IA automatiquement » sur la carte Outils IA des Paramètres.',
         },
         plan: {
           s1: 'Collez la réponse finale de l’IA ici pour générer un plan hebdomadaire.',

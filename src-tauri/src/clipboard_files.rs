@@ -2,16 +2,19 @@
 //!
 //! 为什么不做浏览器插件（10-13 用户：Safari / Edge / Arc / 小众浏览器各不相同，多装一个插件太麻烦）：
 //! 把文件管理器里复制的文件粘进网页，Chrome 66+、Edge 79+、Firefox 63+、Safari 13.1+ 都支持
-//! （paste 事件的 `clipboardData.files`），所以只要把 `.md` 以 `CF_HDROP` 放进剪贴板，
-//! 用户在任何浏览器的对话框里按一下 Ctrl+V 就附上了，什么都不用装。
+//! （paste 事件的 `clipboardData.files`），所以只要把 `.md` 以文件放进剪贴板，
+//! 用户在任何浏览器的对话框里按一下 Ctrl+V（Mac 上 ⌘V）就附上了，什么都不用装。
 //!
-//! 只有 Windows 实现；别的平台返回 `Unsupported`，界面退回「拖文件进对话框」。
+//! - Windows：自己写 `CF_HDROP` + `Preferred DropEffect`（复制，不是剪切）；读前台标题、替用户按键也只有这里有。
+//! - Mac / Linux：用依赖树里本来就有的 arboard（Mac 写 `NSURL`，同访达里复制文件；Linux 在 X11 / Wayland
+//!   上写 `text/uri-list`）。全自动替按键在这两个系统上不做（Mac 要辅助功能授权），界面不显示那个开关。
+//!   放不进去（比如没有图形会话）返回错误，界面退回「拖文件进对话框」。
 
 use std::path::Path;
 
 #[derive(Debug)]
 pub enum ClipboardError {
-    // 只有非 Windows 平台会走到。
+    /// 这个系统 / 会话里拿不到剪贴板（Mac、Linux 没有图形会话时）。Windows 上不会走到。
     #[cfg_attr(windows, allow(dead_code))]
     Unsupported,
     Busy,
@@ -188,12 +191,28 @@ mod imp {
 mod imp {
     use super::ClipboardError;
     use std::path::Path;
+    use std::sync::Mutex;
 
-    pub fn copy_file(_: &Path) -> Result<(), ClipboardError> {
-        Err(ClipboardError::Unsupported)
+    /// Linux 上剪贴板内容由持有它的进程提供：`Clipboard` 一放下，粘贴就取不到了。
+    /// 所以留一个常驻实例，应用不退出，用户什么时候按 Ctrl+V 都还在。
+    static CLIPBOARD: Mutex<Option<arboard::Clipboard>> = Mutex::new(None);
+
+    fn with(
+        put: impl FnOnce(&mut arboard::Clipboard) -> Result<(), arboard::Error>,
+    ) -> Result<(), ClipboardError> {
+        let mut guard = CLIPBOARD.lock().unwrap_or_else(|e| e.into_inner());
+        if guard.is_none() {
+            *guard = Some(arboard::Clipboard::new().map_err(|_| ClipboardError::Unsupported)?);
+        }
+        let clipboard = guard.as_mut().ok_or(ClipboardError::Unsupported)?;
+        put(clipboard).map_err(|_| ClipboardError::Busy)
     }
-    pub fn copy_text(_: &str) -> Result<(), ClipboardError> {
-        Err(ClipboardError::Unsupported)
+
+    pub fn copy_file(path: &Path) -> Result<(), ClipboardError> {
+        with(|clipboard| clipboard.set().file_list(&[path]))
+    }
+    pub fn copy_text(text: &str) -> Result<(), ClipboardError> {
+        with(|clipboard| clipboard.set_text(text))
     }
     pub fn foreground_title() -> Option<String> {
         None

@@ -14,6 +14,8 @@ import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vu
 import { useTour, type TargetBox } from '../../composables/useTour';
 import { inSandbox } from '../../lib/tour/sandbox';
 import { useTourText } from './tour.i18n';
+import { autoSupported } from '../../composables/ai/useAutoHandoff';
+import { withPlatformKeys } from '../../lib/platformKeys';
 import { onMotionEscape } from '../../lib/motion/interrupt';
 
 const t = useTourText();
@@ -32,7 +34,13 @@ type StepCopy = Record<string, string>;
 const text = computed(() => {
   const now = snap.value;
   if (!now) return '';
-  return (t.value.steps[now.chapter] as StepCopy)[`s${now.step + 1}`] ?? '';
+  const copy = t.value.steps[now.chapter] as StepCopy;
+  let line = copy[`s${now.step + 1}`] ?? '';
+  // 交给 AI 第 3 步的后半句讲「全自动」开关：只有 Windows 有那个开关，别的系统不说。
+  if (now.chapter === 'handoff' && now.step === 2 && copy.s3Auto && autoSupported()) {
+    line += /[\u3000-\u9fff]$/.test(line) ? copy.s3Auto : ` ${copy.s3Auto}`;
+  }
+  return withPlatformKeys(line);
 });
 const title = computed(() => (snap.value ? t.value.chapter[snap.value.chapter] : ''));
 /** 只有一步的就地提示：只给一个「知道了」。 */

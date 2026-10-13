@@ -3251,7 +3251,8 @@ Regels: vergelijk me alleen met mijn eigen historie, niet met populatiegemiddeld
         handoff: {
           s1: 'Links staan je gekozen gegevens: tik op een kaart om het aantal dagen aan te passen, of veeg hem weg om hem weg te laten.',
           s2: 'Schrijf rechts je vraag; deze wordt verpakt in één .md voor de AI.',
-          s3: 'Houd het slot in het midden ingedrukt om over te dragen: het bestand belandt op je klembord, dus met Ctrl+V in het chatvenster van de AI voeg je het direct toe. Wil je dat het plakken en verzenden ook voor je wordt gedaan? Schakel dan „Automatisch overdragen aan AI” in op de kaart AI-tools in Instellingen.',
+          s3: 'Houd het slot in het midden ingedrukt om over te dragen: het bestand belandt op je klembord, dus met Ctrl+V in het chatvenster van de AI voeg je het direct toe.',
+          s3Auto: 'Wil je dat het plakken en verzenden ook voor je wordt gedaan? Schakel dan „Automatisch overdragen aan AI” in op de kaart AI-tools in Instellingen.',
         },
         plan: {
           s1: 'Plak het definitieve antwoord van de AI hier terug om een weekschema te maken.',

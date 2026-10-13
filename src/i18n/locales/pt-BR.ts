@@ -2886,7 +2886,8 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
         handoff: {
           s1: 'Seus dados selecionados ficam à esquerda: toque em um cartão para mudar quantos dias ele cobre ou deslize-o para fora para removê-lo.',
           s2: 'Escreva sua pergunta à direita; tudo é empacotado em um único .md para a IA.',
-          s3: 'Mantenha pressionado o cadeado no centro para entregar: o arquivo vai para a área de transferência e basta pressionar Ctrl+V no chat da IA para anexá-lo. Quer que colar e enviar também sejam feitos para você? Ative “Passar para a IA automaticamente” no cartão “Exportação e IA” nas Configurações.',
+          s3: 'Mantenha pressionado o cadeado no centro para entregar: o arquivo vai para a área de transferência e basta pressionar Ctrl+V no chat da IA para anexá-lo.',
+          s3Auto: 'Quer que colar e enviar também sejam feitos para você? Ative “Passar para a IA automaticamente” no cartão “Exportação e IA” nas Configurações.',
         },
         plan: {
           s1: 'Cole a resposta final da IA aqui para transformá-la no plano da semana.',

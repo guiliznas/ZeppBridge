@@ -3336,7 +3336,8 @@ Antworte in Markdown.`,
         handoff: {
           s1: 'Links liegen deine gewählten Daten: Tippe auf eine Karte, um den Zeitraum zu ändern, oder wische sie weg, um sie wegzulassen.',
           s2: 'Schreibe rechts deine Frage – sie wird in ein einzelnes .md für die KI gepackt.',
-          s3: 'Halte das Schloss in der Mitte gedrückt, um zu übergeben: Die Datei landet in deiner Zwischenablage; mit Ctrl+V im KI-Chat wird sie angehängt. Möchtest du dir auch das Einfügen und Senden sparen? Aktiviere „Automatisch an die KI übergeben“ auf der Karte „KI-Werkzeuge“ in den Einstellungen.',
+          s3: 'Halte das Schloss in der Mitte gedrückt, um zu übergeben: Die Datei landet in deiner Zwischenablage; mit Ctrl+V im KI-Chat wird sie angehängt.',
+          s3Auto: 'Möchtest du dir auch das Einfügen und Senden sparen? Aktiviere „Automatisch an die KI übergeben“ auf der Karte „KI-Werkzeuge“ in den Einstellungen.',
         },
         plan: {
           s1: 'Füge die Antwort der KI hier ein und sie wird zum Wochenplan.',

@@ -1,8 +1,8 @@
 /**
  * 交给 AI 的最后一步（计划 12.1，10-13）：不装浏览器插件。
  *
- * - 交出去的 `.md` 以「文件」放进系统剪贴板（同资源管理器里 Ctrl+C）：任何浏览器的对话框里 Ctrl+V 就附上
- *   （Chrome / Edge / Arc / Firefox / Safari 都认 paste 事件里的文件）。放不进去（非 Windows）就退回拖文件。
+ * - 交出去的 `.md` 以「文件」放进系统剪贴板（同资源管理器 / 访达里复制文件）：任何浏览器的对话框里 Ctrl+V（⌘V）就附上
+ *   （Chrome / Edge / Arc / Firefox / Safari 都认 paste 事件里的文件）。放不进去（比如 Linux 没有图形会话）就退回拖文件。
  * - 「全自动」（默认关，设置「交给 AI 工具」卡）：打开网站后等它到前台，替你粘文件、粘开场白、回车；
  *   每一下之前都核对前台窗口，按 Esc / 切走窗口就停，文件还在剪贴板里。
  *
@@ -44,7 +44,7 @@ const listenOnce = () => {
   return listening;
 };
 
-/** 文件进剪贴板。成功返回 true；失败（非 Windows、剪贴板被占）返回 false，调用方退回复制开场白。 */
+/** 文件进剪贴板。成功返回 true；失败（没有图形会话、剪贴板被占）返回 false，调用方退回复制开场白。 */
 export const copyFileToClipboard = async (mdPath: string): Promise<boolean> => {
   try {
     await backend.aiHandoffCopyFile(mdPath);

@@ -36,7 +36,8 @@ const messages = defineMessages(
       },
       handoff: {
         s1: '左边是你挑好的数据：点一张能改看几天，不想给就把它往外甩掉。', s2: '在右边写下想问的，打包成一个 .md 交给 AI。',
-        s3: '按住中间的锁交出去：文件自动放进剪贴板，在 AI 对话框里按 Ctrl+V 就附上了。连粘贴和发送都想省掉？去设置「交给 AI 工具」卡打开「全自动」。',
+        s3: '按住中间的锁交出去：文件自动放进剪贴板，在 AI 对话框里按 Ctrl+V 就附上了。',
+        s3Auto: '连粘贴和发送都想省掉？去设置「交给 AI 工具」卡打开「全自动」。',
       },
       plan: {
         s1: '把 AI 的最终回复粘贴回来，就成了一周计划。',
@@ -92,7 +93,8 @@ const messages = defineMessages(
       },
       handoff: {
         s1: 'Your picked data is on the left: tap a card to change how many days it covers, or flick it away to leave it out.', s2: 'Write your question on the right; it is packed into one .md for the AI.',
-        s3: 'Hold the lock in the middle to hand it off: the file lands on your clipboard, so pressing Ctrl+V in the AI chat box attaches it. Want the pasting and sending done for you too? Turn on “Hand off to AI automatically” in the AI tools card in Settings.',
+        s3: 'Hold the lock in the middle to hand it off: the file lands on your clipboard, so pressing Ctrl+V in the AI chat box attaches it.',
+        s3Auto: 'Want the pasting and sending done for you too? Turn on “Hand off to AI automatically” in the AI tools card in Settings.',
       },
       plan: {
         s1: "Paste the AI's final reply back and it becomes a week's plan.",
@@ -148,7 +150,8 @@ const messages = defineMessages(
       },
       handoff: {
         s1: 'A la izquierda están tus datos elegidos: toca una carta para cambiar cuántos días abarca, o lánzala fuera para no incluirla.', s2: 'Escribe tu pregunta a la derecha; se empaqueta en un solo .md para la IA.',
-        s3: 'Mantén pulsado el candado del centro para entregarlo: el archivo va al portapapeles y con Ctrl+V en el chat de la IA queda adjunto. ¿Quieres que también se pegue y se envíe solo? Activa «Pasar a la IA automáticamente» en la tarjeta de herramientas de IA de Ajustes.',
+        s3: 'Mantén pulsado el candado del centro para entregarlo: el archivo va al portapapeles y con Ctrl+V en el chat de la IA queda adjunto.',
+        s3Auto: '¿Quieres que también se pegue y se envíe solo? Activa «Pasar a la IA automáticamente» en la tarjeta de herramientas de IA de Ajustes.',
       },
       plan: {
         s1: 'Pega aquí la respuesta final de la IA y se convierte en el plan de la semana.',

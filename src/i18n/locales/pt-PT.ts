@@ -3212,7 +3212,8 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
         handoff: {
           s1: 'Os teus dados selecionados estão à esquerda: toca num cartão para alterar o período de dias ou afasta-o para o excluir.',
           s2: 'Escreva a sua pergunta à direita; é compactada num ficheiro .md único para a IA.',
-          s3: 'Mantém premido o cadeado ao centro para entregar: o ficheiro vai para a área de transferência e com Ctrl+V na conversa da IA fica anexado. Também queres que cole e envie sozinho? Ativa «Passar à IA automaticamente» no cartão «Ferramentas de IA» em Definições.',
+          s3: 'Mantém premido o cadeado ao centro para entregar: o ficheiro vai para a área de transferência e com Ctrl+V na conversa da IA fica anexado.',
+          s3Auto: 'Também queres que cole e envie sozinho? Ativa «Passar à IA automaticamente» no cartão «Ferramentas de IA» em Definições.',
         },
         plan: {
           s1: 'Cole a resposta final da IA aqui para transformá-la no plano semanal.',

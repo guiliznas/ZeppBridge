@@ -6757,6 +6757,7 @@ name = "zeppbridge"
 version = "3.0.0-beta.60"
 dependencies = [
  "anyhow",
+ "arboard",
  "chrono",
  "directories",
  "reqwest 0.12.28",

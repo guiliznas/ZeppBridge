@@ -113,6 +113,10 @@ pub async fn ai_handoff_autopaste(
         .find(|(id, _)| *id == request.provider)
         .map(|(_, titles)| *titles)
         .ok_or_else(|| AppError::new("err.ai_handoff.provider", "目标 AI 不在允许列表里"))?;
+    // 替用户按键只有 Windows 有；别的系统界面上也没有这个开关。
+    if cfg!(not(windows)) {
+        return Err(clipboard_error(ClipboardError::Unsupported));
+    }
     let path = handoff_file(&state, &request.md_path)?;
     clipboard_files::copy_file(&path).map_err(clipboard_error)?;
     let ticket = GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
