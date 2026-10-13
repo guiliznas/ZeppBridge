@@ -7,11 +7,10 @@
  * 一个都没固定时是一张引导卡，点开挑选面板（PinPicker）。
  *
  * 动效：挑完回来，新加的磁贴由下往上漫出类别色再显出内容；留下的原地不动（缓存页回场不重放）。 */
-import { computed, defineAsyncComponent, onMounted, ref } from 'vue';
-import { RouterLink } from 'vue-router';
+import { computed, defineAsyncComponent, onMounted, provide, ref } from 'vue';
 import Icon from '../Icon.vue';
-import Sparkline from '../Sparkline.vue';
-import BaselineTag from '../ask/BaselineTag.vue';
+import PinTile from './PinTile.vue';
+import { PIN_TILES, type PinTileData } from './pinTiles';
 import { backend, isDesktop } from '../../lib/bridge';
 import { useRevisionReload } from '../../composables/useRevisionReload';
 import { useTrendRange } from '../../composables/useTrendRange';
@@ -21,7 +20,7 @@ import { metricColor } from '../../lib/metricTone';
 import { coverageLabel, indexSeries, SERIES_FETCH_DAYS, sliceIndexed } from '../../lib/metricSeries';
 import { today as currentToday } from '../../lib/currentDay';
 import {
-  pinHref, pinLatestDate, pinMassUnit, pinNumberText, pinnableMetric, pinSparkValues, pinValueText, readPins, writePins, type PinnableMetric,
+  pinLatestDate, pinMassUnit, pinnableMetric, pinSparkValues, pinValueText, readPins, writePins, type PinnableMetric,
 } from '../../lib/pinnedMetrics';
 import type { MetricSeries } from '../../types';
 import { useMessages } from '../../i18n';
@@ -63,7 +62,7 @@ const dayText = (date: string | null): string | null => {
   return t.value.measuredOn(displayDateTimeFormatter({ month: 'short', day: 'numeric' }).format(day));
 };
 
-const tiles = computed(() => pins.value.flatMap((id) => {
+const tiles = computed<PinTileData[]>(() => pins.value.flatMap((id) => {
   const metric = pinnableMetric(id);
   if (!metric) return [];
   const data = series.value[id];
@@ -80,6 +79,19 @@ const tiles = computed(() => pins.value.flatMap((id) => {
     tone: metricColor(id),
   }];
 }));
+/* 磁贴的内容交给 PinTile 自己渲染，这里的 TransitionGroup 只认「有哪几块、什么顺序」（性能审计 11）。
+   TransitionGroup 每重渲染一次就要把每块磁贴的位置量两遍（为了「挪位」动画），换语言、数据刷新时
+   内容一变它就跟着重渲染，换语言那一下多出约 30ms 整页强制排版。现在只有增删、换顺序才轮到它。 */
+const tileMap = computed(() => new Map(tiles.value.map((tile) => [tile.id, tile])));
+provide(PIN_TILES, tileMap);
+const tileIds = computed<string[]>((previous) => {
+  const next = tiles.value.map((tile) => tile.id);
+  return previous && previous.length === next.length && previous.every((id, i) => id === next[i]) ? previous : next;
+});
+/* 类名和样式也是 TransitionGroup 的 props：每次渲染新建一个数组 / 对象，它就以为 props 变了、跟着重渲染。 */
+const gridClass = computed(() => ['pins-grid', { 'just-pinned': justPinned.value }]);
+const gridStyle = computed(() => ({ '--count': tileIds.value.length }));
+const PIN_DURATION = { enter: 900, leave: 0 };
 
 let loadSeq = 0;
 /** 上一次读取失败了。已经显示着的数据保留，没有数据的磁贴说「读不出来」而不是「无记录」。 */
@@ -137,17 +149,9 @@ const apply = async (next: string[]) => {
 
     <!-- 灌色动画在 ::after 和子元素上，Vue 只看得见磁贴自己的 240ms 过渡，会在 27% 处撤掉
          enter-active 把它截断：时长显式给 900。离场是 display:none，不用等。 -->
-    <TransitionGroup v-else tag="div" name="pin" :appear="justPinned" :duration="{ enter: 900, leave: 0 }"
-      :class="['pins-grid', { 'just-pinned': justPinned }]" :style="{ '--count': tiles.length }">
-      <RouterLink v-for="tile in tiles" :key="tile.id" :to="pinHref(tile.metric)" data-morph-card
-        :class="['pin-tile', { 'is-empty': tile.value === '—' }]" :style="{ '--tone': tile.tone }" :aria-label="t.tileAria(tile.label, tile.value)">
-        <span class="pin-label"><i class="pin-dot" aria-hidden="true"></i>{{ tile.label }}</span>
-        <span class="pin-value"><strong>{{ tile.value }}</strong><small v-if="tile.unit && tile.value !== '—'">{{ tile.unit }}</small></span>
-        <span class="pin-when">{{ tile.when ?? tile.coverage }}<BaselineTag class="pin-baseline" :metric="tile.id" :format="(v: number) => pinNumberText(tile.metric, v)" :unit="tile.unit" /></span>
-        <Sparkline v-if="tile.spark.length > 1" class="pin-spark" :values="tile.spark" :color="tile.tone" :label="`${tile.label} · ${tile.coverage}`" />
-        <!-- 没有记录不画线（不编数据），留一块和曲线同高的浅槽，几块磁贴照样齐平。 -->
-        <span v-else class="pin-spark pin-spark-empty" aria-hidden="true"></span>
-      </RouterLink>
+    <TransitionGroup v-else tag="div" name="pin" :appear="justPinned" :duration="PIN_DURATION"
+      :class="gridClass" :style="gridStyle">
+      <PinTile v-for="id in tileIds" :key="id" :id="id" />
     </TransitionGroup>
 
     <PinPicker v-if="pickerOpen" :pins="pins" :label="label" @close="pickerOpen = false" @done="apply" />
@@ -177,49 +181,11 @@ const apply = async (next: string[]) => {
 .pins-empty-copy small { font-size: var(--fs-xs); }
 
 .pins-grid { position: relative; display: grid; grid-template-columns: repeat(var(--count, 4), minmax(0, 1fr)); gap: 12px; }
-/* 类别色只做右上角一点微光（和下面的入口卡一样），不给整块刷颜色。 */
-.pin-tile {
-  position: relative; display: grid; align-content: start; gap: 4px; min-width: 0; padding: 14px 16px 12px; overflow: hidden;
-  border-radius: var(--radius-lg);
-  background: radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--tone) 16%, transparent), transparent 60%), var(--mat-card);
-  box-shadow: var(--mat-rim), var(--mat-shadow);
-  color: inherit; text-decoration: none; transition: translate var(--dur-base) var(--ease-out), box-shadow var(--dur-base) ease;
-}
-.pin-tile:hover { translate: 0 -2px; }
-.pin-tile:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.pin-label { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; color: var(--muted); font-size: var(--fs-xs); text-overflow: ellipsis; white-space: nowrap; }
-.pin-dot { width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--tone); box-shadow: 0 0 8px color-mix(in srgb, var(--tone) 60%, transparent); }
-.pin-value { display: flex; align-items: baseline; gap: 5px; }
-.pin-value strong { color: var(--ink); font-size: var(--fs-3xl); font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
-.pin-value small { color: var(--muted); font-size: var(--fs-xs); }
-.pin-when { color: var(--subtle); font-size: var(--fs-2xs); }
-.pin-spark { margin-top: 2px; }
-.pin-spark-empty { display: block; height: 52px; border-radius: 10px;
-  background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--ink) 4%, transparent) 0 6px, transparent 6px 12px); }
-.pin-tile.is-empty { background: var(--mat-card); }
-.pin-tile.is-empty .pin-value strong { color: var(--subtle); }
-.pin-tile.is-empty .pin-dot { box-shadow: none; opacity: .55; }
-
-/* 新来的磁贴：先是一块灰底，类别色从底边往上漫满，再退成微光、内容浮上来。
-   只动 transform（scaleY）和 opacity，合成器就能做。留下来的磁贴不重放。 */
-.pin-tile::after {
-  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
-  background: linear-gradient(0deg, color-mix(in srgb, var(--tone) 34%, transparent), color-mix(in srgb, var(--tone) 12%, transparent));
-  transform: scaleY(0); transform-origin: 50% 100%; opacity: 0;
-}
 @media (prefers-reduced-motion: no-preference) {
-  .just-pinned .pin-enter-active::after { animation: pin-flood 900ms cubic-bezier(.3, .7, .2, 1) both; }
-  .just-pinned .pin-enter-active > * { animation: pin-content 900ms ease both; }
   .pin-move { transition: transform 420ms cubic-bezier(.2, .8, .2, 1); }
 }
-/* 去掉的磁贴直接让位（它在挑选面板里已经退过场），剩下的滑到新位置。 */
+/* 去掉的磁贴直接让位（它在挑选面板里已经退过场），剩下的滑到新位置。磁贴自己的样式在 PinTile.vue。 */
 .pin-leave-active { display: none; }
-@keyframes pin-flood {
-  0% { transform: scaleY(0); opacity: 1; }
-  50% { transform: scaleY(1); opacity: 1; }
-  100% { transform: scaleY(1); opacity: 0; }
-}
-@keyframes pin-content { 0%, 45% { opacity: 0; translate: 0 6px; } 100% { opacity: 1; translate: 0 0; } }
 
 @container (max-width: 760px) {
   .pins-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -227,6 +193,4 @@ const apply = async (next: string[]) => {
 @media (max-width: 760px) {
   .pins-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-/* 「比平时高 / 低」（只和自己比，精修批次 6.2）跟在测量时间后面。 */
-.pin-baseline { margin-left: 6px; vertical-align: 1px; }
 </style>

@@ -29,15 +29,22 @@ export const useWidthMorph = (
   watch(source, async () => {
     const node = el.value;
     if (!node) return;
+    // 换语言的涟漪期间不补间（lib/motion/ashSwitch.ts）：新快照是活的，宽度每变一帧整张快照都要重画，
+    // 而且胶囊换成新宽度这件事本身就被涟漪盖着。涟漪的标记在换语言之前就挂上了：先看它，连量都不量——
+    // 换语言那一刻整页的字都在变，量一次旧宽、一次新宽就是两次整页强制排版（性能审计 11，约 35ms）。
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (reduced || document.documentElement.dataset.ashMorph !== undefined) {
+      running?.cancel();
+      await nextTick();
+      onSettled?.();
+      return;
+    }
+    // 正在伸缩时先量：从画面上此刻的宽度接着走。
     from = node.getBoundingClientRect().width;
     running?.cancel();
     await nextTick();
-    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     const to = node.getBoundingClientRect().width;
-    // 换语言的涟漪期间不补间（lib/motion/ashSwitch.ts）：新快照是活的，宽度每变一帧整张快照都要重画，
-    // 而且胶囊换成新宽度这件事本身就被涟漪盖着。
-    const ashing = document.documentElement.dataset.ashMorph !== undefined;
-    if (reduced || ashing || !from || Math.abs(to - from) < 1) {
+    if (!from || Math.abs(to - from) < 1) {
       onSettled?.();
       return;
     }
