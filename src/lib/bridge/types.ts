@@ -303,6 +303,10 @@ export interface BridgeBackend {
   readClipboardText(): Promise<string>;
   aiTaskDayStrip(daysBefore: number, end?: string): Promise<import('../../types/timeBridge').DayStripRow[]>;
   aiExchangeList(limit?: number): Promise<import('../../types/timeBridge').AiExchange[]>;
+  /** 给一条往返记录起名（空白 = 回到当时的问题）；返回这条是否还在。 */
+  aiExchangeRename(id: string, title: string): Promise<boolean>;
+  /** 删掉一条往返记录；返回是否真的删到了。 */
+  aiExchangeDelete(id: string): Promise<boolean>;
   aiProfileSave(note: string): Promise<void>;
   trainingPlanAdherence(from: string, to: string): Promise<import('../../types/timeBridge').AdherenceDay[]>;
   trainingPlanUpdateDraft(id: string, document: PlanDocument): Promise<boolean>;

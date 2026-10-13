@@ -105,6 +105,12 @@ export const sandboxFlags = (): SandboxFlags | null => {
 
 export const inSandbox = (): boolean => sandboxFlags() !== null;
 
+/** 整页载入回某一页的地址：只能载入根路径，页面放在 `route` 参数里（见 demo/early.ts）。 */
+export const reloadUrl = (path: string | null | undefined): string => {
+  const target = safePath(path, '/');
+  return target === '/' ? '/' : `/?${new URLSearchParams({ route: target }).toString()}`;
+};
+
 /** 进沙盒：整页载入成示例模式。`route` 是第一步所在的页，载入时直接落在那里。 */
 export const enterSandbox = (options: { chapters: TourChapterId[]; welcome?: boolean; ret: string; route: string; theme: string; locale: string }): void => {
   const params = new URLSearchParams({
@@ -132,5 +138,5 @@ export const leaveSandbox = (ret: string): void => {
   } catch {
     // 带不回来就沿用原来的设置。
   }
-  window.location.replace(safePath(ret, '/'));
+  window.location.replace(reloadUrl(ret));
 };

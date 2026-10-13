@@ -20,7 +20,7 @@ const t = useBridgeText();
 <template>
   <section class="page ai-sub-page" aria-labelledby="ai-exchanges-title">
     <PageHeader title-id="ai-exchanges-title" :title="t.history" :intro="t.historyHint" />
-    <div class="ai-panel"><ExchangeList :items="history.exchanges.value" /></div>
+    <div class="ai-panel ex-panel"><ExchangeList :items="history.exchanges.value" @rename="history.rename" @remove="history.remove" /></div>
     <p v-if="history.error.value" class="ai-message" role="alert">{{ history.error.value }}<button class="pill-button quiet" @click="history.load()">{{ t.retry }}</button></p>
   </section>
 </template>
@@ -29,4 +29,6 @@ const t = useBridgeText();
 <style scoped>
 /* 列表自己的标题在页头里说过了。 */
 .ai-panel :deep(.exchange-list > header) { display: none; }
+/* 每一条已经是一张圆角小卡：外面不再套一层面板（卡里套卡）。 */
+.ex-panel { padding: 0; border: 0; background: none; box-shadow: none; }
 </style>

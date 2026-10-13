@@ -28,6 +28,7 @@ import { useTrainingPlan } from '../../composables/useTrainingPlan';
 import { useBridgeText } from '../../components/ai/bridge/bridge.i18n';
 import { useHubText } from '../../components/ai/hub/hub.i18n';
 import { usePlanText } from '../../components/plan/usePlanText';
+import { foreignToUi, langOf } from '../../lib/trainingPlan/foreignText';
 import { issueDate } from '../../lib/trainingPlan/week';
 import { planIssueText } from '../../lib/trainingPlan/issues';
 import '../../styles/ai-task.css';
@@ -106,7 +107,7 @@ const changes = computed(() => (plan.editingSent.value
     <div v-if="hub.notice.value" class="ai-message" role="status"><Icon name="info" :size="14" /><span>{{ hub.notice.value }}</span><button class="pill-button quiet" @click="plan.dismissNotice()">{{ pt.dismiss }}</button></div>
 
     <div v-if="hub.future.value" class="ai-panel week-panel">
-      <p v-if="hub.future.value.check.summary" class="plan-summary">{{ hub.future.value.check.summary }}</p>
+      <p v-if="hub.future.value.check.summary" class="plan-summary" :lang="langOf(hub.future.value.check.summary)">{{ hub.future.value.check.summary }}<small v-if="foreignToUi(hub.future.value.check.summary)" class="ai-original" :title="pt.aiOriginalHint" lang="">{{ pt.aiOriginal }}</small></p>
       <BridgeFuture :preview="hub.future.value" :readonly="!hub.editable.value" :stamped="hub.stamped.value" :today="hub.today.value"
         :swap="hub.changeDay" :insert="hub.insertAt" :changes="changes"
         @move="hub.changeDay" @delete="hub.removeDay" @publish="deliver" />
@@ -130,6 +131,8 @@ const changes = computed(() => (plan.editingSent.value
 .week-panel { gap: 14px; }
 .start-from { display: inline-flex; align-items: center; gap: 6px; }
 .plan-summary { margin: 0; color: var(--muted); font-size: var(--fs-sm); line-height: 1.6; }
+.ai-original { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 8%, transparent);
+  color: var(--subtle); font-size: var(--fs-2xs); font-weight: 600; white-space: nowrap; vertical-align: 1px; cursor: help; }
 .whole-issues { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; color: var(--warning); font-size: var(--fs-xs); }
 .whole-issues li { display: flex; align-items: center; gap: 8px; }
 </style>

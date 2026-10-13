@@ -2039,6 +2039,16 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
       historyCount: (count: number) => `Tarefas guardadas (${count})`,
       rename: 'Clica para renomear',
     },
+    'components/ai/ExchangeList': {
+      today: 'Hoje',
+      yesterday: 'Ontem',
+      rename: 'Mudar o nome',
+      remove: 'Eliminar',
+      confirmRemove: 'Confirmar eliminação',
+      cancel: 'Cancelar',
+      renameHint: 'Enter para guardar; deixa em branco para usar a pergunta original',
+      planDays: (n: number) => (n === 1 ? 'Plano de 1 dia' : `Plano de ${n} dias`),
+    },
     'components/ai/CoverageDetails': {
       picked: (count: number) => `${count} ${count === 1 ? 'dia escolhido' : 'dias escolhidos'}`,
       summary: (bytes: string) => `Cobertura detalhada (pacote ≈ ${bytes})`,
@@ -2520,6 +2530,9 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
       exchanges: (count: number) => plural(count, { one: '1 ida e volta', other: `${count} idas e voltas` }),
       ringHint: 'Mantém o anel premido para carregar. Uma volta completa envia.',
       resetCards: 'Repor cartões',
+      restoreAll: 'Recomeçar',
+      restoreAllHint:
+        'Voltar ao início: todos os tipos de dados, dias predefinidos e cartões no seu lugar; a tua pergunta e nome da tarefa mantêm-se. Desfazer recupera tudo.',
       faceAsk: 'Perguntar',
       facePlan: 'Plano',
       tally: (train: number, rest: number) => `${train} treino · ${rest} descanso`,
@@ -2554,6 +2567,30 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
       never: 'Ainda nada enviado',
       undo: 'Anular o último envio',
       clear: 'Limpar plano do relógio',
+    },
+    'components/plan/library': {
+      saveTemplate: 'Guardar como modelo',
+      saveTemplateNamed: (name: string) => `Guardar como modelo: ${name}`,
+      addTitle: 'Adicionar treino',
+      importFile: 'Importar ficheiro (.zwo / .fit)',
+      removeTemplate: (name: string) => `Eliminar modelo «${name}»`,
+      startFrom: 'Começar com um modelo ou ficheiro',
+      saved: 'Guardado como modelo; volta a adicioná-lo a partir de «⋯» em qualquer dia',
+      saveFailed: 'Não foi possível guardar: armazenamento local indisponível',
+      added: (name: string) => `«${name}» adicionado`,
+      noteBand: 'O ficheiro forneceu apenas um valor de intensidade; foi alargado para um intervalo de ±3%',
+      noteDropped: 'Os alvos que o relógio não suporta (cadência, inclinação) foram removidos',
+      notePadded: 'Os passos com menos de 10 segundos passaram para 10 segundos',
+      failUnreadable: 'Não foi possível ler este ficheiro: apenas são suportados ficheiros .zwo e .fit de treino',
+      failNotWorkout: 'Este .fit não é um treino (é uma atividade ou percurso)',
+      failSport: 'Os planos do relógio apenas suportam corrida, ciclismo e natação',
+      failZones: 'Este ficheiro define alvos por número de zona e não pode ser convertido: exporta com valores concretos e tenta novamente',
+      failStep: 'Contém passos não suportados pelo plano do relógio (a terminar por frequência cardíaca, potência ou botão de volta, ou séries dentro de séries)',
+      failEmpty: 'O ficheiro não tem passos',
+      needFtp: 'Este ficheiro define a intensidade como percentagem do FTP. O teu FTP (watts)',
+      needPace: 'Este ficheiro define a intensidade pelo ritmo de limiar. O teu ritmo de limiar (por km)',
+      needGo: 'Importar',
+      needCancel: 'Cancelar',
     },
     'components/ask/ask': {
       workoutHint: 'Escolhe uma pergunta para começar: abre uma nova tarefa com este treino e os dados dos dias próximos, com a pergunta já preenchida. Ainda podes alterá-la antes de enviar.',
@@ -2601,6 +2638,8 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
         example,
         '```',
       ].join('\n'),
+      language: (lang: string) =>
+        `- Escreve name, focus, description, summary e note em ${lang}: são apresentados exatamente assim no ZeppBridge e no relógio.`,
     },
     'lib/trainingPlan/issues': {
       fallback: () => 'Não foi possível identificar um problema neste plano',
@@ -2679,6 +2718,9 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
       minuteUnit: 'min',
       minutes: (count: number) => `${count} min`,
       noPlanDay: 'Sem treino neste dia',
+      aiOriginal: 'Texto original da IA',
+      aiOriginalHint:
+        'Este é o texto original da IA; o ZeppBridge não o traduz. Os planos que pedires a partir de agora serão redigidos no idioma da interface.',
       noticeCleared: 'Os próximos 7 dias foram limpos.',
       noticeError: 'Esta ação não foi concluída. Tenta novamente dentro de momentos.',
       noticeInvalid: 'O plano ainda tem pontos a corrigir. Corrige-os antes de enviar.',
@@ -2944,6 +2986,7 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
       sidecarMissing: 'Esta versão não inclui o programa MCP; liga manualmente com as instruções ou configuração abaixo',
       otherClients: 'Outros clientes',
       configReady: 'Configuração copiada com o caminho já preenchido',
+      staleClients: (names: string) => `${names} ainda apontam para outro zeppbridge-mcp, provavelmente uma versão antiga que não consegue ler esta biblioteca: usa o botão correspondente para voltar a ligar`,
     },
     'views/settings/sections/display': {
       focusTitle: 'O que me interessa',
@@ -3152,14 +3195,13 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
         },
         detail: {
           s1: 'Escolha um intervalo de datas uma vez e todas as páginas memorizam-no.',
-          s2: 'Métricas sem dados são agrupadas numa só linha; sem curvas inventadas.',
         },
         pick: {
           s1: 'Escolha aqui alguns dias para passar a uma IA.',
           s2: 'Na mesa, clique numa carta para virar e marcar, ou arraste-a para a caixa. Clique num monte para expandir, clique no espaço vazio para recolher.',
         },
         handoff: {
-          s1: 'À esquerda estão os dados escolhidos; arraste para ordenar.',
+          s1: 'Os teus dados selecionados estão à esquerda: toca num cartão para alterar o período de dias ou afasta-o para o excluir.',
           s2: 'Escreva a sua pergunta à direita; é compactada num ficheiro .md único para a IA.',
         },
         plan: {
@@ -3169,7 +3211,7 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
         },
         settings: {
           s1: 'Cópia de segurança e restauro encontram-se aqui.',
-          s2: 'MCP, linha de comandos e extensões encontram-se aqui.',
+          s2: 'O MCP permite que ferramentas de IA como o Claude Code e o Codex leiam os teus dados diretamente neste computador (só leitura, nada vai para a Internet); a linha de comandos e os plugins também estão aqui.',
           s3: 'Volte a este cartão sempre que quiser rever a visita guiada.',
         },
         cards: {
@@ -3190,6 +3232,7 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
       done: 'Concluído',
       skip: 'Ignorar guia',
       gotIt: 'Entendido',
+      tryIt: 'Experimenta dentro da moldura',
       progress: (index: number, total: number) => `${index} / ${total}`,
       sample: 'Dados de exemplo',
       sampleHint: 'O guia utiliza dados de exemplo; a sua biblioteca permanece intacta',
@@ -3199,6 +3242,8 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
       inviteText: 'O que mudou na V3? Uma vista de olhos de um minuto',
       inviteGo: 'Ver',
       inviteLater: 'Mais tarde',
+      toolsText: 'As tuas ferramentas de IA ainda usam o ZeppBridge antigo; volta a ligá-las',
+      toolsGo: 'Voltar a ligar',
       cardTitle: 'Guia',
       cardSummary: (seen: number, total: number) => `${seen} de ${total} capítulos vistos`,
       fullTour: 'Desde o início',

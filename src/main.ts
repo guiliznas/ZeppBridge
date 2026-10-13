@@ -27,8 +27,8 @@ const tourSandbox = demo && window.__ZB_DEMO__?.tour !== undefined;
    引导里的每一步就会落到真实库上——宁可不看引导，立刻回到真实应用。 */
 const demoRuntimeInstalled = () => window.__ZB_IPC__?.__zbDemo === true;
 const abandonSandbox = () => {
-  const ret = window.__ZB_DEMO__?.ret;
-  window.location.replace(ret && ret.startsWith('/') && !ret.startsWith('//') ? ret : '/');
+  void import("./lib/tour/sandbox").then(({ reloadUrl }) => window.location.replace(reloadUrl(window.__ZB_DEMO__?.ret)),
+    () => window.location.replace('/'));
 };
 
 const mount = () => {

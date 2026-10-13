@@ -6,6 +6,7 @@ use crate::training_plan::PlanDocument;
 use chrono::Utc;
 use rusqlite::{params, OptionalExtension};
 use serde::Serialize;
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct AiExchange {
@@ -26,7 +27,13 @@ pub struct AiExchange {
     pub undone: bool,
     pub document: Option<PlanDocument>,
     pub plan: Option<crate::training_plan::PlanCheck>,
+    /// 用户给这条往返起的名字；没起就是 None，界面回落到当时的问题。
+    pub title: Option<String>,
 }
+
+/// 往返记录的自定义名字：一张 id → 名字的表，存在 app_meta（不为一个可选的标签动表结构）。
+const EXCHANGE_TITLES_KEY: &str = "ai_exchange_titles";
+const TITLE_MAX_CHARS: usize = 120;
 
 impl Database {
     /// Only an explicitly seeded isolated library can enable simulated delivery.
@@ -86,12 +93,15 @@ impl Database {
                     undone: r.get(14)?,
                     document: None,
                     plan: None,
+                    title: None,
                 },
                 r.get::<_, Option<String>>(15)?,
             ))
         })?;
+        let titles = self.exchange_titles()?;
         rows.map(|r| {
             let (mut item, text) = r?;
+            item.title = titles.get(&item.id).cloned();
             item.document = text.map(|t| serde_json::from_str(&t)).transpose()?;
             if let Some(document) = &item.document {
                 let today = chrono::DateTime::parse_from_rfc3339(&item.sent_at)
@@ -108,6 +118,49 @@ impl Database {
             Ok(item)
         })
         .collect()
+    }
+
+    fn exchange_titles(&self) -> Result<BTreeMap<String, String>> {
+        Ok(self
+            .get_app_meta(EXCHANGE_TITLES_KEY)?
+            .and_then(|text| serde_json::from_str(&text).ok())
+            .unwrap_or_default())
+    }
+
+    /// 给一条往返起名（空白 = 去掉自定义名字）。这条不存在时返回 false，不凭空记一个名字。
+    pub fn rename_ai_exchange(&self, id: &str, title: &str) -> Result<bool> {
+        let exists: bool = self.conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM ai_exchanges WHERE id=?1)",
+            [id],
+            |r| r.get(0),
+        )?;
+        if !exists {
+            return Ok(false);
+        }
+        let mut titles = self.exchange_titles()?;
+        let title = title.trim();
+        if title.is_empty() {
+            titles.remove(id);
+        } else {
+            titles.insert(
+                id.to_string(),
+                title.chars().take(TITLE_MAX_CHARS).collect(),
+            );
+        }
+        self.set_app_meta(EXCHANGE_TITLES_KEY, &serde_json::to_string(&titles)?)?;
+        Ok(true)
+    }
+
+    /// 删掉一条往返记录（只删这条记录和它的名字；导出的 .md 是用户的文件、接回的计划草稿各有归处，都不动）。
+    pub fn delete_ai_exchange(&self, id: &str) -> Result<bool> {
+        let removed = self
+            .conn
+            .execute("DELETE FROM ai_exchanges WHERE id=?1", [id])?;
+        let mut titles = self.exchange_titles()?;
+        if titles.remove(id).is_some() {
+            self.set_app_meta(EXCHANGE_TITLES_KEY, &serde_json::to_string(&titles)?)?;
+        }
+        Ok(removed > 0)
     }
 
     pub fn update_plan_draft(&self, id: &str, document: &PlanDocument) -> Result<bool> {

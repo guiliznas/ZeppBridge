@@ -2,7 +2,7 @@
 /* 桌面外壳：顶栏、导航、切页动效、同步控制器、更新检查。落地页不经过这里——
    App.vue 按落地模式二选一，浏览器访客因此不下载这一整块。 */
 import { getVersion } from '@tauri-apps/api/app';
-import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { RouterView, useRoute, useRouter } from 'vue-router';
 import type { DesignIconName } from './components/DesignIcon.vue';
 import GlyphTile from './components/GlyphTile.vue';
@@ -14,6 +14,7 @@ import { usePageMorph } from './composables/usePageMorph';
 import { installMotionInterrupt, settleMotion } from './lib/motion/interrupt';
 import { installPrefetch, preloadBeforeOpen } from './lib/motion/prefetch';
 import { installGlassTips } from './lib/glassTip';
+import { whenFramesSteady } from './lib/motion/steady';
 import { useSyncController } from './composables/useSyncController';
 import { useUiScale } from './composables/useUiScale';
 import { backend, backendLate, isDesktop, whenBackendReady } from './lib/bridge';
@@ -125,9 +126,22 @@ const removeBeforeEach = router.beforeEach(async (to, from) => {
   if (from.matched.length > 1 && to.matched[0] && to.matched[0] === from.matched[0]) { motion.value = 'none'; return; }
   motion.value = pageMorph.decide(from, to, pageMotion(from.path, to.path));
   leavingScroll = document.getElementById('main-content')?.scrollTop ?? 0;
+  // 走 CSS 动画的几种切页：先停在第一帧，等新页上屏、帧稳了再放（见下面 afterEach 和 shell.css）。
+  pageHold.value = motion.value !== 'expand' && motion.value !== 'collapse';
   // 从卡片展开：先把新页首屏的数据备好（多半悬停时已经读好，立刻就过；最多等一小会儿），
   // 新页第一帧就是真内容，而不是长成整页以后再停在骨架上。
   if (motion.value === 'expand') await preloadBeforeOpen(to.fullPath);
+});
+/* 切页动效先停在第一帧（.page-host.holding），新页挂上去、帧节奏恢复后再放：滚到页底再换页时整屏重新光栅化，
+   GPU 一卡就是一两百毫秒，按时间走的动画会被这一下吞掉，看上去就是硬切（10-13 录屏）。最多等 320ms。 */
+const pageHold = ref(false);
+let holdSeq = 0;
+const removeAfterEach = router.afterEach(() => {
+  if (!pageHold.value) return;
+  const mine = ++holdSeq;
+  void nextTick()
+    .then(() => whenFramesSteady(320))
+    .then(() => { if (mine === holdSeq) pageHold.value = false; });
 });
 const onPageBeforeLeave = (el: Element) => {
   (el as HTMLElement).style.top = `${-leavingScroll}px`;
@@ -229,6 +243,7 @@ onMounted(() => {
 onUnmounted(() => {
   unmounted = true;
   removeBeforeEach();
+  removeAfterEach();
   document.removeEventListener('keydown', onDocumentKeydown);
   disposeMotionInterrupt?.();
   disposePrefetch?.();
@@ -308,7 +323,7 @@ onUnmounted(() => {
            变化，各页都在监听）时才重新读库。
 
            详情页不缓存：它们按 URL 参数取数，缓存一堆实例既没收益又占内存。 -->
-      <div class="page-host">
+      <div :class="['page-host', { holding: pageHold }]">
       <RouterView v-slot="{ Component }">
         <Transition :name="`page-${motion}`" @before-leave="onPageBeforeLeave" @enter="pageMorph.onEnter" @leave="pageMorph.onLeave" @after-leave="pageMorph.onAfterLeave">
           <KeepAlive :include="CACHED_PAGES" :max="4">

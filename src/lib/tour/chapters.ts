@@ -19,6 +19,12 @@ export interface TourStep {
   route?: string;
   /** 圈住选择器匹配到的**所有**可见元素的外接框（一组牌），而不是第一个。 */
   all?: boolean;
+  /** 圈住的那一块可以直接上手（拨语言轮、换主题、拖牌）；圈外仍然挡住，免得点跑。 */
+  interactive?: boolean;
+  /** 在 `route` 上找不到 `target`（窄窗口里顶栏收起了语言轮）时，去这一页圈这个。 */
+  fallback?: { route: string; target: string };
+  /** 进这一步先做的事：`pickDays` = 点开这一页的「挑日子」，把牌桌摊出来（离开这一步时收回去）。 */
+  open?: 'pickDays';
 }
 
 /** 完整引导按这个顺序走。 */
@@ -40,9 +46,10 @@ export const TOUR_STEPS: Record<TourChapterId, TourStep[]> = {
     { route: '/settings/account', target: '.deck-stage .open-card' },
   ],
   basics: [
-    { route: '/', target: '.theme-toggle' },
-    // 顶栏放不下时（手机）语言轮会被收起，那时圈「显示」卡里的语言那一行；选择器按文档顺序取第一个看得见的。
-    { route: '/settings/display', target: '.locale-wheel, .deck-stage .open-card [data-tour="locale"]' },
+    { route: '/', target: '.theme-toggle', interactive: true },
+    // 「随时换语言」圈的就是顶栏的语言轮，原地拨（10-13：以前先跳到设置的「显示」卡，圈的却是右上角，货不对板）。
+    // 顶栏放不下时（手机）语言轮会被收起，那时才去「显示」卡圈语言那一行。
+    { route: '/', target: '.locale-wheel', interactive: true, fallback: { route: '/settings/display', target: '.deck-stage .open-card [data-tour="locale"]' } },
   ],
   connect: [
     { route: '/settings/account', target: '.deck-stage .open-card' },
@@ -53,17 +60,17 @@ export const TOUR_STEPS: Record<TourChapterId, TourStep[]> = {
     { route: '/', target: '.pins .baseline-tag' },
     { route: '/', target: '.overview-focus' },
   ],
+  // 「没有数据的指标收成一行」那一步 10-13 拿掉了：要专门跳到身体页去看一行灰字，用户觉得没必要。
   detail: [
     { route: '/heart', target: '.range-bar' },
-    // 示例数据里心率页每项都有读数，身体页的夜间血氧 ODI 没有：缺失行在那里才看得到。
-    { route: '/body', target: '.missing-row' },
   ],
   pick: [
     { route: '/heart', target: '.pick-days' },
-    { route: '/heart', target: null },
+    // 牌桌真的摊开（10-13：以前只出一张居中的说明卡，嘴上说牌桌、眼前没有牌），圈住牌，可以直接翻、拖。
+    { route: '/heart', target: '.card-table .table-layer:not(.pending) .pcard', all: true, open: 'pickDays', interactive: true },
   ],
   handoff: [
-    { route: '/ai', target: '.ai-stage-page .cloud .slot', all: true },
+    { route: '/ai', target: '.ai-stage-page .cloud .slot', all: true, interactive: true },
     { route: '/ai', target: '.ai-stage-page .future' },
   ],
   plan: [

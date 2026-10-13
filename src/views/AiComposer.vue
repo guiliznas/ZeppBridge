@@ -128,8 +128,9 @@ const physics = useCloudPhysics({
 });
 watch(() => drag.live.value, () => physics.kick());
 /**
- * 拖着一张牌时（10-09，用户：视觉焦点要始终在手里这张牌上）：舞台其余部分压一层高斯模糊，被挤开的牌在模糊底下让位；
- * 手里这张浮在最上面。松手以后模糊和层级都留到弹回落定（牌从很远弹回来时，视线还在它身上），再一起退。
+ * 拖着一张牌时（10-09，用户：视觉焦点要始终在手里这张牌上）：手里这张浮在最上面，别的牌退成剪影、线和锁淡一档。
+ * 10-13 起不再整块压高斯模糊：那层模糊有边，牌被挤出舞台时一道分界线清清楚楚，周围的牌也全看不清了。
+ * 松手以后剪影和层级都留到弹回落定（牌从很远弹回来时，视线还在它身上），再一起退。
  */
 const holdingCard = computed(() => !!drag.live.value);
 const focusing = ref(false);
@@ -141,6 +142,8 @@ watch(holdingCard, (on) => {
   else liftTimer = window.setTimeout(() => { focusing.value = false; lifted.value = false; }, 720);
 });
 onBeforeUnmount(() => window.clearTimeout(liftTimer));
+/** 舞台上那张牌本身（背面 / 档案从它长出来、缩回它）。 */
+const cardEl = (id: string): HTMLElement | null => slots.get(id)?.querySelector<HTMLElement>('.scard') ?? null;
 const open = (id: string) => {
   if (send.gathering.value) return;
   const card = cards.value.find((c) => c.id === id);
@@ -173,6 +176,12 @@ const reflow = async (stagger = 0) => {
 /* 牌的多少变了（甩掉一张、加回一类、换任务）。 */
 watch(() => cards.value.map((c) => c.id).join('|'), () => reflow(), { flush: 'pre' });
 const resetCards = () => { if (!drag.dragging() && !send.gathering.value) void reflow(45); };
+/** 一键回到初始（10-13）：每一类都交、默认天数，牌一张接一张落回原位。 */
+const restoreAll = () => {
+  if (drag.dragging() || send.gathering.value) return;
+  ctl.restoreAllData();
+  void reflow(45);
+};
 /** 牌此刻的位置（含拖动偏移、被挤开的位移）：线从这里接出去。`stay` 是本来停的位置（不含被挤开），线分组只看它。 */
 const placed = computed(() => cards.value.map((card) => {
   const rest = restOf(card.id) ?? { x: 0, y: 0 };
@@ -305,7 +314,14 @@ onDeactivated(() => { paused.value = true; });
         {{ s.exchanges(history.exchanges.value.length) }}<Icon name="chevron-right" :size="13" />
       </RouterLink>
       <div v-if="hub.demo.value" class="demo-banner" role="status"><Icon name="database" :size="14" /><div><strong>{{ t.fullDemo }}</strong><span>{{ t.demoHint }}</span></div></div>
-      <Transition name="undo-fade"><GraphUndoPill v-if="ctl.canUndo.value" class="undo-selection" :can-undo="ctl.canUndo.value" :label="t.undo" @undo="ctl.undo()" /></Transition>
+      <div class="head-tools">
+        <Transition name="undo-fade">
+          <button v-if="!ctl.atInitial.value" type="button" class="restore-all glass-control" :disabled="send.gathering.value" :title="s.restoreAllHint" @click="restoreAll">
+            <Icon name="refresh" :size="14" />{{ s.restoreAll }}
+          </button>
+        </Transition>
+        <Transition name="undo-fade"><GraphUndoPill v-if="ctl.canUndo.value" class="undo-selection" :can-undo="ctl.canUndo.value" :label="t.undo" @undo="ctl.undo()" /></Transition>
+      </div>
     </header>
 
     <div ref="stage" :class="['stage', layout.mode, { paused, gathering: send.gathering.value, focusing, lifted }]" :style="{ height: `${layout.height}px` }" :aria-label="s.stage">
@@ -313,7 +329,6 @@ onDeactivated(() => { paused.value = true; });
       <ThreadField :tree="tree" :width="layout.width" :height="layout.height" :lit="lit" :reeled="reeled" :order="order" :active="drag.live.value?.id ?? null" />
 
       <ul class="cloud" :style="{ '--card-w': `${cloud.width}px` }" :aria-label="t.past">
-        <li class="focus-veil" aria-hidden="true"></li>
         <li v-for="(p, i) in placed" :key="p.card.id" :ref="(el) => setSlot(p.card.id, el)" :class="['slot', { top: drag.lastId.value === p.card.id }]"
           :style="{ left: `${p.rest.x}px`, top: `${p.rest.y}px`, translate: `${p.x - p.rest.x}px ${p.y - p.rest.y}px`, '--rot': `${p.rot}deg`, '--i': i }">
           <button type="button" class="slot-button" :aria-label="`${p.card.title} · ${p.card.line}`" @pointerdown="drag.onDown($event, p.card.id)" @keydown.enter.prevent="open(p.card.id)" @keydown.space.prevent="open(p.card.id)">
@@ -352,9 +367,9 @@ onDeactivated(() => { paused.value = true; });
       <p v-if="send.blocked.value.length === 0 && send.ready.value === null && hub.notice.value" class="bridge-message" role="status"><Icon name="info" :size="14" /><span>{{ hub.notice.value }}</span><button class="pill-button quiet" @click="plan.dismissNotice()">{{ t.close }}</button></p>
     </div>
 
-    <StageCardBack v-if="backCard" :card="cards.find((c) => c.id === backCard!.id) ?? backCard" @close="backCard = null" @deal="deal" />
+    <StageCardBack v-if="backCard" :card="cards.find((c) => c.id === backCard!.id) ?? backCard" :anchor="cardEl(backCard.id)" @close="backCard = null" @deal="deal" />
     <AddKindDialog v-if="adding" :cards="off.map(dataCard)" :empty="empty" @close="adding = false" />
-    <ProfileTray v-if="profile" @close="profile = false" />
+    <ProfileTray v-if="profile" :anchor="cardEl('profile')" @close="profile = false" />
     <CardTable v-if="deck" :source="deck.source" :range="7" :origin="deck.origin" :anchor="deck.anchor" @close="deck = null" />
     <PlanClearDialog />
     <RouterView v-slot="{ Component, route: sub }">

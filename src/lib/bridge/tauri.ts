@@ -154,6 +154,8 @@ export const tauriBackend: BridgeBackend = {
   readClipboardText() { return call<string>('plugin:clipboard-manager|read_text'); },
   aiTaskDayStrip(daysBefore, end) { return call('ai_task_day_strip', { daysBefore, end }); },
   aiExchangeList(limit = 30) { return call('ai_exchange_list', { limit }); },
+  aiExchangeRename(id, title) { return call<boolean>('ai_exchange_rename', { id, title }); },
+  aiExchangeDelete(id) { return call<boolean>('ai_exchange_delete', { id }); },
   aiProfileSave(note) { return call('ai_profile_save', { note }); },
   trainingPlanAdherence(from, to) { return call('training_plan_adherence', { from, to }); },
   trainingPlanUpdateDraft(id, document) { return call('training_plan_update_draft', { id, document }); },

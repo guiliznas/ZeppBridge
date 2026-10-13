@@ -80,7 +80,8 @@ export const leaveSheet = (el: Element, done: () => void) => {
   const clip = sheetClip(panelRadius(panel));
   const to = sheetOrigin(root.dataset.sheetName ?? '');
   body?.animate([{ opacity: bodyNow }, { opacity: 0, offset: 0.3 }, { opacity: 0 }], { duration: CLOSE_MS, fill: 'forwards' });
-  veil?.animate([{ opacity: veilNow }, { opacity: 0 }], { duration: CLOSE_MS, easing: 'ease-in', fill: 'forwards' });
+  // 背景跟着大卡一路清回来（10-13：以前 ease-in，前七成几乎不动、最后一下才清，看上去背景没有过渡）。
+  veil?.animate([{ opacity: veilNow }, { opacity: 0 }], { duration: CLOSE_MS, easing: 'cubic-bezier(.3, 0, .3, 1)', fill: 'forwards' });
   const transform = now === 'none' ? 'none' : now;
   // 开好的卡没有裁切：先把裁切框从卡外收到卡沿（投影跟着收掉），再开始形变。
   const lead: Keyframe[] = clipNow && clipNow !== 'none'

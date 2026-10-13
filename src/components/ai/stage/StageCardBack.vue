@@ -16,7 +16,7 @@ import type { StageCardModel } from '../../../composables/ai/useStageCards';
 import { useBridgeText } from '../bridge/bridge.i18n';
 import { useStageText } from './stage.i18n';
 
-const props = defineProps<{ card: StageCardModel }>();
+const props = defineProps<{ card: StageCardModel; anchor?: HTMLElement | null }>();
 const emit = defineEmits<{ close: []; deal: [] }>();
 const ctl = useAiTaskDraft();
 const b = useBridgeText();
@@ -31,7 +31,7 @@ const drop = () => { ctl.setCategoryEnabled(props.card.category!, false); emit('
 </script>
 
 <template>
-  <ModalDialog :labelledby="titleId" @close="emit('close')">
+  <ModalDialog :labelledby="titleId" :origin="anchor ?? null" @close="emit('close')">
     <div class="back" :style="{ '--tint': card.tint }">
       <header>
         <TintIcon :name="card.icon" :tint="card.tint" :size="34" />

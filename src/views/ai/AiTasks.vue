@@ -181,13 +181,15 @@ onBeforeUnmount(() => window.clearTimeout(undoTimer));
 <style scoped src="./aiPage.css"></style>
 <style scoped>
 .task-group + .task-group { margin-top: 18px; }
-/* 单列列表（方案 B）：一行一个任务，行与行之间一条细线；正在用的那个标题是品牌绿。 */
-.task-grid { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0; padding: 0; border-top: 1px solid var(--line); list-style: none; }
-.task-card { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 14px 8px 14px 16px;
-  border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; }
-.task-card:hover { background: color-mix(in srgb, var(--ink) 3%, transparent); }
+/* 单列列表：一个任务一张圆角小卡，卡与卡之间留缝（10-13：以前是贴满整宽的直角行，上下两条线、左右顶到边，看着生硬、像出界）。
+   正在用的那个标题是品牌绿，置顶的左边一道绿色短条（收在卡里面）。 */
+.task-grid { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.task-card { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 14px 10px 14px 20px;
+  border: 1px solid var(--mat-line); border-radius: 18px; background: var(--mat-card); box-shadow: var(--mat-rim); }
+.task-card:hover { background: color-mix(in srgb, var(--ink) 4%, var(--mat-card)); }
+.task-card.current { border-color: color-mix(in srgb, var(--accent) 35%, var(--mat-line)); }
 .task-card.current .open strong { color: var(--accent); }
-.task-card.pinned::before { content: ''; position: absolute; top: 16px; left: 0; width: 3px; height: 22px; border-radius: 0 3px 3px 0; background: var(--accent); }
+.task-card.pinned::before { content: ''; position: absolute; top: 50%; left: 8px; width: 3px; height: 22px; border-radius: 3px; background: var(--accent); translate: 0 -50%; }
 .open { display: grid; gap: 6px; min-width: 0; padding: 2px 0; border: 0; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
 .open strong { overflow: hidden; font-size: var(--fs-md); font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
 .rename { width: 100%; font-weight: 650; }
@@ -206,7 +208,7 @@ onBeforeUnmount(() => window.clearTimeout(undoTimer));
 .earlier[open] summary :deep(svg) { rotate: 90deg; }
 .task-enter-active, .task-leave-active, .task-move { transition: opacity 300ms ease, translate 420ms cubic-bezier(.4, .6, .2, 1); }
 .task-enter-from, .task-leave-to { opacity: 0; translate: 0 8px; }
-.task-leave-active { position: absolute; }
+.task-leave-active { position: absolute; width: 100%; }
 /* 挑选中：没选的卡沉下去一点、淡一点，选上的浮起发亮（只动 transform / opacity / 阴影）。 */
 .select-hint { margin: -6px 0 14px; color: var(--subtle); font-size: var(--fs-2xs); }
 .task-card { transition: translate 260ms cubic-bezier(.3, 1.3, .5, 1), scale 260ms cubic-bezier(.3, 1.3, .5, 1), opacity 200ms ease, box-shadow 200ms ease; touch-action: pan-y; }

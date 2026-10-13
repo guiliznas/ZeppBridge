@@ -13,7 +13,7 @@
  *   - 按距离写步骤、配速目标、不设目标、同一天多条，都已核实可用。
  * 数字上限和后端校验对齐：最远 56 天后、一条训练最多 40 步、重复最多 50 次、不能套重复。
  */
-import { defineMessages, messagesOf } from '../../i18n';
+import { defineMessages, locale, LOCALE_LABELS, messagesOf } from '../../i18n';
 
 const isoDay = (date: Date, plus: number): string => {
   const moved = new Date(date.getFullYear(), date.getMonth(), date.getDate() + plus);
@@ -92,6 +92,7 @@ const messages = defineMessages(
       example,
       '```',
     ].join('\n'),
+    language: (lang: string) => `- name、focus、description、summary、note 这些文字一律用${lang}写：它们会原样显示在 ZeppBridge 和手表上。`,
   },
   {
     example: {
@@ -120,6 +121,7 @@ const messages = defineMessages(
       example,
       '```',
     ].join('\n'),
+    language: (lang: string) => `- Write name, focus, description, summary and note in ${lang}: they are shown as-is in ZeppBridge and on the watch.`,
   },
   {
     example: {
@@ -148,11 +150,14 @@ const messages = defineMessages(
       example,
       '```',
     ].join('\n'),
+    language: (lang: string) => `- Escribe name, focus, description, summary y note en ${lang}: se muestran tal cual en ZeppBridge y en el reloj.`,
   },
   'lib/aiTask/planGuide',
 );
 
 export const planGuide = (now: Date = new Date()): string => {
   const text = messagesOf(messages);
-  return text.guide(exampleFor(now, text.example));
+  // 计划里的文字跟着界面语言写（10-13：中文对话里排的计划，换成葡语界面后满屏中文）。语言名用它的自称，
+  // 语言包还没翻这一句时回落英文那句，也照样写对语言。
+  return `${text.guide(exampleFor(now, text.example))}\n${text.language(LOCALE_LABELS[locale.value])}`;
 };

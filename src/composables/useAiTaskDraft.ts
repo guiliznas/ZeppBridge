@@ -332,6 +332,38 @@ const mergePicks = (byCategory: Map<AiTaskCategory, string[]>, today: string, wo
   if (workoutIds.length) patchRange('workout', { enabled: true });
 };
 
+/**
+ * 一键回到初始（10-13）：这一份任务里的数据回到「全部都交」——每一类都开着、回到默认的天数、挑过的具体日子清掉、
+ * 单挑的运动清掉、详细程度和模板回到默认；问题、任务名、个人背景、附件不动。最近 90 天一条记录都没有的类别照旧不勾
+ * （交上去也是空的）。这一下进撤销栈，点「撤销」能回来。
+ */
+const restoreAllData = () => {
+  const fresh = newTaskDraft();
+  const byCategory = new Map(fresh.categories.map((range) => [range.category, range]));
+  rememberSelection();
+  beforeTemplate = null;
+  patchDraft({
+    template_id: fresh.template_id,
+    detail_level: fresh.detail_level,
+    workout_ids: [],
+    categories: draft.value.categories.map((range) => {
+      const base = byCategory.get(range.category);
+      if (!AI_TASK_CATEGORY_META[range.category].hasWindow || !base) return range;
+      return { ...range, enabled: !emptyCategories.has(range.category), days_before: base.days_before, picked_days: [], excluded_metrics: [] };
+    }),
+  });
+};
+/** 现在是不是已经是初始的「全部都交」（按钮据此显隐）。 */
+const atInitial = computed(() => {
+  const fresh = newTaskDraft();
+  const byCategory = new Map(fresh.categories.map((range) => [range.category, range]));
+  return !draft.value.workout_ids.length && draft.value.template_id === fresh.template_id && draft.value.categories.every((range) => {
+    const base = byCategory.get(range.category);
+    if (!AI_TASK_CATEGORY_META[range.category].hasWindow || !base) return true;
+    return range.enabled === !emptyCategories.has(range.category) && range.days_before === base.days_before && !range.picked_days?.length;
+  });
+});
+
 const setWorkoutSelected = (workoutId: string, selected: boolean) => {
   const ids = draft.value.workout_ids;
   if (ids.includes(workoutId) === selected) return;
@@ -395,6 +427,8 @@ export function useAiTaskDraft() {
     savedNotice,
     loadTask,
     resetDraft,
+    restoreAllData,
+    atInitial,
     setEmptyCategories,
     saveDraft,
     deleteTask,

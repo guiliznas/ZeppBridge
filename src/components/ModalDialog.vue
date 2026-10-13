@@ -2,7 +2,12 @@
 import { onBeforeUnmount, onMounted, onUnmounted, ref } from 'vue';
 import { dialogFlight, originOf, type FlightOrigin } from '../lib/motion/dialogFlight';
 
-defineProps<{ labelledby: string }>();
+const props = defineProps<{
+  labelledby: string;
+  /** 从哪个元素长出来、缩回哪里（舞台上被点的那张牌）。不给就用打开它时聚焦的元素 / 最近一次按下的位置。
+      牌是按 pointerdown 拖的、点开时焦点不在它身上：不显式给的话，关的时候会缩进刚点的「收起」按钮，看上去是凭空消失（10-13）。 */
+  origin?: HTMLElement | null;
+}>();
 const emit = defineEmits<{ (event: 'close'): void }>();
 const panel = ref<HTMLElement | null>(null);
 const backdrop = ref<HTMLElement | null>(null);
@@ -48,7 +53,7 @@ const keepFocusInside = (event: FocusEvent) => {
 onMounted(() => {
   returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   // 从打开它的那个按钮里长出来，关的时候缩回去（lib/motion/dialogFlight.ts）。
-  origin = originOf(returnFocus);
+  origin = originOf(props.origin ?? returnFocus);
   if (backdrop.value && panel.value) void dialogFlight.open(backdrop.value, panel.value, origin, () => emit('close'));
   // Start at the heading/content instead of scrolling a long dialog to its first action.
   panel.value?.focus({ preventScroll: true });

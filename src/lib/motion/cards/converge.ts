@@ -14,10 +14,13 @@ import { animateFromNow } from './reversible';
 import { lidClose, lidOpen } from './box';
 import { reducedMotion, settled, SPRINGS, springCurve } from './spring';
 
-const SHAKE_MS = 240;
-const SHAKE_STAGGER = 40;
-const FLY_MS = paced(640);
-const FLY_STAGGER = 55;
+/* 10-13（「抖一下、进去再吐出来比较生硬」）：抖改成「被吸起来」——先浮起一点、轻轻晃两下（不是原地硬拧），
+   飞的时候越来越快地被吸进锁（ease-in），锁吞下去的那一下缩一缩；回执牌沿一道上拱的弧线被吐出来、带一点过冲落定。 */
+const SHAKE_MS = 320;
+const SHAKE_STAGGER = 36;
+const FLY_MS = paced(620);
+const FLY_STAGGER = 50;
+const SUCK_EASE = 'cubic-bezier(.55, 0, .8, .25)';
 const BACK_MS = paced(440);
 
 export interface Convergence {
@@ -63,7 +66,7 @@ export const convergeCards = (cards: HTMLElement[], paths: Pt[][], lock: HTMLEle
       const scale = 1 - t * 0.86;
       return {
         offset: t,
-        transform: `translate(${(p.x - start.x).toFixed(1)}px, ${(p.y - start.y).toFixed(1)}px) rotate(${(-6 * (1 - t)).toFixed(1)}deg) scale(${scale.toFixed(3)})`,
+        transform: `translate(${(p.x - start.x).toFixed(1)}px, ${(p.y - start.y - 4 * (1 - t)).toFixed(1)}px) rotate(${(-6 * (1 - t)).toFixed(1)}deg) scale(${(scale * (1 + 0.03 * (1 - t))).toFixed(3)})`,
         opacity: t > 0.86 ? 1 - (t - 0.86) / 0.14 : 1,
       };
     });
@@ -76,18 +79,25 @@ export const convergeCards = (cards: HTMLElement[], paths: Pt[][], lock: HTMLEle
 
   return {
     gather: async () => {
+      // 被吸起来：浮起 4px、放大一点，轻晃两下，停在浮起的样子上直接起飞（和飞的第一帧接得上，不回落再起）。
       const shakes = clones.map((clone, i) => clone.animate(
-        [{ transform: 'none' }, { transform: 'rotate(3deg)' }, { transform: 'rotate(-3deg)' }, { transform: 'rotate(2deg)' }, { transform: 'none' }],
-        { duration: SHAKE_MS, delay: i * SHAKE_STAGGER, easing: 'ease-in-out' },
+        [
+          { transform: 'none' },
+          { transform: 'translate(0px, -4px) rotate(2.4deg) scale(1.03)', offset: 0.32 },
+          { transform: 'translate(0px, -4px) rotate(-2deg) scale(1.03)', offset: 0.64 },
+          { transform: 'translate(0px, -4px) rotate(-6deg) scale(1.03)' },
+        ],
+        { duration: SHAKE_MS, delay: i * SHAKE_STAGGER, easing: 'cubic-bezier(.4, 0, .4, 1)', fill: 'forwards' },
       ));
       flying = shakes;
       await settled(shakes);
       if (stopped) return;
       flying = clones.map((clone, i) => clone.animate(flightFrames(i), {
-        duration: FLY_MS, delay: i * FLY_STAGGER, easing: CLOSE_EASE, fill: 'forwards',
+        duration: FLY_MS, delay: i * FLY_STAGGER, easing: SUCK_EASE, fill: 'forwards',
       }));
-      // 第一张到锁的时候，锁吸一下。
-      if (lock) window.setTimeout(() => { if (!stopped) lock.animate([{ scale: '1' }, { scale: '.9' }, { scale: '1.04' }, { scale: '1' }], { duration: 520, easing: 'ease-out' }); }, FLY_MS * 0.8);
+      for (const shake of shakes) shake.cancel();
+      // 第一张到锁的时候，锁吞一下（缩一缩再回弹）。
+      if (lock) window.setTimeout(() => { if (!stopped) lock.animate([{ scale: '1' }, { scale: '.9', offset: 0.3 }, { scale: '1.04', offset: 0.7 }, { scale: '1' }], { duration: 520, easing: 'ease-out' }); }, FLY_MS * 0.78);
       await settled(flying);
     },
     scatter: async () => {
@@ -164,10 +174,18 @@ export const emergeFrom = async (card: HTMLElement | null, lock: HTMLElement | n
   const l = lock.getBoundingClientRect();
   const dx = l.left + l.width / 2 - (c.left + c.width / 2);
   const dy = l.top + l.height / 2 - (c.top + c.height / 2);
-  const { easing, duration } = springCurve(SPRINGS.settle);
+  const { duration } = springCurve(SPRINGS.settle);
+  // 锁先「吐」：缩一下再鼓起来，牌就在鼓起来的那一刻出来。
+  lock.animate([{ scale: '1' }, { scale: '.9', offset: 0.3 }, { scale: '1.08', offset: 0.6 }, { scale: '1' }], { duration: 560, easing: 'ease-out' });
+  // 牌沿一道往上拱的弧线飞出来，边飞边摆正、长大，最后带一点过冲落定。
+  const arc = Math.min(70, 24 + Math.hypot(dx, dy) * 0.12);
   const grow = card.animate(
-    [{ transform: `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px) scale(.12)`, opacity: 0 }, { transform: 'none', opacity: 1 }],
-    { duration: Math.max(560, duration), easing },
+    [
+      { transform: `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px) rotate(-10deg) scale(.12)`, opacity: 0 },
+      { transform: `translate(${(dx * 0.45).toFixed(1)}px, ${(dy * 0.45 - arc).toFixed(1)}px) rotate(-4deg) scale(.72)`, opacity: 1, offset: 0.42 },
+      { transform: 'none', opacity: 1 },
+    ],
+    { duration: Math.max(680, duration), delay: 120, easing: 'cubic-bezier(.22, .9, .3, 1.06)', fill: 'backwards' },
   );
   await grow.finished.catch(() => undefined);
 };

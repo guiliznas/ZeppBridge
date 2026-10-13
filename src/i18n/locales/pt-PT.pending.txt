@@ -1,27 +1,2 @@
 # 尚未覆盖的键（i18n:check --write-pending 生成；W4 翻译一行删一行）。
 # 格式：moduleId.键路径。
-components/plan/library.addTitle
-components/plan/library.added
-components/plan/library.failEmpty
-components/plan/library.failNotWorkout
-components/plan/library.failSport
-components/plan/library.failStep
-components/plan/library.failUnreadable
-components/plan/library.failZones
-components/plan/library.importFile
-components/plan/library.needCancel
-components/plan/library.needFtp
-components/plan/library.needGo
-components/plan/library.needPace
-components/plan/library.noteBand
-components/plan/library.noteDropped
-components/plan/library.notePadded
-components/plan/library.removeTemplate
-components/plan/library.saveFailed
-components/plan/library.saveTemplate
-components/plan/library.saveTemplateNamed
-components/plan/library.saved
-components/plan/library.startFrom
-components/tour/tour.toolsGo
-components/tour/tour.toolsText
-views/settings/sections/ai.staleClients

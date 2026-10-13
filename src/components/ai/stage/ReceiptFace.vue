@@ -53,7 +53,7 @@ const onFileDrag = (event: MouseEvent) => {
         <h3>{{ s.receiptTitle(provider) }}</h3>
         <p v-if="question">{{ question }}</p>
       </div>
-      <button type="button" class="edit" @click="emit('edit')">{{ s.editQuestion }}</button>
+      <button type="button" class="edit" @click="emit('edit')"><Icon name="edit" :size="12" />{{ s.editQuestion }}</button>
     </header>
 
     <!-- 交出去的那份文件画成一页纸，占满牌的中间：按住它拖进对话框。 -->
@@ -86,17 +86,23 @@ header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12
 .head-copy { min-width: 0; padding-top: 1px; }
 h3 { margin: 0; font-size: var(--fs-md); font-weight: 700; line-height: 1.3; }
 .head-copy p { display: -webkit-box; margin: 4px 0 0; overflow: hidden; color: var(--muted); font-size: var(--fs-xs); line-height: 1.45; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.edit { padding: 4px 2px; border: 0; background: none; color: var(--subtle); font-size: var(--fs-2xs); cursor: pointer; white-space: nowrap; }
-.edit:hover { color: var(--ink); }
+/* 改问题、再复制、再打开：平时就有一圈底和边（10-13：以前只是几个字，悬停才冒出底色，看不出能点）。 */
+.edit { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border: 1px solid var(--mat-glass-line); border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 5%, transparent); color: var(--muted); font-size: var(--fs-2xs); font-weight: 600; cursor: pointer; white-space: nowrap;
+  transition: background var(--dur-base) ease, color var(--dur-base) ease; }
+.edit:hover { background: color-mix(in srgb, var(--ink) 10%, transparent); color: var(--ink); }
 .edit:focus-visible, .reveal:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
-.sheet { position: relative; display: grid; flex: 1 1 auto; grid-template-rows: 1fr auto auto; gap: 10px; min-height: 120px; padding: 18px 18px 14px;
-  border-radius: 6px 22px 6px 6px; background: var(--mat-inset); box-shadow: var(--mat-inset-shadow); }
+/* 纸片：牌矮的时候只压缩上面那几道示意的横线，标签和文件名、大小永远放得下（10-13：以前整块被压到比内容还矮，
+   「15 KB · 约 5124 token」溢到下面那行提示上，叠在一起）。边缘换成一道细线 + 柔和的内阴影，不再是一块硬邦邦的黑板。 */
+.sheet { position: relative; display: grid; flex: 1 1 auto; grid-template-rows: minmax(0, 1fr) auto auto; gap: 10px; min-height: 108px; overflow: hidden; padding: 16px 18px 14px;
+  border: 1px solid color-mix(in srgb, var(--ink) 7%, transparent); border-radius: 14px 22px 14px 14px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ink) 3%, var(--mat-inset)), var(--mat-inset)); box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ink) 5%, transparent); }
 /* 折角：右上角一小块翻过来的纸。 */
-.sheet::after { content: ''; position: absolute; top: 0; right: 0; width: 22px; height: 22px; border-radius: 0 22px 0 6px; background: var(--mat-raised); box-shadow: var(--mat-raised-rim); }
+.sheet::after { content: ''; position: absolute; top: -1px; right: -1px; width: 22px; height: 22px; border-radius: 0 22px 0 8px; background: var(--mat-raised); box-shadow: var(--mat-raised-rim); }
 .sheet.draggable { cursor: grab; }
 .sheet.draggable:active { cursor: grabbing; }
 .sheet:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.sheet-lines { display: grid; align-content: start; gap: 8px; padding-top: 6px; }
+.sheet-lines { display: grid; align-content: start; gap: 8px; min-height: 0; overflow: hidden; padding-top: 6px; }
 .sheet-lines i { height: 4px; border-radius: 2px; background: color-mix(in srgb, var(--ink) 7%, transparent); }
 .sheet-lines i:nth-child(2) { width: 82%; }
 .sheet-lines i:nth-child(4) { width: 64%; }
@@ -107,11 +113,13 @@ h3 { margin: 0; font-size: var(--fs-md); font-weight: 700; line-height: 1.3; }
 .sheet-copy small { color: var(--subtle); font-size: var(--fs-2xs); }
 .reveal { position: absolute; z-index: 1; right: 8px; bottom: 12px; display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--subtle); cursor: pointer; }
 .reveal:hover { background: var(--glass-press); color: var(--ink); }
-.hint { margin: -4px 0 0; color: var(--subtle); font-size: var(--fs-2xs); line-height: 1.5; }
+.hint { flex: 0 0 auto; margin: -4px 0 0; color: var(--subtle); font-size: var(--fs-2xs); line-height: 1.5; }
 .note { margin: -6px 0 0; color: var(--warning); font-size: var(--fs-2xs); line-height: 1.5; }
 .steps { font-size: var(--fs-2xs); }
 .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.actions .pill-button { justify-content: center; min-width: 0; overflow: hidden; font-size: var(--fs-2xs); text-overflow: ellipsis; white-space: nowrap; }
+.actions .pill-button { justify-content: center; min-width: 0; overflow: hidden; border: 1px solid var(--mat-glass-line); background: color-mix(in srgb, var(--ink) 5%, transparent);
+  font-size: var(--fs-2xs); text-overflow: ellipsis; white-space: nowrap; }
+.actions .pill-button:hover { background: color-mix(in srgb, var(--ink) 10%, transparent); }
 /* 接回定稿：牌底一整条，和上面两枚是同一种胶囊，只是更重一点；提示字进 title，不再在下面另起一行。 */
 .receive-row { display: grid; }
 .receive-row :deep(.receive-button) { width: 100%; }

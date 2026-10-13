@@ -62,6 +62,8 @@ export const createDemoOperations = (data: DemoData, plan: DemoPlan) => {
     ai_template_delete: a => { templates.delete(String(a.id)); },
     ai_task_attachment_stat: () => [],
     ai_exchange_list: () => exchanges.map(e => ({ ...e, document: e.plan_draft_id ? plan.state().drafts[0]?.document ?? e.document : null, publish_state: plan.state().drafts.length ? null : 'sent' })),
+    ai_exchange_rename: a => { const e = exchanges.find(x => x.id === a.id); if (!e) return false; const title = String(a.title ?? '').trim(); e.title = title ? title.slice(0, 120) : null; return true; },
+    ai_exchange_delete: a => { const i = exchanges.findIndex(x => x.id === a.id); if (i < 0) return false; exchanges.splice(i, 1); return true; },
     get_device_profile: () => devices.profiles[0], get_device_profiles: () => devices,
     set_device_model_override: a => { devices.profiles[0].catalog_id = String(a.catalogId ?? 'amazfit-balance-2'); },
     get_local_api_status: () => ({ ...localApi }),

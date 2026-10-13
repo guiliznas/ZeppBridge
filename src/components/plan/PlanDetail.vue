@@ -26,6 +26,7 @@ import { displayDateTimeFormatter, parseDisplayDate } from '../../lib/dateTime';
 import type { PlanHeldWorkout, PlanIssue, PlanSport } from '../../types/trainingPlan';
 import Icon from '../Icon.vue';
 import { usePlanText } from './usePlanText';
+import { foreignToUi, langOf } from '../../lib/trainingPlan/foreignText';
 import { useBridgeText } from '../ai/bridge/bridge.i18n';
 
 /* `showWorkout = false`：单天页里训练本身由 PlanWorkoutEditor 画（可以改），这里只留走路这类、休息建议和问题清单。 */
@@ -157,9 +158,9 @@ const stepTarget = (row: StepRow) => target(row.target);
           <span v-if="restTime"><Icon name="moon" :size="14" />{{ bridgeText.bedtime }} <b>{{ restTime }}</b></span>
           <span v-if="row.rest.sleep_target_seconds != null"><Icon name="moon" :size="14" />{{ bridgeText.sleepTarget }} <b>{{ minutes(Math.round(row.rest.sleep_target_seconds / 60)) }}</b></span>
         </p>
-        <p v-if="row.rest?.note" class="rest-note">{{ row.rest.note }}</p>
+        <p v-if="row.rest?.note" class="rest-note" :lang="langOf(row.rest.note)">{{ row.rest.note }}<small v-if="foreignToUi(row.rest.note)" class="ai-original" :title="t.aiOriginalHint" lang="">{{ t.aiOriginal }}</small></p>
       </div>
-      <div v-if="row.rest && !restDay" class="local-rest"><Icon name="moon" :size="18"/><div><p><span v-if="restTime">{{ bridgeText.bedtime }} {{ restTime }}</span><span v-if="row.rest.sleep_target_seconds != null">{{ bridgeText.sleepTarget }} {{ minutes(Math.round(row.rest.sleep_target_seconds / 60)) }}</span></p><p v-if="row.rest.note">{{ row.rest.note }}</p></div></div>
+      <div v-if="row.rest && !restDay" class="local-rest"><Icon name="moon" :size="18"/><div><p><span v-if="restTime">{{ bridgeText.bedtime }} {{ restTime }}</span><span v-if="row.rest.sleep_target_seconds != null">{{ bridgeText.sleepTarget }} {{ minutes(Math.round(row.rest.sleep_target_seconds / 60)) }}</span></p><p v-if="row.rest.note" :lang="langOf(row.rest.note)">{{ row.rest.note }}<small v-if="foreignToUi(row.rest.note)" class="ai-original" :title="t.aiOriginalHint" lang="">{{ t.aiOriginal }}</small></p></div></div>
 
       <p v-if="!row.inWindow && workout" class="note">{{ t.outsideNote }}</p>
 
@@ -216,6 +217,9 @@ h3 { margin: 0; font-size: var(--fs-2xl); line-height: 1.25; }
 .sleep-chips span { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: color-mix(in srgb, var(--sleep) 14%, transparent);
   color: var(--sleep); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
 .sleep-chips b { color: var(--ink); font-weight: 700; }
+/* AI 写的原文和界面不是一种文字：后面跟一枚小签「AI 原话」（lib/trainingPlan/foreignText.ts）。 */
+.ai-original { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 8%, transparent);
+  color: var(--subtle); font-size: var(--fs-2xs); font-weight: 600; white-space: nowrap; vertical-align: 1px; cursor: help; }
 .rest-note { max-width: 46ch; margin: 4px 0 0; color: var(--muted); font-size: var(--fs-xs); line-height: 1.6; }
 
 .issues h4 { margin: 0 0 8px; color: var(--muted); font-size: var(--fs-xs); font-weight: 650; }

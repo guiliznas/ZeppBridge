@@ -31,7 +31,22 @@ const read = (): DemoFlags | undefined => {
   }
 };
 
+/* 整页载入只能落在根路径：vite 的 base 是 './'，载入 `/settings/guide` 这种多级地址时脚本会被
+   解析成 `/settings/assets/…`，取不到，窗口一片白（引导结束回设置页就这样白过屏，10-13）。
+   所以要回到某一页时一律载入 `/?route=<页>`，这里在路由器创建前把地址换过去。 */
+const applyRouteParam = () => {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('demo') !== null) return;
+    const route = params.get('route');
+    if (route && route.startsWith('/') && !route.startsWith('//')) window.history.replaceState(null, '', route);
+  } catch {
+    // 换不了就停在根路径。
+  }
+};
+
 if (typeof window !== 'undefined' && window.__ZB_DEMO__ === undefined) {
+  applyRouteParam();
   const flags = read();
   if (flags) {
     window.__ZB_DEMO__ = flags;

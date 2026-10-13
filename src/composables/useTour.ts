@@ -2,8 +2,9 @@
  * 新手引导的状态机（全局单例）。章节和步骤是 lib/tour/chapters.ts 的数据，界面是
  * components/tour/TourOverlay.vue（聚光框 + 玻璃说明卡）和 TourWelcome.vue（第一屏语言轮）。
  *
- * 一步 = 必要时换页 → 等目标元素出现（最多几秒，等不到就退成居中说明卡，不卡住）→ 滚到视野里
- * → 量出它的位置交给聚光框。窗口尺寸变化、滚动时重量。
+ * 一步 = 收起上一步摊开的东西（牌桌）→ 必要时换页 → 等目标元素出现（最多几秒，等不到就退成居中说明卡，
+ * 不卡住）→ 滚到视野里 → **等它停稳**（设置卡的形变、牌的发牌都在动，10-13 录屏里聚光框量在半路，
+ * 说明卡跟着跳、点「下一步」点空）→ 量出位置交给聚光框。窗口尺寸变化、滚动时重量；位置没变就不动。
  */
 import { computed, getCurrentInstance, ref, shallowRef } from 'vue';
 import router from '../router';
@@ -26,47 +27,48 @@ interface ActiveTour {
 export interface TargetBox { x: number; y: number; width: number; height: number }
 
 const active = shallowRef<ActiveTour | null>(null);
-/** 当前这一步圈住的地方；null = 没有目标（居中说明卡）或还在找。 */
+/** 当前这一步圈住的地方；null = 没有目标（居中说明卡）。换步途中保留上一步的，新的量好再挪过去。 */
 const box = shallowRef<TargetBox | null>(null);
-/** 正在换页 / 找目标：说明卡先别动。 */
+/** 正在换页 / 找目标 / 等目标停稳：说明卡先藏起来。 */
 const settling = ref(false);
 /** 沙盒的第一屏（语言轮）还开着。 */
 const welcomeOpen = ref(false);
 
 const WAIT_MS = 4000;
+/** 有 `fallback` 的步骤先在本页找这么久，找不到再去后备那一页。 */
+const FALLBACK_WAIT_MS = 900;
+/** 等目标停稳：连续这么多帧外接框不动（< 0.5px）才算，最多等 STEADY_MAX_MS。 */
+const STEADY_FRAMES = 6;
+const STEADY_MAX_MS = 1600;
 const PAD = 8;
 let token = 0;
 /** 当前这一步圈住的元素（`all` 的步骤是一组）。 */
 let targets: Element[] = [];
+/** 圈住它们用的选择器：元素被重渲染换掉时就地再找一次。 */
+let selector: { css: string; all: boolean } | null = null;
+let refinding = false;
 let measureFrame = 0;
 
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+const sleep = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
-const findTargets = (selector: string, all: boolean, run: number): Promise<Element[]> => new Promise((resolve) => {
+const findTargets = (css: string, all: boolean, run: number, wait = WAIT_MS): Promise<Element[]> => new Promise((resolve) => {
   const started = performance.now();
   const tick = () => {
     if (run !== token) return resolve([]);
     // 换页时旧页面在离场动画里还挂着（KeepAlive + Transition），上面也可能有同名元素：跳过它们。
-    const visible = [...document.querySelectorAll(selector)]
+    const visible = [...document.querySelectorAll(css)]
       .filter((element) => element.getClientRects().length > 0 && !element.closest('[class*="-leave-active"]'));
     const found = all ? visible : visible.slice(0, 1);
-    if (found.length || performance.now() - started > WAIT_MS) return resolve(found);
+    if (found.length || performance.now() - started > wait) return resolve(found);
     window.setTimeout(tick, 80);
   };
   tick();
 });
 
-const measure = () => {
-  measureFrame = 0;
-  const live = targets.filter((element) => element.isConnected);
-  if (!live.length) {
-    // 圈住的东西被换掉了（页面重渲染）：重新找一次，找不到就退成居中卡，不会反复来。
-    box.value = null;
-    targets = [];
-    if (active.value && !settling.value) void show();
-    return;
-  }
-  const rects = live.map((element) => element.getBoundingClientRect());
+const boxOf = (elements: Element[]): TargetBox | null => {
+  const rects = elements.map((element) => element.getBoundingClientRect()).filter((r) => r.width || r.height);
+  if (!rects.length) return null;
   const rect = {
     left: Math.min(...rects.map((r) => r.left)), top: Math.min(...rects.map((r) => r.top)),
     right: Math.max(...rects.map((r) => r.right)), bottom: Math.max(...rects.map((r) => r.bottom)),
@@ -76,11 +78,53 @@ const measure = () => {
   const y = Math.max(rect.top - PAD, 4);
   const right = Math.min(rect.right + PAD, window.innerWidth - 4);
   const bottom = Math.min(rect.bottom + PAD, window.innerHeight - 4);
-  box.value = { x, y, width: Math.max(right - x, 0), height: Math.max(bottom - y, 0) };
+  return { x, y, width: Math.max(right - x, 0), height: Math.max(bottom - y, 0) };
 };
-const scheduleMeasure = () => {
-  if (!measureFrame && targets.length) measureFrame = requestAnimationFrame(measure);
+const sameBox = (a: TargetBox | null, b: TargetBox | null) => !!a && !!b
+  && Math.abs(a.x - b.x) < 0.5 && Math.abs(a.y - b.y) < 0.5 && Math.abs(a.width - b.width) < 0.5 && Math.abs(a.height - b.height) < 0.5;
+
+/** 等目标停稳：形变、发牌、弹簧都放完（外接框连续几帧不动），或者到点。 */
+const waitSteady = (elements: Element[], run: number): Promise<void> => new Promise((resolve) => {
+  const started = performance.now();
+  let last: TargetBox | null = null;
+  let still = 0;
+  const tick = () => {
+    if (run !== token) return resolve();
+    const now = boxOf(elements.filter((element) => element.isConnected));
+    still = sameBox(now, last) ? still + 1 : 0;
+    last = now;
+    if (still >= STEADY_FRAMES || performance.now() - started > STEADY_MAX_MS) return resolve();
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+});
+
+const measure = () => {
+  measureFrame = 0;
+  const live = targets.filter((element) => element.isConnected);
+  if (!live.length) {
+    // 圈住的东西被换掉了（页面重渲染）：就地按同一个选择器再找一次（不换页、不重放这一步）；
+    // 真找不到才重走这一步，那时也不会反复来。
+    if (refinding || !active.value || settling.value || !selector) return;
+    refinding = true;
+    const run = token;
+    const { css, all } = selector;
+    void findTargets(css, all, run, 600).then((found) => {
+      refinding = false;
+      if (run !== token) return;
+      if (found.length) { targets = found; scheduleMeasure(); return; }
+      targets = [];
+      void show();
+    });
+    return;
+  }
+  const next = boxOf(live);
+  // 没变就不碰：每次赋新对象都会让聚光框和说明卡重新排一次。
+  if (next && !sameBox(next, box.value)) box.value = next;
 };
+function scheduleMeasure() {
+  if (!measureFrame && (targets.length || selector)) measureFrame = requestAnimationFrame(measure);
+}
 
 const listen = (on: boolean) => {
   const method = on ? 'addEventListener' : 'removeEventListener';
@@ -90,27 +134,69 @@ const listen = (on: boolean) => {
 
 const stepOf = (tour: ActiveTour): TourStep | undefined => TOUR_STEPS[tour.chapters[tour.chapter]]?.[tour.step];
 
-const show = async () => {
+/** 这一步摊开过的牌桌：离开这一步时收回去（点它自己的 ×，走它原本的收牌动画）。 */
+let openedTable = false;
+const closeOpened = async () => {
+  if (!openedTable) return;
+  openedTable = false;
+  const close = document.querySelector<HTMLElement>('.card-table [data-table-close]');
+  if (!close) return;
+  close.click();
+  await sleep(reducedMotion() ? 120 : 620);
+};
+const openPickDays = async (run: number) => {
+  if (document.querySelector('.card-table')) { openedTable = true; return; }
+  const [button] = await findTargets('.pick-days', false, run);
+  if (run !== token || !(button instanceof HTMLElement)) return;
+  button.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'auto' });
+  button.click();
+  openedTable = true;
+};
+
+async function show() {
   const tour = active.value;
   const step = tour && stepOf(tour);
   if (!tour || !step) return;
   const run = ++token;
+  // 上一步的聚光框先留着：新的量好以后从旧的样子平滑挪过去（不再先清空、说明卡跳到正中再跳回来）。
   settling.value = true;
   targets = [];
-  box.value = null;
-  if (step.route && router.currentRoute.value.path !== step.route) await router.push(step.route).catch(() => undefined);
-  const found = step.target ? await findTargets(step.target, step.all === true, run) : [];
+  selector = null;
+  if (!step.open) await closeOpened();
   if (run !== token) return;
-  if (found.length) {
-    found[0].scrollIntoView({ block: 'center', inline: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });
-    // 平滑滚动大约 300ms；滚完再量，聚光框一次落到位，不追着滚动跑。
-    await new Promise((resolve) => window.setTimeout(resolve, reducedMotion() ? 0 : 360));
+  if (step.route && router.currentRoute.value.path !== step.route) await router.push(step.route).catch(() => undefined);
+  if (run !== token) return;
+  if (step.open === 'pickDays') await openPickDays(run);
+  let css = step.target;
+  let found = css ? await findTargets(css, step.all === true, run, step.fallback ? FALLBACK_WAIT_MS : WAIT_MS) : [];
+  if (run !== token) return;
+  if (!found.length && step.fallback) {
+    if (router.currentRoute.value.path !== step.fallback.route) await router.push(step.fallback.route).catch(() => undefined);
+    css = step.fallback.target;
+    found = await findTargets(css, false, run);
     if (run !== token) return;
+  }
+  if (found.length && css) {
+    found[0]!.scrollIntoView({ block: 'center', inline: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });
+    // 平滑滚动大约 300ms，换页、形变、发牌也还在放：等它们停稳再量，聚光框一次落到位，不追着跑。
+    await sleep(reducedMotion() ? 0 : 200);
+    if (run !== token) return;
+    await waitSteady(found, run);
+    if (run !== token) return;
+    // 牌是一张张落下的：停稳后再按选择器取一遍，圈住全部。
+    if (step.all) {
+      const again = await findTargets(css, true, run, 0);
+      if (run !== token) return;
+      if (again.length) found = again;
+    }
     targets = found;
+    selector = { css, all: step.all === true };
     measure();
+  } else {
+    box.value = null;
   }
   settling.value = false;
-};
+}
 
 const finish = (completed: boolean) => {
   const tour = active.value;
@@ -123,9 +209,12 @@ const finish = (completed: boolean) => {
   markSeen(ids);
   token += 1;
   targets = [];
+  selector = null;
   box.value = null;
   active.value = null;
+  settling.value = false;
   listen(false);
+  void closeOpened();
   if (tour.mode === 'sandbox') leaveSandbox(sandboxFlags()?.ret ?? '/');
 };
 
@@ -209,6 +298,8 @@ export const useTour = () => ({
       first: done === 0,
       last: done === total - 1,
       mode: tour.mode,
+      /** 圈住的那一块可以直接上手。 */
+      interactive: steps[tour.step]?.interactive === true,
     };
   }),
   next: () => move(1),

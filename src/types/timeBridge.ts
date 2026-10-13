@@ -15,4 +15,6 @@ export interface AiExchange {
   sent_at: string; md_path: string; plan_draft_id: string | null; received_at: string | null;
   publish_id: number | null; publish_state: string | null; undone: boolean; document: PlanDocument | null;
   plan?: PlanCheck | null;
+  /** 用户给这条往返起的名字；没有就显示当时的问题。 */
+  title?: string | null;
 }

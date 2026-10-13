@@ -6,7 +6,7 @@
  * 缩回当初那一格），「⋯」里是把这一天的训练存成模板、从模板或 .zwo / .fit 文件加一条、删掉这一天。
  * 已经发出去的计划也能改：第一下改动时把它拿回来变成草稿。
  */
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import PageHeader from '../../components/PageHeader.vue';
 import Icon from '../../components/Icon.vue';
@@ -102,13 +102,25 @@ const importFile = async () => {
   await menuPop.value?.close();
   library.openFile();
 };
+/* 前一天 / 后一天：内容顺着方向滑过去、标题跟着换（10-13：以前是原地硬切，看不出换了一天）。
+   同一个路由组件只换参数，外壳的切页动效不管这里，这一页自己放。 */
+const dayDir = ref<'next' | 'prev'>('next');
+const titleBox = ref<HTMLElement | null>(null);
+watch(date, async (now, before) => {
+  dayDir.value = before && now < before ? 'prev' : 'next';
+  await nextTick();
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+  const heading = titleBox.value?.querySelector<HTMLElement>('#ai-day-title');
+  const dx = dayDir.value === 'next' ? 18 : -18;
+  heading?.animate([{ opacity: 0, transform: `translateX(${dx}px)` }, { opacity: 1, transform: 'none' }], { duration: 420, easing: 'cubic-bezier(.2, .8, .2, 1)' });
+});
 const title = computed(() => (/^\d{4}-\d{2}-\d{2}$/.test(date.value)
   ? displayDateTimeFormatter({ month: 'long', day: 'numeric', weekday: 'long' }).format(parseDisplayDate(date.value))
   : '—'));
 </script>
 
 <template>
-  <section class="page ai-sub-page" aria-labelledby="ai-day-title">
+  <section ref="titleBox" class="page ai-sub-page" aria-labelledby="ai-day-title">
     <PageHeader title-id="ai-day-title" :title="title">
       <nav class="day-nav" :aria-label="title" data-no-morph>
         <RouterLink v-if="prev" :to="`/ai/plan/${prev}`" replace class="nav-button" :aria-label="h.prevDay" :title="h.prevDay"><Icon name="arrow-left" :size="16" /></RouterLink>
@@ -129,22 +141,41 @@ const title = computed(() => (/^\d{4}-\d{2}-\d{2}$/.test(date.value)
     </GlassPopover>
     <PlanAddNotice :outcome="library.outcome.value" :need="library.need.value" @supply="library.supply" @cancel="library.cancelNeed" @dismiss="library.dismiss" />
     <div v-if="hub.notice.value" class="ai-message" role="status"><Icon name="info" :size="14" /><span>{{ hub.notice.value }}</span><button class="pill-button quiet" @click="plan.dismissNotice()">{{ pt.dismiss }}</button></div>
-    <template v-if="row">
-      <div v-for="entry in entries" :key="entry.key" class="ai-panel">
-        <p v-if="entry.held" class="held-note"><Icon name="warning" :size="14" />{{ e.held }}</p>
-        <PlanWorkoutEditor :workout="entry.workout" :locate="entry.locate" :issues="issuesOf(entry)" :editable="hub.editable.value" />
-      </div>
-      <div v-if="detailNeeded" class="ai-panel">
-        <PlanDetail :row="row" :issues="issues" :show-date="false" :show-workout="!entries.length" :editable="hub.editable.value" @retype="hub.retype" @remove="hub.removeWorkout" />
-      </div>
-    </template>
-    <p v-else class="ai-panel ai-empty">{{ pt.noPlanDay }}</p>
+    <div class="day-stage">
+      <Transition :name="`day-${dayDir}`">
+        <div :key="date" class="day-body">
+          <template v-if="row">
+            <div v-for="entry in entries" :key="entry.key" class="ai-panel">
+              <p v-if="entry.held" class="held-note"><Icon name="warning" :size="14" />{{ e.held }}</p>
+              <PlanWorkoutEditor :workout="entry.workout" :locate="entry.locate" :issues="issuesOf(entry)" :editable="hub.editable.value" />
+            </div>
+            <div v-if="detailNeeded" class="ai-panel">
+              <PlanDetail :row="row" :issues="issues" :show-date="false" :show-workout="!entries.length" :editable="hub.editable.value" @retype="hub.retype" @remove="hub.removeWorkout" />
+            </div>
+          </template>
+          <p v-else class="ai-panel ai-empty">{{ pt.noPlanDay }}</p>
+        </div>
+      </Transition>
+    </div>
   </section>
 </template>
 
 <style scoped src="./aiPage.css"></style>
 <style scoped>
 .day-nav { display: flex; gap: 6px; }
+/* 换一天：新的一天从前进方向滑进来、旧的往反方向让一小段淡掉（和换顶栏入口同一种节奏）。两天叠在同一格里，不撑高。 */
+.day-stage { display: grid; }
+.day-body { grid-area: 1 / 1; min-width: 0; }
+.day-next-enter-active, .day-prev-enter-active { transition: opacity 320ms cubic-bezier(.2, .7, .2, 1), transform 520ms cubic-bezier(.2, .8, .2, 1); }
+.day-next-leave-active, .day-prev-leave-active { transition: opacity 180ms ease-in, transform 260ms ease-in; pointer-events: none; }
+.day-next-enter-from { opacity: 0; transform: translateX(64px); }
+.day-prev-enter-from { opacity: 0; transform: translateX(-64px); }
+.day-next-leave-to { opacity: 0; transform: translateX(-28px); }
+.day-prev-leave-to { opacity: 0; transform: translateX(28px); }
+@media (prefers-reduced-motion: reduce) {
+  .day-next-enter-active, .day-prev-enter-active, .day-next-leave-active, .day-prev-leave-active { transition: opacity 120ms ease; }
+  .day-next-enter-from, .day-prev-enter-from, .day-next-leave-to, .day-prev-leave-to { transform: none; }
+}
 .nav-button { display: grid; width: 36px; height: 36px; place-items: center; padding: 0; border: 1px solid var(--mat-line); border-radius: 50%; background: var(--mat-raised);
   box-shadow: var(--mat-raised-rim); color: var(--ink); cursor: pointer; transition: translate var(--dur-base) var(--ease-spring); }
 .nav-button:hover { translate: 0 -1px; }

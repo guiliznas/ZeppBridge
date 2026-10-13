@@ -49,13 +49,27 @@ const t = useMessages(defineMessages(
   'components/ai/AiTaskHeader',
 ));
 
-/* —— 任务名：平时是一行字，点一下变输入框，回车 / 失焦确认，Esc 放弃 —— */
+/* —— 任务名：平时是一行字，点一下变输入框，回车 / 失焦确认，Esc 放弃 ——
+   10-13（「点编辑栏是硬切」）：字留在原地不动（输入框的内边距和字一模一样），胶囊的宽度从此刻滑到新宽度，
+   输入框的底色和焦点圈淡进来；收起时原路滑回去。 */
 const editing = ref(false);
 const titleInput = ref<HTMLInputElement | null>(null);
+const pill = ref<HTMLElement | null>(null);
 const shownTitle = computed(() => draft.value.title.trim() || props.fallbackTitle);
-const startRename = async () => {
-  editing.value = true;
+const reduced = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+/** 换成输入框 / 换回字：胶囊宽度从旧值滑到新值（只动这一块玻璃的 width，小元素，不碍事）。 */
+const morph = async (change: () => void) => {
+  const el = pill.value;
+  const from = el?.getBoundingClientRect().width ?? 0;
+  change();
   await nextTick();
+  if (!el || reduced()) return;
+  const to = el.getBoundingClientRect().width;
+  if (from && Math.abs(to - from) > 1) el.animate([{ width: `${from}px` }, { width: `${to}px` }], { duration: 340, easing: 'cubic-bezier(.2, .8, .2, 1)' });
+};
+const startRename = async () => {
+  await morph(() => { editing.value = true; });
+  titleInput.value?.focus();
   titleInput.value?.select();
 };
 const commitRename = (event: Event) => {
@@ -63,9 +77,9 @@ const commitRename = (event: Event) => {
   const value = (event.target as HTMLInputElement).value.trim();
   // 改回和自动标题一样的字就当没改：自动标题会跟着日期和范围更新。
   setTitle(value === props.fallbackTitle ? '' : value);
-  editing.value = false;
+  void morph(() => { editing.value = false; });
 };
-const cancelRename = () => { editing.value = false; };
+const cancelRename = () => { void morph(() => { editing.value = false; }); };
 
 </script>
 
@@ -76,7 +90,7 @@ const cancelRename = () => { editing.value = false; };
       <p>{{ t.intro }}</p>
     </div>
     <div class="head-row">
-    <div class="head-task glass-control is-lens-host">
+    <div ref="pill" class="head-task glass-control is-lens-host">
       <input v-if="editing" ref="titleInput" class="ai-input title-input" type="text" :value="shownTitle"
         :aria-label="t.titleLabel" maxlength="120"
         @blur="commitRename" @keydown.enter.prevent="commitRename" @keydown.esc.prevent="cancelRename" />
@@ -109,8 +123,12 @@ const cancelRename = () => { editing.value = false; };
 .saved-link:hover { color: var(--ink); }
 .saved-link:active { scale: .96; }
 .saved-link:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.title-input { width: 280px; min-width: 0; padding: 7px 14px; border: 0; border-radius: 999px; background: var(--glass-press); box-shadow: none; font-size: var(--fs-md); font-weight: 650; }
-.title-input:focus { box-shadow: 0 0 0 2px var(--focus); }
+/* 输入框和字同一个内边距、同一个字号：字不跳；宽度跟着字走（field-sizing），底色和焦点圈淡进来。 */
+.title-input { width: 280px; min-width: 104px; max-width: 360px; field-sizing: content; padding: 8px 12px 8px 16px; border: 0; border-radius: 999px; background: var(--glass-press);
+  box-shadow: 0 0 0 2px var(--focus); font-size: var(--fs-md); font-weight: 650; line-height: inherit; animation: title-edit-in 280ms cubic-bezier(.2, .8, .2, 1) both; }
+.title-input:focus { outline: none; }
+@keyframes title-edit-in { from { background: transparent; box-shadow: 0 0 0 2px transparent; } }
+@media (prefers-reduced-motion: reduce) { .title-input { animation: none; } }
 
 /* 很窄的窗口：任务名自己占一行，天数和记录挪到第二行，谁也不被挤出画面。 */
 @media (max-width: 480px) {

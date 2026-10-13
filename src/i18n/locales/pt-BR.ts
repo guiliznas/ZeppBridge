@@ -1920,7 +1920,16 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
       picked: (count: number) => `${count} ${count === 1 ? 'dia escolhido' : 'dias escolhidos'}`,
     },
 
-
+    'components/ai/ExchangeList': {
+      today: 'Hoje',
+      yesterday: 'Ontem',
+      rename: 'Renomear',
+      remove: 'Excluir',
+      confirmRemove: 'Confirmar exclusão',
+      cancel: 'Cancelar',
+      renameHint: 'Enter para salvar; deixe vazio para usar a pergunta original',
+      planDays: (n: number) => (n === 1 ? 'Plano de 1 dia' : `Plano de ${n} dias`),
+    },
 
     'components/ai/HandoffDock': {
       more: 'Mais',
@@ -2376,6 +2385,8 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
       notOpened: 'Você recolheu no meio do caminho; o site não foi aberto',
       exchanges: (count: number) => plural(count, { one: '1 ida e volta', other: `${count} idas e voltas` }),
       resetCards: 'Restaurar cartões',
+      restoreAll: 'Recomeçar',
+      restoreAllHint: 'De volta ao início: todos os tipos de dados, dias padrão e cartas de volta ao lugar; sua pergunta e nome da tarefa continuam. Desfazer restaura tudo.',
       ringHint: 'Mantenha o anel pressionado para carregar. Ao completar o círculo, ele é enviado.',
       faceAsk: 'Perguntar',
       facePlan: 'Plano',
@@ -2399,6 +2410,8 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
       minuteUnit: 'min',
       minutes: (count: number) => `${count} min`,
       noPlanDay: 'Nenhum treino neste dia',
+      aiOriginal: 'Texto original da IA',
+      aiOriginalHint: 'Este é o texto original gerado pela IA; o ZeppBridge não o traduz. Os planos solicitados a partir de agora serão escritos no idioma da interface.',
       noticeCleared: 'Os próximos 7 dias foram limpos.',
       noticeError: 'Esta etapa não foi concluída. Tente novamente em instantes.',
       noticeInvalid: 'Ainda há itens para corrigir no plano. Corrija-os antes de enviar.',
@@ -2454,6 +2467,30 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
       laterDelivered: 'Enviado ao Zepp; será sincronizado com o relógio quando a data se aproximar', weekNotSent: 'Esta semana não foi enviada',
       noticePartial: (weeks: string) => `Parte do plano não foi enviada: a semana que começa em ${weeks}. O restante foi enviado e será reenviado automaticamente na próxima sincronização.`,
     },
+    'components/plan/library': {
+      saveTemplate: 'Salvar como modelo',
+      saveTemplateNamed: (name: string) => `Salvar como modelo: ${name}`,
+      addTitle: 'Adicionar treino',
+      importFile: 'Importar arquivo (.zwo / .fit)',
+      removeTemplate: (name: string) => `Excluir modelo “${name}”`,
+      startFrom: 'Começar com um modelo ou arquivo',
+      saved: 'Salvo como modelo; adicione novamente a partir de “⋯” em qualquer dia',
+      saveFailed: 'Não foi possível salvar: armazenamento local indisponível',
+      added: (name: string) => `“${name}” adicionado`,
+      noteBand: 'O arquivo forneceu apenas um valor de intensidade; foi ampliado para uma faixa de ±3%',
+      noteDropped: 'Metas que o relógio não suporta (cadência, inclinação) foram removidas',
+      notePadded: 'Passos com menos de 10 segundos foram definidos para 10 segundos',
+      failUnreadable: 'Não foi possível ler este arquivo: apenas arquivos .zwo e .fit de treino são suportados',
+      failNotWorkout: 'Este .fit não é um treino (é uma atividade ou trajeto)',
+      failSport: 'Planos do relógio suportam apenas corrida, ciclismo e natação',
+      failZones: 'Este arquivo define metas por número de zona e não pode ser convertido: exporte com valores específicos e tente novamente',
+      failStep: 'Contém passos incompatíveis com planos do relógio (finalizados por frequência cardíaca, potência ou botão de volta, ou séries dentro de séries)',
+      failEmpty: 'O arquivo não contém passos',
+      needFtp: 'Este arquivo define a intensidade como porcentagem do FTP. Seu FTP (watts)',
+      needPace: 'Este arquivo define a intensidade pelo ritmo de limiar. Seu ritmo de limiar (por km)',
+      needGo: 'Importar',
+      needCancel: 'Cancelar',
+    },
     'lib/aiTask/planGuide': {
       guide: (example: string) => [
         'Converse comigo sobre o plano primeiro e permita várias rodadas de ajustes. Só gere o JSON final do plano de treino quando eu disser explicitamente “finalizar” ou “enviar o plano”:',
@@ -2471,6 +2508,7 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
         example,
         '```',
       ].join('\n'),
+      language: (lang: string) => `- Escreva name, focus, description, summary e note em ${lang}: eles serão exibidos exatamente assim no ZeppBridge e no relógio.`,
       example: {
         summary: 'Um treino de qualidade; os demais são aeróbicos e de recuperação',
         restNote: 'Durma cedo na véspera do treino de qualidade',
@@ -2743,6 +2781,7 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
       bundleSaved: 'Extensão salva; dê um duplo clique para adicioná-la ao Claude Desktop',
       bundlePick: 'Escolha uma pasta para salvar a extensão',
       sidecarMissing: 'Esta versão não inclui o programa MCP; conecte manualmente com o prompt ou a configuração abaixo',
+      staleClients: (names: string) => `${names} ainda apontam para outro zeppbridge-mcp, provavelmente uma versão antiga que não consegue ler esta biblioteca: use o botão correspondente para reconectar`,
       otherClients: 'Outros clientes',
       configReady: 'Configuração copiada com o caminho preenchido',
     },
@@ -2830,14 +2869,13 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
         },
         detail: {
           s1: 'Escolha um período uma vez e todas as páginas se lembrarão dele.',
-          s2: 'Métricas sem dados são agrupadas em uma linha; sem curvas inventadas.',
         },
         pick: {
           s1: 'Escolha alguns dias aqui para enviar para a IA.',
           s2: 'Na mesa, clique em uma carta para virar e marcar, ou arraste-a para a caixa. Clique em um monte para expandir, clique no vazio para recolher.',
         },
         handoff: {
-          s1: 'À esquerda estão seus dados selecionados; arraste para ordenar.',
+          s1: 'Seus dados selecionados ficam à esquerda: toque em um cartão para mudar quantos dias ele cobre ou deslize-o para fora para removê-lo.',
           s2: 'Escreva sua pergunta à direita; tudo é empacotado em um único .md para a IA.',
         },
         plan: {
@@ -2847,7 +2885,7 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
         },
         settings: {
           s1: 'Backup e restauração ficam aqui.',
-          s2: 'MCP, linha de comando e plugins ficam aqui.',
+          s2: 'O MCP permite que ferramentas de IA como o Claude Code e o Codex leiam seus dados diretamente neste computador (somente leitura, nada vai para a internet); a linha de comando e os plugins também ficam aqui.',
           s3: 'Volte a este cartão sempre que quiser rever o guia.',
         },
         cards: {
@@ -2868,6 +2906,7 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
       done: 'Concluído',
       skip: 'Pular guia',
       gotIt: 'Entendi',
+      tryIt: 'Experimente dentro da moldura',
       progress: (index: number, total: number) => `${index} / ${total}`,
       sample: 'Dados de exemplo',
       sampleHint: 'O guia usa dados de exemplo; sua biblioteca pessoal não é alterada',
@@ -2877,6 +2916,8 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
       inviteText: 'O que mudou na V3? Um tour rápido de um minuto',
       inviteGo: 'Ver',
       inviteLater: 'Mais tarde',
+      toolsText: 'Suas ferramentas de IA ainda usam o ZeppBridge antigo; reconecte-as',
+      toolsGo: 'Reconectar',
       cardTitle: 'Guia',
       cardSummary: (seen: number, total: number) => `${seen} de ${total} capítulos vistos`,
       fullTour: 'Do início',

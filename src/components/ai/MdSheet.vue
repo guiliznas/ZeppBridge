@@ -45,7 +45,18 @@ const onFileDrag = (event: MouseEvent) => {
       <Icon v-else name="spark" :size="16" />
       {{ s.lock(provider) }}
     </h2>
-    <p v-if="busy" class="md-hint" data-pop-item>{{ s.lockBusy }}</p>
+    <!-- 准备文件时先摆一张同样大小的空纸片（扫一道光），文件好了原地换上：浮层不再从一行字突然长成一大块（10-13 录屏「卡卡的」）。 -->
+    <template v-if="busy">
+      <div class="sheet skeleton" aria-hidden="true" data-pop-item>
+        <span class="sheet-lines"><i v-for="n in 4" :key="n"></i></span>
+        <span class="sheet-tag">.md</span>
+        <span class="sheet-copy"><b></b><b class="short"></b></span>
+      </div>
+      <p class="md-hint" role="status" data-pop-item>{{ s.lockBusy }}</p>
+      <div class="md-actions" aria-hidden="true" data-pop-item>
+        <span class="pill-button quiet ghost"></span><span class="pill-button quiet ghost"></span>
+      </div>
+    </template>
     <ul v-else-if="blocked.length" class="md-issues" role="alert" data-pop-item>
       <li v-for="(issue, i) in blocked" :key="i"><Icon name="warning" :size="13" />{{ aiTaskIssueText(issue) }}</li>
     </ul>
@@ -94,5 +105,18 @@ const onFileDrag = (event: MouseEvent) => {
 .reveal:hover { background: var(--glass-press); color: var(--ink); }
 .reveal:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .md-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+/* 两枚按钮平时也有一圈底：看得出是能点的按钮，不是两行字（10-13）。 */
+.md-actions .pill-button { border: 1px solid var(--mat-glass-line); background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.md-actions .pill-button:hover { background: color-mix(in srgb, var(--ink) 10%, transparent); }
+/* 空纸片：同样的版式，读数换成灰条，一道光从左扫到右。 */
+.sheet.skeleton { overflow: hidden; }
+.sheet.skeleton::before { content: ''; position: absolute; inset: 0; z-index: 1; border-radius: inherit;
+  background: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--ink) 7%, transparent) 50%, transparent 70%);
+  transform: translateX(-100%); animation: md-sweep 1.3s cubic-bezier(.4, 0, .2, 1) infinite; }
+.sheet.skeleton .sheet-copy b { display: block; width: 72%; height: 10px; border-radius: 5px; background: color-mix(in srgb, var(--ink) 10%, transparent); }
+.sheet.skeleton .sheet-copy b.short { width: 40%; height: 8px; margin-top: 4px; background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.pill-button.ghost { min-height: 32px; opacity: .45; }
+@keyframes md-sweep { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .sheet.skeleton::before { animation: none; } }
 .md-actions .pill-button { justify-content: center; min-width: 0; overflow: hidden; font-size: var(--fs-2xs); text-overflow: ellipsis; white-space: nowrap; }
 </style>

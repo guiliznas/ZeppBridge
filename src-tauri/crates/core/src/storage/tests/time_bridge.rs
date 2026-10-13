@@ -163,6 +163,45 @@ fn exchanges_link_the_pasted_draft_and_persist_profile_independently() {
 }
 
 #[test]
+fn exchange_rename_and_delete_touch_only_that_row() {
+    let db = Database::in_memory().unwrap();
+    let id = db.save_plan_draft(DraftOrigin::Mcp, &document()).unwrap();
+    let other = db.save_plan_draft(DraftOrigin::Mcp, &document()).unwrap();
+    let rows = db.ai_exchange_list(10).unwrap();
+    assert_eq!(rows.len(), 2);
+    let target = rows
+        .iter()
+        .find(|r| r.plan_draft_id.as_deref() == Some(id.as_str()))
+        .unwrap()
+        .id
+        .clone();
+    assert!(db
+        .rename_ai_exchange(&target, "  Long run block  ")
+        .unwrap());
+    // 不存在的那条：不凭空记一个名字。
+    assert!(!db.rename_ai_exchange("missing", "x").unwrap());
+    let rows = db.ai_exchange_list(10).unwrap();
+    let named = rows.iter().find(|r| r.id == target).unwrap();
+    assert_eq!(named.title.as_deref(), Some("Long run block"));
+    assert!(rows
+        .iter()
+        .filter(|r| r.id != target)
+        .all(|r| r.title.is_none()));
+    // 空白名字 = 回到当时的问题。
+    assert!(db.rename_ai_exchange(&target, "   ").unwrap());
+    assert!(db
+        .ai_exchange_list(10)
+        .unwrap()
+        .iter()
+        .all(|r| r.title.is_none()));
+    assert!(db.delete_ai_exchange(&target).unwrap());
+    assert!(!db.delete_ai_exchange(&target).unwrap());
+    let rows = db.ai_exchange_list(10).unwrap();
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].plan_draft_id.as_deref(), Some(other.as_str()));
+}
+
+#[test]
 fn mcp_incoming_draft_has_a_local_history_entry_without_invented_export_scope() {
     let db = Database::in_memory().unwrap();
     db.save_plan_draft(DraftOrigin::AiPaste, &document())

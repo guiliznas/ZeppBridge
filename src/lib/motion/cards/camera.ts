@@ -63,6 +63,9 @@ export interface Receded {
   restore: () => Promise<void>;
   /** 不放动画，直接复原（牌桌整个关掉时用）。 */
   drop: () => void;
+  /** 桌角那一叠（连同它的模糊拷贝）从此刻淡掉、缩一点：换范围、整桌收牌时和别的东西同起同止，
+      不再等到最后被 `drop` 一下抹掉（10-13：左上角那叠硬消失 / 关掉以后还留着残影）。 */
+  fadeOut: (duration: number) => Promise<void>;
 }
 
 /**
@@ -91,6 +94,12 @@ export const recedeLayer = (layer: HTMLElement, pileCard: HTMLElement, live: () 
     layer.inert = false;
     layer.style.transformOrigin = '';
     if (slot) slot.style.zIndex = '';
+  };
+  const fadeOut = async (duration: number) => {
+    restoring = true;
+    const els = [layer, copy].filter((el): el is HTMLElement => !!el);
+    const fades = els.map((el) => animateFromNow(el, { opacity: 0 }, { duration, easing: CLOSE_EASE, fill: 'forwards' }, ['opacity']));
+    await settled(fades);
   };
   const restore = async () => {
     restoring = true;
@@ -135,5 +144,5 @@ export const recedeLayer = (layer: HTMLElement, pileCard: HTMLElement, live: () 
     animateFromNow(layer, { opacity: 0 }, { duration: BLUR_SWAP_MS, easing: 'ease-out', fill: 'forwards' });
     await settled([blurIn]);
   })();
-  return { pile, now, restore, drop, ready };
+  return { pile, now, restore, drop, fadeOut, ready };
 };

@@ -21,7 +21,7 @@ import { useCardCollection } from '../../composables/useCardCollection';
 import { useCardPicking } from '../../composables/useCardPicking';
 import { useCardTableDrag } from '../../composables/useCardTableDrag';
 import {
-  animateFromNow, dealCards, fanBack, receive, recedeLayer, reducedMotion, relay, returnStack, stackCards, type Landing, type Receded,
+  animateFromNow, dealCards, fanBack, receive, recedeLayer, reducedMotion, relay, returnStack, settled, stackCards, type Landing, type Receded,
 } from '../../lib/motion/cards';
 import { CLOSE_EASE, OPEN_EASE, paced } from '../../lib/motion/timing';
 import { onMotionEscape } from '../../lib/motion/interrupt';
@@ -35,6 +35,8 @@ const emit = defineEmits<{ close: [] }>();
 const t = useCardsText();
 const box = useCardCollection();
 const RETURN_MS = paced(440);
+/** 换范围时桌角那一叠淡掉的时长：和理牌（~320ms）差不多同时落定。 */
+const PARK_FADE_MS = paced(300);
 
 interface Entry { id: string; level: DeckLevel; title: string; receded: (Receded & { ready: Promise<void> }) | null; pending: boolean }
 const range = ref<DeckRange>(props.focus ? 7 : props.range);
@@ -241,8 +243,11 @@ const close = async () => {
   if (!seq.live(id)) { receiver.cancel(); return; }
   // 放回：整叠缩回来处，背景模糊、标题、箱子（空的话）同一段时间里淡回去，牌落地那一刻页面正好清楚。
   setBoxOpen(false);
-  const fades = fadeChrome(0, reducedMotion() ? 160 : RETURN_MS);
-  await Promise.all([returnStack(cards, anchorLanding()), ...fades.map((a) => a.finished.catch(() => undefined))]);
+  const fadeMs = reducedMotion() ? 160 : RETURN_MS;
+  const fades = fadeChrome(0, fadeMs);
+  // 桌角那一叠（上一层退下去的）也一起淡掉：以前它的模糊拷贝不在 layers 里，整桌淡完它还亮着，像一块残影。
+  const parked = stack.value.map((entry) => entry.receded?.fadeOut(fadeMs));
+  await Promise.all([returnStack(cards, anchorLanding()), ...fades.map((a) => a.finished.catch(() => undefined)), ...parked]);
   if (!seq.live(id)) { receiver.cancel(); return; }
   receiver.land(props.source.tint);
   for (const entry of stack.value) entry.receded?.drop();
@@ -287,7 +292,9 @@ const switchRange = async (value: string) => {
   if (shown.length !== stack.value.length) { stack.value = shown; await nextTick(); }
   const depth = stack.value.length - 1;
   const old = cardsOf(depth);
-  for (const layer of layers.slice(0, depth)) animateFromNow(layer, { opacity: 0 }, { duration: 260, fill: 'forwards' }, ['opacity']);
+  // 换范围：桌角那一叠和理牌同起，缓缓淡掉（10-13：以前要等新牌发出来那一刻被 drop 一下抹掉，左上角硬消失）。
+  const parked = stack.value.slice(0, depth).map((entry, i) => entry.receded?.fadeOut(PARK_FADE_MS)
+    ?? animateFromNow(layers[i]!, { opacity: 0 }, { duration: PARK_FADE_MS, fill: 'forwards' }, ['opacity']).finished.then(() => undefined, () => undefined));
   const center = stageCenter();
   const stacked = stackCards(old, center);
   // 等理牌动画真的交给合成器（一帧），再做渲染新一副这件重活。
@@ -297,13 +304,17 @@ const switchRange = async (value: string) => {
   if (!level) { busy.value = false; return; }
   const entry: Entry = { id: `e${entrySeq++}`, level, title: rootTitle(), receded: null, pending: true };
   stack.value = [...stack.value, entry];
-  await Promise.all([stacked, nextTick()]);
+  // 等这一叠**真的理齐**再换牌（10-13「叠起来再展开，末尾那一下跳变」）：stackCards 在七成处就交棒，
+  // 那时牌缝还张着，旧的一副在半开的样子被整个换成一叠新牌，看上去是一跳。
+  await Promise.all([stacked.then((animations) => settled(animations)), nextTick()]);
   if (!seq.live(id)) return;
   // 这一叠就是落点：新的一副从同一个位置、同样大小发出来。
   const topCard = old[old.length - 1];
   const width = (topCard?.offsetWidth ?? 120);
   const at = center ?? { x: window.innerWidth / 2, y: window.innerHeight / 2 };
   const from: Landing = { rect: new DOMRect(at.x - width / 2, at.y - width * 0.7, width, width * 1.4), kind: 'pile', angle: 0, width };
+  await Promise.all(parked);
+  if (!seq.live(id)) return;
   for (const below of stack.value) below.receded?.drop();
   layers.length = 0;
   stack.value = [{ ...entry, pending: false }];
@@ -400,7 +411,7 @@ defineExpose({ reopen, isClosing: () => closing.value });
           <p>{{ t.pickSubtitle }} · {{ crumbs }}<template v-if="pickedCount"> · <b>{{ t.pickedHere(pickedCount) }}</b></template></p>
         </div>
         <span v-if="!workouts" data-intro><SegmentTrack compact intro :items="rangeItems" :model-value="String(range)" :aria-label="t.rangeAria" @update:model-value="switchRange" /></span>
-        <button type="button" class="table-icon" data-intro :aria-label="t.close" @click="close"><Icon name="x" :size="17" /></button>
+        <button type="button" class="table-icon" data-intro data-table-close :aria-label="t.close" @click="close"><Icon name="x" :size="17" /></button>
       </header>
       <div ref="stage" class="table-stage" @click.self="onBlank">
         <p v-if="loadFailed || (top && top.level.kind === 'days' && !top.level.days.length)" class="table-empty">{{ workouts ? t.noWorkouts : t.noRecord }}</p>

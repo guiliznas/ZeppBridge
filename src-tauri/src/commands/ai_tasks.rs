@@ -253,6 +253,37 @@ pub async fn ai_exchange_list(
 ) -> Result<Vec<zeppbridge_core::storage::ai_exchanges::AiExchange>, AppError> {
     spawn_independent_read(state.data_dir.clone(), move |db| db.ai_exchange_list(limit)).await
 }
+/// 给一条往返记录起名（空白 = 回到当时的问题）。返回这条是否还在。
+#[tauri::command]
+pub async fn ai_exchange_rename(
+    state: tauri::State<'_, AppState>,
+    id: String,
+    title: String,
+) -> Result<bool, AppError> {
+    with_write(
+        &state.data_dir,
+        &state.db,
+        WritePurpose::Metadata,
+        move |db| db.rename_ai_exchange(&id, &title),
+    )
+    .await
+}
+
+/// 删掉一条往返记录。返回是否真的删到了。
+#[tauri::command]
+pub async fn ai_exchange_delete(
+    state: tauri::State<'_, AppState>,
+    id: String,
+) -> Result<bool, AppError> {
+    with_write(
+        &state.data_dir,
+        &state.db,
+        WritePurpose::Metadata,
+        move |db| db.delete_ai_exchange(&id),
+    )
+    .await
+}
+
 #[tauri::command]
 pub async fn ai_profile_save(
     state: tauri::State<'_, AppState>,
