@@ -649,11 +649,18 @@ fn anchor_workouts_follow_the_workout_category_switch_and_its_exclusions() {
     let doc = export(&off);
     assert_eq!(doc["workouts"], serde_json::json!([]));
     let text = doc.to_string();
-    assert!(!text.contains("\"w1\""), "锚点运动 id 不出现在任何地方：{text}");
+    assert!(
+        !text.contains("\"w1\""),
+        "锚点运动 id 不出现在任何地方：{text}"
+    );
     let recovery = doc["coverage"].as_array().unwrap();
     assert_eq!(recovery.len(), 1);
     assert!(recovery[0]["workout_id"].is_null());
-    assert_eq!(recovery[0]["end_date"], local_day(start).to_string(), "日期窗照旧锚在运动那天");
+    assert_eq!(
+        recovery[0]["end_date"],
+        local_day(start).to_string(),
+        "日期窗照旧锚在运动那天"
+    );
 
     let mut on = off.clone();
     let mut workout = range(AiTaskCategory::Workout, 0, true);
