@@ -2379,6 +2379,12 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
       nextShort: 'Próxima semana',
       receiptTitle: (provider: string) => `Enviado para ${provider}`,
       receiptLead: 'Arraste o arquivo deste cartão para a conversa, cole a mensagem inicial copiada e envie.',
+      receiptPaste: (provider: string) => `Arquivo copiado: pressione Ctrl+V no chat de ${provider} e Enter para enviar.`,
+      autoWaiting: (provider: string) => `Aguardando ${provider} abrir para colar e enviar para você (Esc para parar)`,
+      autoFilling: 'Colando no chat…',
+      autoFilled: 'Colado no chat — pressione Enter para enviar',
+      autoSent: (provider: string) => `Enviado para ${provider}`,
+      autoStopped: 'A colagem automática parou: o arquivo ainda está na área de transferência — pressione Ctrl+V',
       copyAgain: 'Copiar abertura novamente',
       openAgain: (provider: string) => `Abrir ${provider} novamente`,
       editQuestion: 'Editar pergunta',
@@ -2784,6 +2790,9 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
       staleClients: (names: string) => `${names} ainda apontam para outro zeppbridge-mcp, provavelmente uma versão antiga que não consegue ler esta biblioteca: use o botão correspondente para reconectar`,
       otherClients: 'Outros clientes',
       configReady: 'Configuração copiada com o caminho preenchido',
+      autoTitle: 'Passar para a IA automaticamente',
+      autoOff: 'Desativado: o arquivo vai para a área de transferência; você pressiona Ctrl+V no chat da IA e Enter para enviar',
+      autoOn: 'Ativado: ao abrir o site da IA, o arquivo e a mensagem inicial são colados e enviados para você; pressione Esc a qualquer momento para parar',
     },
 
     'views/settings/sections/display': {
@@ -2877,6 +2886,7 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
         handoff: {
           s1: 'Seus dados selecionados ficam à esquerda: toque em um cartão para mudar quantos dias ele cobre ou deslize-o para fora para removê-lo.',
           s2: 'Escreva sua pergunta à direita; tudo é empacotado em um único .md para a IA.',
+          s3: 'Mantenha pressionado o cadeado no centro para entregar: o arquivo vai para a área de transferência e basta pressionar Ctrl+V no chat da IA para anexá-lo. Quer que colar e enviar também sejam feitos para você? Ative “Passar para a IA automaticamente” no cartão “Exportação e IA” nas Configurações.',
         },
         plan: {
           s1: 'Cole a resposta final da IA aqui para transformá-la no plano da semana.',
@@ -3177,6 +3187,10 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
     'err.ai_task.workout_not_found': 'Alguns dos treinos selecionados não foram encontrados localmente',
     'err.ai_task.write_failed': 'Falha ao gravar arquivos de exportação',
     'err.ai_task.attachment_missing': 'Arquivo anexo não encontrado no caminho especificado',
+    'err.ai_handoff.file': 'Não foi possível encontrar o arquivo para entrega',
+    'err.ai_handoff.provider': 'Essa IA não está na lista permitida',
+    'err.ai_handoff.unsupported': 'Este sistema ainda não suporta copiar arquivos para a área de transferência',
+    'err.ai_handoff.clipboard': 'Outro aplicativo está usando a área de transferência — tente novamente em instantes',
     'err.ai_template.invalid': 'O modelo selecionado possui parâmetros inválidos',
     'err.ai_template.not_found': 'Modelo de análise não encontrado',
     'err.ai_template.builtin_readonly': 'Modelos padrão do sistema são somente leitura. Salve como cópia para editar',

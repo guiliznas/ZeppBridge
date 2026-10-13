@@ -2523,6 +2523,12 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
       nextShort: 'Próxima semana',
       receiptTitle: (provider: string) => `Enviado para ${provider}`,
       receiptLead: 'Arraste o ficheiro deste cartão para a conversa, cole a mensagem inicial copiada e envie.',
+      receiptPaste: (provider: string) => `Ficheiro copiado: prime Ctrl+V na conversa do ${provider} e depois Enter.`,
+      autoWaiting: (provider: string) => `A aguardar que ${provider} abra para colar e enviar por ti (Esc para parar)`,
+      autoFilling: 'A colar na conversa…',
+      autoFilled: 'Colado na conversa — prime Enter para enviar',
+      autoSent: (provider: string) => `Enviado para ${provider}`,
+      autoStopped: 'A colagem automática parou: o ficheiro ainda está na área de transferência — prime Ctrl+V',
       copyAgain: 'Copiar abertura novamente',
       openAgain: (provider: string) => `Abrir ${provider} novamente`,
       editQuestion: 'Editar pergunta',
@@ -2987,6 +2993,9 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
       otherClients: 'Outros clientes',
       configReady: 'Configuração copiada com o caminho já preenchido',
       staleClients: (names: string) => `${names} ainda apontam para outro zeppbridge-mcp, provavelmente uma versão antiga que não consegue ler esta biblioteca: usa o botão correspondente para voltar a ligar`,
+      autoTitle: 'Passar à IA automaticamente',
+      autoOff: 'Desativado: o ficheiro vai para a área de transferência; prime Ctrl+V na conversa da IA e depois Enter',
+      autoOn: 'Ativado: ao abrir o site da IA, o ficheiro e a mensagem inicial são colados e enviados por ti; prime Esc para parar a qualquer momento',
     },
     'views/settings/sections/display': {
       focusTitle: 'O que me interessa',
@@ -3203,6 +3212,7 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
         handoff: {
           s1: 'Os teus dados selecionados estão à esquerda: toca num cartão para alterar o período de dias ou afasta-o para o excluir.',
           s2: 'Escreva a sua pergunta à direita; é compactada num ficheiro .md único para a IA.',
+          s3: 'Mantém premido o cadeado ao centro para entregar: o ficheiro vai para a área de transferência e com Ctrl+V na conversa da IA fica anexado. Também queres que cole e envie sozinho? Ativa «Passar à IA automaticamente» no cartão «Ferramentas de IA» em Definições.',
         },
         plan: {
           s1: 'Cole a resposta final da IA aqui para transformá-la no plano semanal.',
@@ -3405,6 +3415,12 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
     'err.ai_task.write_failed': 'Não foi possível gravar os ficheiros da tarefa',
     'err.ai_task.attachment_missing':
       'Um anexo original já não se encontra acessível',
+    'err.ai_handoff.file': 'Não foi possível encontrar o ficheiro a entregar',
+    'err.ai_handoff.provider': 'Essa IA não está na lista permitida',
+    'err.ai_handoff.unsupported':
+      'Ainda não é possível copiar ficheiros para a área de transferência neste sistema',
+    'err.ai_handoff.clipboard':
+      'Outra aplicação está a utilizar a área de transferência — tenta novamente dentro de momentos',
     'err.ai_template.invalid': 'Parâmetros do modelo inválidos',
     'err.ai_template.not_found': 'Modelo não encontrado',
     'err.ai_template.builtin_readonly':

@@ -150,6 +150,12 @@ export default {
     'err.ai_task.not_found': 'Die Analyseaufgabe existiert nicht oder wurde gelöscht',
     'err.ai_task.workout_not_found': 'Das gewählte Training existiert auf diesem Gerät nicht',
     'err.ai_task.write_failed': 'Die Übergabedateien konnten nicht geschrieben werden',
+    'err.ai_handoff.file': 'Die zu übergebende Datei konnte nicht gefunden werden',
+    'err.ai_handoff.provider': 'Diese KI steht nicht auf der Freigabeliste',
+    'err.ai_handoff.unsupported':
+      'Auf diesem System können Dateien noch nicht in die Zwischenablage kopiert werden',
+    'err.ai_handoff.clipboard':
+      'Die Zwischenablage wird von einem anderen Programm belegt – kurz warten und erneut versuchen',
     'err.ai_template.builtin_readonly':
       'Eingebaute Vorlagen sind schreibgeschützt – als eigene Vorlage speichern',
     'err.ai_template.invalid': 'Vorlageninhalt ungültig. Prüfe die Felder',
@@ -2935,6 +2941,15 @@ Antworte in Markdown.`,
       nextShort: 'Nächste Woche',
       receiptTitle: (provider: string) => `An ${provider} übergeben`,
       receiptLead: 'Ziehe die Datei von dieser Karte in den Chat, füge den kopierten Einleitungstext ein und sende ab.',
+      receiptPaste: (provider: string) =>
+        `Datei kopiert: Drücke im Chat von ${provider} Ctrl+V zum Einfügen und Enter zum Senden.`,
+      autoWaiting: (provider: string) =>
+        `Wartet, bis ${provider} öffnet, fügt dann für dich ein und sendet (Esc zum Stoppen)`,
+      autoFilling: 'Wird in den Chat eingefügt…',
+      autoFilled: 'In den Chat eingefügt – drücke Enter zum Senden',
+      autoSent: (provider: string) => `An ${provider} gesendet`,
+      autoStopped:
+        'Automatisches Einfügen gestoppt: Die Datei ist noch in der Zwischenablage – drücke Ctrl+V',
       copyAgain: 'Einleitungstext erneut kopieren',
       openAgain: (provider: string) => `${provider} erneut öffnen`,
       editQuestion: 'Frage bearbeiten',
@@ -3233,6 +3248,11 @@ Antworte in Markdown.`,
       toolTrainingContext:
         'Jüngstes Training und Erholung in einem Aufruf: Tagestabelle, jedes Training, der aktive Plan',
       toolTrainingPlan: 'Trainingsplan-Register: aktiver Plan, Übertragungsstatus, Entwürfe',
+      autoTitle: 'Automatisch an die KI übergeben',
+      autoOff:
+        'Aus: Die Datei landet in der Zwischenablage; drücke im KI-Chat Ctrl+V zum Einfügen und Enter zum Senden',
+      autoOn:
+        'Ein: Sobald die KI-Website öffnet, werden Datei und Einleitungstext für dich eingefügt und gesendet; mit Esc jederzeit stoppen',
     },
     'views/settings/sections/display': {
       focusTitle: 'Mein Fokus',
@@ -3316,6 +3336,7 @@ Antworte in Markdown.`,
         handoff: {
           s1: 'Links liegen deine gewählten Daten: Tippe auf eine Karte, um den Zeitraum zu ändern, oder wische sie weg, um sie wegzulassen.',
           s2: 'Schreibe rechts deine Frage – sie wird in ein einzelnes .md für die KI gepackt.',
+          s3: 'Halte das Schloss in der Mitte gedrückt, um zu übergeben: Die Datei landet in deiner Zwischenablage; mit Ctrl+V im KI-Chat wird sie angehängt. Möchtest du dir auch das Einfügen und Senden sparen? Aktiviere „Automatisch an die KI übergeben“ auf der Karte „KI-Werkzeuge“ in den Einstellungen.',
         },
         plan: {
           s1: 'Füge die Antwort der KI hier ein und sie wird zum Wochenplan.',

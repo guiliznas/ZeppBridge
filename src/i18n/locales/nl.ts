@@ -2775,6 +2775,12 @@ Regels: vergelijk me alleen met mijn eigen historie, niet met populatiegemiddeld
       nextShort: 'Volgende week',
       receiptTitle: (provider: string) => `Verstuurd naar ${provider}`,
       receiptLead: 'Sleep het bestand van deze kaart naar de chat, plak de gekopieerde openingszin en verzend.',
+      receiptPaste: (provider: string) => `Het bestand is gekopieerd: druk op Ctrl+V in het chatvenster van ${provider} en druk op Enter.`,
+      autoWaiting: (provider: string) => `Wachten tot ${provider} opent om voor je te plakken en verzenden (Esc om te stoppen)`,
+      autoFilling: 'Plakken in de chat…',
+      autoFilled: 'In de chat geplakt — druk op Enter om te verzenden',
+      autoSent: (provider: string) => `Verstuurd naar ${provider}`,
+      autoStopped: 'Automatisch plakken gestopt: het bestand staat nog op het klembord — druk op Ctrl+V',
       copyAgain: 'Openingszin opnieuw kopiëren',
       openAgain: (provider: string) => `${provider} opnieuw openen`,
       editQuestion: 'Vraag bewerken',
@@ -3022,6 +3028,9 @@ Regels: vergelijk me alleen met mijn eigen historie, niet met populatiegemiddeld
       publishOff: 'Uit: AI kan alleen concepten maken; je bevestigt op de pagina ‘Naar de AI’ voordat iets je horloge bereikt',
       publishOn: 'Aan: met jouw toestemming kan AI plannen direct naar je horloge sturen; bestaande plannen worden nooit gewist',
       publishTitle: 'AI direct trainingsplannen laten publiceren',
+      autoTitle: 'Automatisch overdragen aan AI',
+      autoOff: 'Uit: het bestand gaat naar het klembord; druk op Ctrl+V in het chatvenster van de AI en druk op Enter',
+      autoOn: 'Aan: zodra de AI-site opent, worden het bestand en de openingszin voor je geplakt en verzonden; druk op Esc om te stoppen',
       sidecarMissing: 'Deze versie bevat het MCP-programma niet; koppel handmatig met de prompt of configuratie hieronder',
       staleClients: (names: string) => `${names} verwijzen nog naar een andere zeppbridge-mcp, waarschijnlijk een oude versie die deze bibliotheek niet kan lezen: gebruik de bijbehorende knop om opnieuw te verbinden`,
       toolAthleteProfile: 'Hartslagzones, drempels, recente hardlooptempo’s en de achtergrond die je voor AI hebt geschreven',
@@ -3242,6 +3251,7 @@ Regels: vergelijk me alleen met mijn eigen historie, niet met populatiegemiddeld
         handoff: {
           s1: 'Links staan je gekozen gegevens: tik op een kaart om het aantal dagen aan te passen, of veeg hem weg om hem weg te laten.',
           s2: 'Schrijf rechts je vraag; deze wordt verpakt in één .md voor de AI.',
+          s3: 'Houd het slot in het midden ingedrukt om over te dragen: het bestand belandt op je klembord, dus met Ctrl+V in het chatvenster van de AI voeg je het direct toe. Wil je dat het plakken en verzenden ook voor je wordt gedaan? Schakel dan „Automatisch overdragen aan AI” in op de kaart AI-tools in Instellingen.',
         },
         plan: {
           s1: 'Plak het definitieve antwoord van de AI hier terug om een weekschema te maken.',
@@ -3303,6 +3313,12 @@ Regels: vergelijk me alleen met mijn eigen historie, niet met populatiegemiddeld
     'err.ai_task.workout_not_found':
       'De gekozen training bestaat niet op deze machine',
     'err.ai_task.write_failed': 'De overdrachtsbestanden konden niet worden geschreven',
+    'err.ai_handoff.file': 'Kan het over te dragen bestand niet vinden',
+    'err.ai_handoff.provider': 'Die AI staat niet op de toegestane lijst',
+    'err.ai_handoff.unsupported':
+      'Bestanden naar het klembord kopiëren wordt nog niet ondersteund op dit systeem',
+    'err.ai_handoff.clipboard':
+      'Een andere app gebruikt het klembord — probeer het zo meteen opnieuw',
     'err.ai_template.builtin_readonly':
       'Ingebouwde sjablonen zijn alleen-lezen — sla op als eigen sjabloon',
     'err.ai_template.invalid':
