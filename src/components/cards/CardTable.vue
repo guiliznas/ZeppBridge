@@ -218,10 +218,14 @@ const pop = async () => {
   firstPickable(cardsOf(depth - 1))?.focus({ preventScroll: true });
 };
 
-/** 背景、标题、底下的提示、退在后面的几层：从此刻的样子淡到 `to`，和放回同起同止。 */
+/**
+ * 背景、标题、底下的提示、底下还没退成桌角一叠的层：从此刻的样子淡到 `to`，和放回同起同止。
+ * 桌角那一叠不归这里管（`receded.fadeOut / fadeIn`）：以前这里把它淡回 1，收到一半又打开时父牌整张亮在牌缝后面。
+ */
 const fadeChrome = (to: number, duration: number) => {
   const easing = to ? OPEN_EASE : CLOSE_EASE;
-  const els = [backdrop.value, head.value, foot.value, ...layers.slice(0, -1)].filter((el): el is HTMLElement => !!el);
+  const under = layers.slice(0, -1).filter((_, i) => !stack.value[i]?.receded);
+  const els = [backdrop.value, head.value, foot.value, ...under].filter((el): el is HTMLElement => !!el);
   return els.map((el) => animateFromNow(el, { opacity: to }, { duration, easing, fill: 'forwards' }, ['opacity']));
 };
 const setBoxOpen = (open: boolean) => {
@@ -264,6 +268,7 @@ const reopen = () => {
   props.anchor?.classList.remove('is-receiving');
   setBoxOpen(true);
   fadeChrome(1, 360);
+  for (const entry of stack.value) void entry.receded?.fadeIn(360);
   void fanBack(cardsOf(stack.value.length - 1));
 };
 

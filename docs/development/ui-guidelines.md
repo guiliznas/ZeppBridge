@@ -286,7 +286,12 @@ the AI.
   the real one hidden in the same task — along an arc into the box. The box
   counts it only when it lands; a cancelled flight rolls back. The slot keeps
   a dashed outline "In the box"; tapping it flies a card back and turns it
-  face up. Piles (week / month) fly as one piece on long-press.
+  face up. Piles (week / month) on long-press: the pile sinks, its under-cards
+  square up and the metric colour fills the face from the bottom (450 ms, CSS
+  transitions; released early it drains back). When full, the pile **stays in
+  its slot** — only its top card peels off, lifts and arcs into the box; on
+  landing the pile glows once and its badge pops. Taking a full pile back flies
+  one card from the box that merges into the pile.
 - **Interrupting is a relay, not a lock** (round 4): a new click takes effect
   at once. Animations in flight finish from their current computed pose in
   about 120 ms and the new one starts from there (`relay()` in
@@ -324,8 +329,8 @@ the AI.
   deeper shadow only while moving). On the card table a card can be dragged
   (`useCardDrag.ts`, a drag starts after 6 px so it never fights tap or
   long-press): onto another card to stack them (offset, count badge, can be
-  pulled apart), onto the box to drop it in; long-press a stack (450 ms ring
-  drawn on the card's real size and radius) to send the whole stack. Esc
+  pulled apart), onto the box to drop it in; long-press a stack (450 ms colour
+  fill) to send the whole stack. Esc
   undoes the drag.
 - **Layered backdrops**: each level deeper, the previous one is swapped for a
   *pre-blurred static* layer and cross-faded — never a per-frame blur.

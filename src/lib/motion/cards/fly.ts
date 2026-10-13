@@ -15,6 +15,8 @@ import { restOf, toLocal } from './pose';
 import { reducedMotion, settled, SPRINGS, springCurve } from './spring';
 
 const FLY_MS = paced(560);
+/** `keep` 时多出来的抽起一拍。 */
+const PEEL_MS = paced(110);
 const BACK_MS = paced(480);
 const PULSE_MS = 620;
 
@@ -73,8 +75,10 @@ const ghostOf = (card: HTMLElement) => {
   ghost.removeAttribute('id');
   ghost.setAttribute('aria-hidden', 'true');
   ghost.inert = true;
-  ghost.classList.remove('shift-l', 'shift-r');
+  ghost.classList.remove('shift-l', 'shift-r', 'is-holding');
   const ghostCard = (ghost === slot ? ghost : ghost.querySelector<HTMLElement>('.pcard')) ?? ghost;
+  // 替身不带「按住」那一刻的样子（下压、灌色）：克隆时 Vue 还没来得及摘掉这个类，替身里的过渡会从头再放一遍。
+  ghostCard.classList.remove('holding', 'lifting', 'dragging', 'drop-target');
   // 牌桌给的牌宽、牌此刻的抬起都带上；真牌可能已经隐身了，替身不要跟着隐身。
   ghost.style.setProperty('--card-w', getComputedStyle(card).getPropertyValue('--card-w') || `${card.offsetWidth}px`);
   ghostCard.style.transform = getComputedStyle(card).transform === 'none' ? '' : getComputedStyle(card).transform;
@@ -103,30 +107,51 @@ const arcTo = (rest: ReturnType<typeof restOf>, goal: DOMRect, w: number) => {
   };
 };
 
+export interface FlyOptions {
+  /**
+   * 一叠（周 / 月）长按进箱子：原叠留在牌位上不隐身，替身只带封面、先从叠上抽起来一下再飞（`peel`）。
+   * 10-13：以前整叠隐身、牌位空一块，替身到了箱子原叠再从透明淡回来——看上去是一块残影。
+   */
+  keep?: boolean;
+}
+
+/** 抽起来：替身先往上抬一点、放大一点（像从一叠上揭下最上面那张），再接弧线。 */
+const PEEL_AT = 0.16;
+const peelPose = (rest: ReturnType<typeof restOf>, w: number) =>
+  `rotate(${(rest.angle * 0.6).toFixed(2)}deg) translateY(${(-w * 0.1).toFixed(1)}px) scale(1.06)`;
+
 /**
  * 真牌离开牌位、飞进箱子。返回 true = 到了（`onLand` 已经调过）；false = 被取消（真牌重新露出来，调用方回滚）。
- * 真牌在这里同步隐身；之后牌位上显示什么（「在收集箱里」的虚线轮廓）由调用方决定，记得把 visibility 还回去。
+ * 真牌在这里同步隐身（`keep` 时不隐身）；之后牌位上显示什么（「在收集箱里」的虚线轮廓）由调用方决定，记得把 visibility 还回去。
  */
-export const flyCardHome = async (card: HTMLElement, target: HTMLElement | null, onLand: () => void): Promise<boolean> => {
+export const flyCardHome = async (card: HTMLElement, target: HTMLElement | null, onLand: () => void, options: FlyOptions = {}): Promise<boolean> => {
   if (!target || reducedMotion()) {
     onLand();
     bump(target);
     return true;
   }
   const { ghost, rest, w } = ghostOf(card);
-  card.style.visibility = 'hidden';
+  if (options.keep) ghost.querySelector('.pcard')?.classList.add('peel');
+  else card.style.visibility = 'hidden';
   const path = arcTo(rest, target.getBoundingClientRect(), w);
+  const duration = options.keep ? FLY_MS + PEEL_MS : FLY_MS;
   // 小丑盒：飞到一半盖子弹开接住，落进去再合上（1B·B1）。
-  const caught = catchCard(target, FLY_MS);
-  const flight = ghost.animate(
-    [
+  const caught = catchCard(target, duration);
+  const frames: Keyframe[] = options.keep
+    ? [
+      { transform: path.home, opacity: 1, easing: 'cubic-bezier(.2, .8, .3, 1)' },
+      { transform: peelPose(rest, w), opacity: 1, offset: PEEL_AT, easing: 'cubic-bezier(.4, 0, .3, 1)' },
+      { transform: path.mid, opacity: 1, offset: PEEL_AT + (1 - PEEL_AT) * 0.5 },
+      { opacity: 1, offset: 0.88 },
+      { transform: path.end, opacity: 0 },
+    ]
+    : [
       { transform: path.home, opacity: 1 },
       { transform: path.mid, opacity: 1, offset: 0.5 },
       { opacity: 1, offset: 0.86 },
       { transform: path.end, opacity: 0 },
-    ],
-    { duration: FLY_MS, easing: 'cubic-bezier(.35, 0, .25, 1)', fill: 'forwards' },
-  );
+    ];
+  const flight = ghost.animate(frames, { duration, easing: options.keep ? 'linear' : 'cubic-bezier(.35, 0, .25, 1)', fill: 'forwards' });
   await settled([flight]);
   const landed = flight.playState === 'finished';
   caught(landed);
@@ -142,14 +167,16 @@ export const flyCardHome = async (card: HTMLElement, target: HTMLElement | null,
 
 /**
  * 一张牌从箱子飞回牌位：调用方先把真牌渲染好（隐身，visibility hidden）再调它；落定那一帧替身移除、真牌露出来。
+ * `keep`（一叠整叠拿回来）：原叠一直在牌位上，替身只带封面，飞回来和它重合时淡掉。
  */
-export const flyFromBox = async (source: HTMLElement | null, card: HTMLElement): Promise<void> => {
+export const flyFromBox = async (source: HTMLElement | null, card: HTMLElement, options: FlyOptions = {}): Promise<void> => {
   if (!source || reducedMotion()) {
     card.style.visibility = '';
     return;
   }
   const { ghost, rest, w } = ghostOf(card);
-  card.style.visibility = 'hidden';
+  if (options.keep) ghost.querySelector('.pcard')?.classList.add('peel');
+  else card.style.visibility = 'hidden';
   const path = arcTo(rest, source.getBoundingClientRect(), w);
   bump(source);
   // 盖子弹开、牌蹦出来，离开盒口就合上。
@@ -160,7 +187,8 @@ export const flyFromBox = async (source: HTMLElement | null, card: HTMLElement):
       { transform: path.end, opacity: 0 },
       { opacity: 1, offset: 0.16 },
       { transform: path.mid, opacity: 1, offset: 0.5 },
-      { transform: path.home, opacity: 1 },
+      ...(options.keep ? [{ transform: path.home, opacity: 1, offset: 0.9 }] : []),
+      { transform: path.home, opacity: options.keep ? 0 : 1 },
     ],
     { duration: BACK_MS, easing: CLOSE_EASE, fill: 'forwards' },
   );

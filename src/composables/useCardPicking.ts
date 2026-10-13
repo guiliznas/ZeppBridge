@@ -168,21 +168,31 @@ export const useCardPicking = (options: {
     void turnOver(id, el);
   };
 
-  /** 整叠飞进箱子（或整叠拿回来）。 */
+  /** 落定的那一下：这一叠亮一圈、角标弹出来（角标是 box 变了以后才渲染的，等一拍再找）。 */
+  const settleGroup = async (el: HTMLElement) => {
+    if (reducedMotion()) return;
+    await nextTick();
+    el.querySelector('.pcard-glow')?.animate([{ opacity: 0 }, { opacity: 0.9, offset: 0.3 }, { opacity: 0 }], { duration: 520, easing: 'ease-out' });
+    el.querySelector('.pcard-badge')?.animate([{ scale: '0.4', opacity: 0 }, { scale: '1.15', opacity: 1, offset: 0.55 }, { scale: '1' }], { duration: 380, easing: 'cubic-bezier(.3, 1.3, .5, 1)' });
+  };
+
+  /**
+   * 整叠飞进箱子（或整叠拿回来）。一叠本身一直留在牌位上（它还要带着「已挑 7/7」）：
+   * 只有封面那一张从叠上抽起来飞进去、到了再亮一下；拿回来是一张从箱子飞回来落进这一叠。
+   */
   const pickGroup = async (group: DeckGroup, el: HTMLElement) => {
     const dates = pickableDates(group);
     if (!dates.length) return;
     const { key: k, category } = options.source();
     if (dates.every((date) => box.has(k, date))) {
       box.remove(k, dates);
-      await flyFromBox(boxEl(), el);
+      await flyFromBox(boxEl(), el, { keep: true });
+      await settleGroup(el);
       return;
     }
     options.onFly?.();
-    const landed = await flyCardHome(el, boxEl(), () => box.add(k, category, dates));
-    // 那一叠还在原处（带着「已挑 7/7」）：等替身进了箱子再淡回来。
-    el.style.visibility = '';
-    if (landed && !reducedMotion()) el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 260, easing: 'ease-out' });
+    const landed = await flyCardHome(el, boxEl(), () => box.add(k, category, dates), { keep: true });
+    if (landed) await settleGroup(el);
   };
 
   /** Shift+Enter：这一层能挑的全都飞进去（日牌一张接一张，不翻面确认）。 */

@@ -7,8 +7,8 @@
  * - 一叠：标题只占一行，平均值独占一行，「7 天里几天有记录」画成一排小点；一天都没记录的叠整张压暗、缩小一点，
  *   正中一枚「没有记录」小胶囊（第二轮整块大「—」）。后面垫两张歪着的牌，看上去是一摞。
  * - `state`：`confirm` = 翻到背面「交给 AI ✓」等确认（牌抬起来）；`boxed` = 牌已经在收集箱里，牌位只剩虚线轮廓。
- * - 长按：边框描一圈（450ms，CSS 动画），按住时牌往下沉一点。进度环按牌的真实像素和圆角画（1A·A7，以前
- *   `viewBox 0 0 50 70` 拉伸、rx=5，圆角对不上牌）：矩形的位置、大小、rx 都是 CSS 几何属性，跟着 --w 走。`pcard-glow` 是一圈只淡入淡出的光，牌桌用它闪一下。
+ * - 长按（10-13 重做，原来是边框描一圈绿线）：整叠往下压、垫牌理齐，这一项的颜色从牌底往上灌满（450ms，CSS 过渡，
+ *   只动 transform / opacity）；没按满松手就原路退回去。`pcard-glow` 是一圈只淡入淡出的光，牌桌用它闪一下。
  * 没有记录的日子照样是一张牌，读数写「—」，整张压暗、不能挑。
  */
 import { computed } from 'vue';
@@ -85,7 +85,7 @@ const fit = computed(() => ({ '--fit': String(Math.max(faceFit(parts.value), par
       <em v-if="badge" class="pcard-badge">{{ badge }}</em>
     </span>
     <span class="pcard-glow" aria-hidden="true"></span>
-    <svg class="pcard-ring" aria-hidden="true"><rect pathLength="100" /></svg>
+    <span class="pcard-charge" aria-hidden="true"><i></i></span>
   </button>
 </template>
 

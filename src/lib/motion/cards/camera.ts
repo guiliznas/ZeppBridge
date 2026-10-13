@@ -66,6 +66,8 @@ export interface Receded {
   /** 桌角那一叠（连同它的模糊拷贝）从此刻淡掉、缩一点：换范围、整桌收牌时和别的东西同起同止，
       不再等到最后被 `drop` 一下抹掉（10-13：左上角那叠硬消失 / 关掉以后还留着残影）。 */
   fadeOut: (duration: number) => Promise<void>;
+  /** 收到一半又打开（`reopen`）：桌角那一叠从此刻淡回退好的样子，位置不动。 */
+  fadeIn: (duration: number) => Promise<void>;
 }
 
 /**
@@ -95,11 +97,17 @@ export const recedeLayer = (layer: HTMLElement, pileCard: HTMLElement, live: () 
     layer.style.transformOrigin = '';
     if (slot) slot.style.zIndex = '';
   };
+  // 淡出 / 淡回都要连 transform 一起读：animateFromNow 会取消这一层身上所有动画，只读 opacity 的话
+  // 把它缩到桌角的那段 transform 也被取消，父牌一下弹回正中原尺寸（10-13 220518 录屏：七月 / 八月那张夹在牌缝里）。
   const fadeOut = async (duration: number) => {
     restoring = true;
     const els = [layer, copy].filter((el): el is HTMLElement => !!el);
-    const fades = els.map((el) => animateFromNow(el, { opacity: 0 }, { duration, easing: CLOSE_EASE, fill: 'forwards' }, ['opacity']));
+    const fades = els.map((el) => animateFromNow(el, { opacity: 0 }, { duration, easing: CLOSE_EASE, fill: 'forwards' }));
     await settled(fades);
+  };
+  const fadeIn = async (duration: number) => {
+    const el = copy ?? layer;
+    await settled([animateFromNow(el, { opacity: RECEDE_OPACITY }, { duration, easing: OPEN_EASE, fill: 'forwards' })]);
   };
   const restore = async () => {
     restoring = true;
@@ -144,5 +152,5 @@ export const recedeLayer = (layer: HTMLElement, pileCard: HTMLElement, live: () 
     animateFromNow(layer, { opacity: 0 }, { duration: BLUR_SWAP_MS, easing: 'ease-out', fill: 'forwards' });
     await settled([blurIn]);
   })();
-  return { pile, now, restore, drop, fadeOut, ready };
+  return { pile, now, restore, drop, fadeOut, fadeIn, ready };
 };

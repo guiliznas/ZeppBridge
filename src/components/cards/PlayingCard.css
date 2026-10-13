@@ -105,18 +105,22 @@
 /* 闪一下：一圈光，只淡入淡出它自己（牌桌落定后、从箱子拿回来时）。 */
 .pcard-glow { position: absolute; inset: -3px; z-index: 2; border-radius: calc(var(--w) * .1 + 3px); opacity: 0; pointer-events: none;
   box-shadow: 0 0 0 2px var(--tint), 0 0 30px 6px color-mix(in srgb, var(--tint) 45%, transparent); }
-/* 长按：边框描一圈，按住时往下沉一点，松手弹回。 */
-.pcard.holding { scale: .97; }
-.pcard-ring { position: absolute; inset: 0; z-index: 3; width: 100%; height: 100%; overflow: visible; opacity: 0; pointer-events: none; }
-/* 描边压在牌边上：内缩半个线宽，圆角 = 牌面圆角减半个线宽，四边与牌边重合。 */
-.pcard-ring rect { --sw: 2.5px; x: calc(var(--sw) / 2); y: calc(var(--sw) / 2); width: calc(100% - var(--sw)); height: calc(100% - var(--sw));
-  rx: calc(var(--w) * .1 - var(--sw) / 2); ry: calc(var(--w) * .1 - var(--sw) / 2);
-  fill: none; stroke: var(--accent); stroke-width: var(--sw); stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; }
-.pcard.holding .pcard-ring { opacity: 1; }
-.pcard.holding .pcard-ring rect { animation: pcard-hold 450ms linear forwards; }
-@keyframes pcard-hold { to { stroke-dashoffset: 0; } }
+/* 长按（10-13 重做，原来边框描一圈绿线）：按住的 450ms 里整叠慢慢往下压、垫牌理齐贴到封面底下，
+   这一项的颜色从牌底往上灌满，光圈跟着亮起来；没按满松手就按基础过渡弹回、颜色退下去。只动 scale / transform / opacity。 */
+.pcard.holding { scale: .95; transition: scale 450ms cubic-bezier(.3, .6, .35, 1), opacity var(--dur-base) ease; }
+.pcard.group.holding::before, .pcard.group.holding::after { transform: translateY(calc(var(--w) * .015)) scale(.98); transition-duration: 450ms; }
+.pcard-charge { position: absolute; inset: 0; z-index: 1; overflow: hidden; border-radius: calc(var(--w) * .1); opacity: 0; pointer-events: none;
+  transition: opacity 240ms ease-out; }
+.pcard-charge i { position: absolute; inset: 0; transform: scaleY(0); transform-origin: 50% 100%;
+  background: linear-gradient(to top, color-mix(in srgb, var(--tint) 34%, transparent), color-mix(in srgb, var(--tint) 12%, transparent) 70%, color-mix(in srgb, var(--tint) 24%, transparent) 92%, transparent);
+  transition: transform 220ms cubic-bezier(.4, 0, .6, 1); }
+.pcard.holding .pcard-charge { opacity: 1; transition-duration: 120ms; }
+.pcard.holding .pcard-charge i { transform: scaleY(1); transition: transform 450ms cubic-bezier(.45, .05, .55, .95); }
+.pcard-glow { transition: opacity 220ms ease-out; }
+.pcard.holding .pcard-glow { opacity: .55; transition: opacity 450ms ease-in; }
+/* 飞进箱子的那一张（替身）：只带封面，垫牌留在原处——看上去是从这一叠上抽走了一张。 */
+.pcard.peel::before, .pcard.peel::after { opacity: 0; }
 @media (prefers-reduced-motion: reduce) {
-  .pcard, .pcard-face, .pcard.group::before, .pcard.group::after { transition: none; }
-  .pcard.holding .pcard-ring rect { animation-duration: 1ms; }
+  .pcard, .pcard-face, .pcard.group::before, .pcard.group::after, .pcard-charge, .pcard-charge i, .pcard-glow { transition: none !important; }
   .pcard-face.outline { animation-duration: 1ms; }
 }
