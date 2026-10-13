@@ -28,7 +28,6 @@ export const settingsMessages = defineMessages(
     officialDisconnected: '已断开官方授权，本机数据都在。',
     officialFailed: '官方授权没有完成',
     officialNote: '官方数据已接入：睡眠、心率、步数、运动、PAI 和体重都会同步；HRV、血氧、压力等仍由「高级数据」补充。',
-    officialNotConnected: '未授权',
     copyAuthLink: '复制授权链接',
     copyAuthLinkHint: '浏览器已登录 Zepp 会直接跳到「同意授权」。想换账号（比如 Google、小米登录），把链接粘到无痕窗口打开。',
     linkCopied: '链接已复制',
@@ -49,7 +48,6 @@ export const settingsMessages = defineMessages(
 
     // ── 2. 账户与区域 ──
     verifyAndSync: '验证并同步',
-    reauthenticate: '重新认证',
 
     // ── 3. 设备 ──
     identifying: '正在识别…',
@@ -280,7 +278,6 @@ export const settingsMessages = defineMessages(
     connVerifying: '正在验证',
     connWaiting: '等待登录',
     connFailed: '登录失败',
-    unidentifiedInitial: '未',
     noRecords: '尚无记录',
     timeUnknown: '时间未知',
     refreshFailed: (reason: string) => `重新识别失败，已回退到本机缓存${reason}`,
@@ -380,7 +377,6 @@ export const settingsMessages = defineMessages(
     officialDisconnected: 'Zepp authorization disconnected; local data kept.',
     officialFailed: 'Zepp authorization did not complete',
     officialNote: 'Official data is live: sleep, heart rate, steps, workouts, PAI and weight sync; HRV, blood oxygen and stress still come via "Advanced data".',
-    officialNotConnected: 'Not authorized',
     copyAuthLink: 'Copy authorization link',
     copyAuthLinkHint: 'Already signed in to Zepp in the browser? It jumps straight to consent. For another account (e.g. Google or Xiaomi sign-in), paste the link into a private window.',
     linkCopied: 'Link copied',
@@ -401,7 +397,6 @@ export const settingsMessages = defineMessages(
 
     // ── 2. Account ──
     verifyAndSync: 'Verify and sync',
-    reauthenticate: 'Sign in again',
 
     // ── 3. Devices ──
     identifying: 'Identifying…',
@@ -632,7 +627,6 @@ If you need anything from me (which client I use, where the file lives), just as
     connVerifying: 'Verifying',
     connWaiting: 'Waiting for sign-in',
     connFailed: 'Sign-in failed',
-    unidentifiedInitial: '?',
     noRecords: 'No records yet',
     timeUnknown: 'Time unknown',
     refreshFailed: (reason: string) => `Identification failed; fell back to the local cache${reason}`,
@@ -732,7 +726,6 @@ If you need anything from me (which client I use, where the file lives), just as
     officialDisconnected: 'Autorización desconectada; los datos de este equipo siguen aquí.',
     officialFailed: 'La autorización de Zepp no se completó',
     officialNote: 'Los datos oficiales ya están conectados: se sincronizan sueño, frecuencia cardíaca, pasos, entrenamientos, PAI y peso; la VFC, el oxígeno en sangre y el estrés siguen llegando de «Datos avanzados».',
-    officialNotConnected: 'Sin autorizar',
     copyAuthLink: 'Copiar enlace de autorización',
     copyAuthLinkHint: 'Si el navegador ya tiene sesión en Zepp, salta directo al consentimiento. Para otra cuenta (p. ej. con Google o Xiaomi), pega el enlace en una ventana de incógnito.',
     linkCopied: 'Enlace copiado',
@@ -753,7 +746,6 @@ If you need anything from me (which client I use, where the file lives), just as
 
     // ── 2. Account ──
     verifyAndSync: 'Verificar y sincronizar',
-    reauthenticate: 'Volver a iniciar sesión',
 
     // ── 3. Devices ──
     identifying: 'Identificando…',
@@ -984,7 +976,6 @@ Si necesitas algo de mí (qué cliente uso, dónde está el archivo), pregúntam
     connVerifying: 'Verificando',
     connWaiting: 'Esperando el inicio de sesión',
     connFailed: 'El inicio de sesión falló',
-    unidentifiedInitial: '?',
     noRecords: 'Aún no hay registros',
     timeUnknown: 'Hora desconocida',
     refreshFailed: (reason: string) => `La identificación falló; se usó la caché local${reason}`,

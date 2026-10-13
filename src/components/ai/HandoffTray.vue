@@ -42,7 +42,6 @@ const t = useMessages(defineMessages(
     detailDetailed: '详细（含逐点序列）',
     detailHint: '摘要最省篇幅；详细会带上每一次运动的逐点曲线，AI 能看得更细，文件也更大。',
     mcp: '允许本机 MCP 工具查询这个任务',
-    mcpHint: '给 Claude Desktop 这类本机工具用。只对以 --scope task 启动的 MCP 生效：它只能查这个任务覆盖的范围；默认的全库只读模式不受这个开关限制。',
   },
   {
     attachTitle: 'Original files (PDF / images)',
@@ -65,7 +64,6 @@ const t = useMessages(defineMessages(
     detailDetailed: 'Detailed (per-point series)',
     detailHint: 'Summary is shortest; Detailed adds every workout’s point-by-point curves so the AI can look closer, at the cost of a bigger file.',
     mcp: 'Let local MCP tools query this task',
-    mcpHint: 'For local tools such as Claude Desktop. Only applies to MCP started with --scope task, which then sees just what this task covers; the default full read-only mode is not narrowed by this switch.',
   },
   {
     attachTitle: 'Archivos originales (PDF / imágenes)',
@@ -88,7 +86,6 @@ const t = useMessages(defineMessages(
     detailDetailed: 'Detallado (series punto a punto)',
     detailHint: 'Resumen ocupa menos; Detallado añade las curvas punto a punto de cada actividad para que la IA vea más, con un archivo más grande.',
     mcp: 'Permitir que herramientas MCP locales consulten esta tarea',
-    mcpHint: 'Para herramientas locales como Claude Desktop. Solo se aplica al MCP iniciado con --scope task, que entonces ve únicamente lo que cubre esta tarea; el modo predeterminado de solo lectura completa no se restringe con este interruptor.',
   },
   'components/ai/HandoffTray',
 ));

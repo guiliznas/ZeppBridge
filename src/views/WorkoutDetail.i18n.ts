@@ -23,12 +23,6 @@ export const workoutDetailMessages = defineMessages(
 
 以 Markdown 格式输出。`,
     needDesktop: 'AI 交接需要桌面应用；网页预览不会打开外部网站。',
-    attachmentOpened: (provider: string) =>
-      `数据包已导出到桌面（zeppbridge-ai-handoff.json），拖入 ${provider} 即可；提示词已复制。`,
-    attachmentNotOpened: (provider: string) =>
-      `数据包已导出到桌面（zeppbridge-ai-handoff.json）；提示词已复制，可手动打开 ${provider}。`,
-    copiedAndOpened: (provider: string) => `已复制这条运动的脱敏数据并打开 ${provider}，粘贴即可。`,
-    copiedOnly: (provider: string) => `已复制这条运动的脱敏数据，可手动打开 ${provider} 粘贴。`,
     aiRecoveryTitle: (label: string, day: string) => `${day} ${label} · 带恢复背景`,
     aiRecoveryPrompt: (label: string, gap: number | null) => `这是我的一次${label}${gap === null ? '（这之前没有记录到运动）' : `，距上一次运动 ${gap} 天`}。文件里还有这次运动之前 30 天的睡眠、静息心率、HRV、压力和准备度（有就带，缺的写「未提供」）。
 
@@ -38,7 +32,6 @@ export const workoutDetailMessages = defineMessages(
 3. 最后说${gap === null ? '下一次' : `隔了 ${gap} 天，下一次`}该回到什么强度。
 
 约束：只和我自己的历史比，不和人群平均比；缺的数据直接说缺，不估算；不做医学诊断。`,
-    aiRecoveryDone: (provider: string) => `已把这次运动和之前 30 天的睡眠与恢复整理成一个文件放到桌面，开场白已复制，${provider} 已打开；把文件拖进对话框即可。`,
     noCorrection: '不纠正',
     deviceNameMissing: '设备名称未提供',
     notFetchedYet: '尚未获取',
@@ -152,14 +145,7 @@ export const workoutDetailMessages = defineMessages(
     savedFit: 'FIT 文件已保存',
     exportFailed: '导出失败',
 
-    handoffAria: '交给 AI',
-    handoffTitle: '交给 AI',
-    handoffSub: '只把这条运动的脱敏数据和提示词复制到剪贴板，并打开你选的 AI 网站。按天记录的睡眠、步数不在范围内。',
-    handoffTarget: '目标工具',
-    handoffTargetAria: '交给哪个 AI 工具',
     preparing: '正在准备…',
-    handWaitSync: '同步完成后再交给 AI',
-    handTo: (provider: string) => `交给 ${provider}`,
 
     provenanceAria: '来源信息',
     eyebrowProvenance: '来源',
@@ -192,12 +178,6 @@ Constraints:
 
 Answer in Markdown.`,
     needDesktop: 'AI handoff needs the desktop app — the browser preview will not open external sites.',
-    attachmentOpened: (provider: string) =>
-      `Data package saved to desktop (zeppbridge-ai-handoff.json) — drag it into ${provider}. Prompt copied.`,
-    attachmentNotOpened: (provider: string) =>
-      `Data package saved to desktop (zeppbridge-ai-handoff.json); prompt copied. Open ${provider} yourself.`,
-    copiedAndOpened: (provider: string) => `De-identified data for this workout copied and ${provider} opened. Paste it in.`,
-    copiedOnly: (provider: string) => `De-identified data for this workout copied. Open ${provider} yourself and paste it in.`,
     aiRecoveryTitle: (label: string, day: string) => `${day} ${label} · with recovery`,
     aiRecoveryPrompt: (label: string, gap: number | null) => `This is one ${label} of mine${gap === null ? ' (no earlier workout is recorded)' : `, ${gap} days after my previous workout`}. The file also has my sleep, resting HR, HRV, stress and readiness for the 30 days before it (included where recorded; missing ones say “not provided”).
 
@@ -207,7 +187,6 @@ Please answer in this order:
 3. Finally, ${gap === null ? 'what intensity to aim for next time' : `after a ${gap}-day gap, what intensity to return to next time`}.
 
 Rules: compare me only with my own history, not with population averages; say plainly when data is missing instead of estimating; no medical diagnosis.`,
-    aiRecoveryDone: (provider: string) => `This workout and the 30 days of sleep and recovery before it are in one file on your desktop. The opening message is copied and ${provider} is open — drag the file into the chat.`,
     noCorrection: 'No correction',
     deviceNameMissing: 'Device name not provided',
     notFetchedYet: 'Not fetched yet',
@@ -321,14 +300,7 @@ Rules: compare me only with my own history, not with population averages; say pl
     savedFit: 'FIT file saved',
     exportFailed: 'Export failed',
 
-    handoffAria: 'Send to AI',
-    handoffTitle: 'Send to AI',
-    handoffSub: "Copies this workout's de-identified data plus the prompt, and opens the AI site you pick. Day-level streams like sleep and steps stay out.",
-    handoffTarget: 'Target tool',
-    handoffTargetAria: 'Which AI tool to send it to',
     preparing: 'Preparing…',
-    handTo: (provider: string) => `Send to ${provider}`,
-    handWaitSync: 'Available once the sync finishes',
 
     provenanceAria: 'Provenance',
     eyebrowProvenance: 'Provenance',
@@ -361,12 +333,6 @@ Restricciones:
 
 Responde en español, en Markdown.`,
     needDesktop: 'Pasar a la IA requiere la app de escritorio; la vista previa web no abre sitios externos.',
-    attachmentOpened: (provider: string) =>
-      `El paquete de datos se guardó en tu escritorio (zeppbridge-ai-handoff.json): arrástralo a ${provider}. La instrucción está en tu portapapeles.`,
-    attachmentNotOpened: (provider: string) =>
-      `El paquete de datos se guardó en tu escritorio (zeppbridge-ai-handoff.json). La instrucción está en tu portapapeles; abre ${provider} tú mismo.`,
-    copiedAndOpened: (provider: string) => `Se copiaron los datos anonimizados de este entrenamiento y se abrió ${provider}. Pégalos ahí.`,
-    copiedOnly: (provider: string) => `Se copiaron los datos anonimizados de este entrenamiento. Abre ${provider} tú mismo y pégalos.`,
     aiRecoveryTitle: (label: string, day: string) => `${day} ${label} · con recuperación`,
     aiRecoveryPrompt: (label: string, gap: number | null) => `Esta es una sesión de ${label}${gap === null ? ' (no hay entrenamientos registrados antes)' : `, ${gap} días después de mi entrenamiento anterior`}. El archivo también incluye mi sueño, FC en reposo, HRV, estrés y preparación de los 30 días previos (lo que esté registrado; lo que falte aparece como «no proporcionado»).
 
@@ -376,7 +342,6 @@ Responde en este orden:
 3. Por último, ${gap === null ? 'a qué intensidad apuntar la próxima vez' : `tras ${gap} días sin entrenar, a qué intensidad volver la próxima vez`}.
 
 Reglas: compárame solo con mi propio historial, no con promedios de la población; si faltan datos, dilo en lugar de estimar; sin diagnósticos médicos.`,
-    aiRecoveryDone: (provider: string) => `Esta sesión y los 30 días de sueño y recuperación previos están en un archivo en tu escritorio. El mensaje inicial está copiado y ${provider} está abierto: arrastra el archivo al chat.`,
     noCorrection: 'Sin corrección',
     deviceNameMissing: 'Nombre del dispositivo no disponible',
     notFetchedYet: 'Aún sin datos',
@@ -490,14 +455,7 @@ Reglas: compárame solo con mi propio historial, no con promedios de la poblaci�
     savedFit: 'Archivo FIT guardado',
     exportFailed: 'La exportación falló',
 
-    handoffAria: 'Pasar a la IA',
-    handoffTitle: 'Pasar a la IA',
-    handoffSub: 'Copia al portapapeles solo los datos anonimizados de este entrenamiento y la instrucción, y abre el sitio de IA que elijas. Lo registrado por día, como sueño y pasos, queda fuera.',
-    handoffTarget: 'Herramienta de destino',
-    handoffTargetAria: 'A qué herramienta de IA entregarlo',
     preparing: 'Preparando…',
-    handWaitSync: 'Disponible cuando termine la sincronización',
-    handTo: (provider: string) => `Pasar a ${provider}`,
 
     provenanceAria: 'Procedencia',
     eyebrowProvenance: 'Procedencia',
