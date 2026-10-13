@@ -8,18 +8,40 @@
  */
 const GOOD_MS = 24;
 
+/**
+ * 「正常」按这块屏的帧周期算（性能审计 11）：写死 24ms 在 120 / 240Hz 上等于两三帧，掉了帧也算稳。
+ * 帧周期取上一次等待里最短的间隔（屏幕刷新率不会每次都变），和这一次已经看到的最短间隔取小；
+ * 超过它一半就算掉帧。上限仍是 GOOD_MS——60Hz 上和以前一模一样，只会在高刷屏上更严，不会更松。
+ * 窗口挪到刷新率更低的屏上，第一次等待按旧周期判、最多等到 maxMs，之后就按新屏算。
+ */
+let lastPeriod = Infinity;
+/** 帧周期不取到 4ms 以下：偶尔挨得特别近的两次回调不该把门槛压到谁也过不去。 */
+export const goodFrameMs = (period: number): number => {
+  const p = Math.max(4, period);
+  return Math.min(GOOD_MS, Math.max(p * 1.5, p + 2));
+};
+
 export const whenFramesSteady = (maxMs = 260, minFrames = 2): Promise<void> =>
   new Promise((resolve) => {
     const started = performance.now();
     let last = 0;
     let frames = 0;
     let good = 0;
+    let shortest = Infinity;
+    const finish = () => {
+      if (Number.isFinite(shortest)) lastPeriod = shortest;
+      resolve();
+    };
     const tick = (now: number) => {
       frames += 1;
-      if (last) good = now - last < GOOD_MS ? good + 1 : 0;
+      if (last) {
+        const gap = now - last;
+        shortest = Math.min(shortest, gap);
+        good = gap < goodFrameMs(Math.min(lastPeriod, shortest)) ? good + 1 : 0;
+      }
       last = now;
       if ((frames >= minFrames && good >= 2) || now - started > maxMs) {
-        resolve();
+        finish();
         return;
       }
       requestAnimationFrame(tick);
