@@ -61,6 +61,7 @@ lib/aiTask/metrics.unit_score
 lib/aiTask/metrics.vo2max
 views/settings/deck.secMcp
 components/overview/DataReadyCapsule.streamSeparator
+views/WorkoutDetail.routeModeLocal
 
 # nl
 components/DevicePicker.filterBand
@@ -86,6 +87,7 @@ views/WorkoutDetail.eyebrowExport
 components/overview/DataReadyCapsule.streamSeparator
 composables/useFocusAreas.areaTraining
 views/settings/sections/archive.details
+components/tour/tour.inviteLater
 
 # de
 components/DeviceVisual.ring
@@ -178,6 +180,7 @@ views/WorkoutDetail.eyebrowProvenance
 views/WorkoutDetail.provenanceTitle
 views/WorkoutDetail.provenanceAria
 components/overview/DataReadyCapsule.streamSeparator
+views/WorkoutDetail.routeModeLocal
 
 # pt-PT
 components/BackupPanel.kind.manual
@@ -236,6 +239,7 @@ components/overview/PinnedMetrics.unitBpm
 components/overview/PinnedMetrics.unitKcal
 components/overview/PinnedMetrics.unitMin
 components/plan/plan.minuteUnit
+views/WorkoutDetail.routeModeLocal
 
 # ru
 components/HeartRateZonePicker.basesSeparator
