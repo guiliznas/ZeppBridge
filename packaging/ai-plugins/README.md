@@ -1,5 +1,7 @@
 # AI plugins
 
+[简体中文](README.zh-CN.md)
+
 `zepp-coach/skills/zepp-coach/SKILL.md` is the coaching skill that goes with the
 ZeppBridge MCP server: read the data first, advise conservatively, no medical
 judgements, draft plans in the `zeppbridge-plan/3` format, publish only after the

@@ -1,32 +1,61 @@
-# ZeppBridge 网站部署
+# ZeppBridge website deployment
 
-浏览器访问构建产物时显示产品落地页；Tauri 桌面运行时仍显示完整应用。页面中内嵌的体验使用当前应用代码，以及独立的内存数据，不会连接真实账户或修改本地数据库。
+[简体中文](website-deployment.zh-CN.md)
 
-## 本地构建与验收
+Opened in a browser, the build output shows the product landing page; inside the
+Tauri desktop runtime it still shows the full app. The embedded demos on the page
+run the current app code against separate in-memory data, so they never connect
+to a real account or touch a local database.
 
-先复用已安装的 Python Playwright、Chromium、ffmpeg 和 ffprobe。构建脚本不会安装或下载工具；必要时用 `LANDING_PYTHON`、`LANDING_CHROMIUM`、`PLAYWRIGHT_BROWSERS_PATH` 指定现有安装。
+## Local build and checks
 
-`npm run build:web` 会进行类型检查与相关测试，启动本地应用，检查演示路由，并录制五个完整功能流程的十种语言、明暗主题版本。视频为 2560 × 1600，配套封面与首页静态素材。脚本根据源代码内容指纹复用未变化的素材；应用、语言、演示数据或录制流程发生变化后，会更新受影响的版本。
+Reuse the Python Playwright, Chromium, ffmpeg and ffprobe that are already
+installed. The build scripts never install or download tools; point them at
+existing installs with `LANDING_PYTHON`, `LANDING_CHROMIUM` and
+`PLAYWRIGHT_BROWSERS_PATH` when needed.
 
-网站构建输出到 `.site-cache/site-dist`；录像、指纹清单与验收截图分别保存在 `.site-cache/media`、`.site-cache/media/manifest.json` 和 `.site-cache/verification`。这些目录不进入 Git。普通 `npm run build` 仍输出桌面应用所用的 `dist`，不打包网站演示视频。
+`npm run build:web` runs type checks and the relevant tests, starts the app
+locally, checks the demo routes, and records five complete feature flows in ten
+languages and both light and dark themes. Videos are 2560 × 1600, with matching
+posters and static home-page assets. The script reuses unchanged media by a
+fingerprint of the source; when the app, languages, demo data or recorded flows
+change, it re-records the affected versions.
 
-本地预览可运行 `npm exec vite -- preview --mode site --host 127.0.0.1 --port 1536`。预览启动后，用 `npm run site:verify -- --url http://127.0.0.1:1536` 验收响应式布局、内嵌操作、视频和强制深色模式。验收脚本额外复用 Python Pillow。`npm run site:media -- --url http://127.0.0.1:1532` 可单独刷新正在运行的本地开发服务器素材；加 `--force` 可强制重录。
+The site is written to `.site-cache/site-dist`; recordings, the fingerprint
+manifest and verification screenshots go to `.site-cache/media`,
+`.site-cache/media/manifest.json` and `.site-cache/verification`. None of these
+directories are in Git. A plain `npm run build` still produces the `dist` used by
+the desktop app and does not bundle the website videos.
 
-构建只生成本地产物。当前输出带 `noindex`，正式上线前需另外决定搜索引擎收录策略。
+To preview locally, run
+`npm exec vite -- preview --mode site --host 127.0.0.1 --port 1536`. Once it is
+up, `npm run site:verify -- --url http://127.0.0.1:1536` checks the responsive
+layout, embedded interactions, videos and forced dark mode; it also reuses
+Python Pillow. `npm run site:media -- --url http://127.0.0.1:1532` refreshes the
+media from a running local dev server on its own; add `--force` to re-record
+everything.
+
+The build only produces local output. It currently ships with `noindex`; decide
+the search-engine indexing policy separately before going live.
 
 ## Cloudflare Pages
 
-仓库的 `Deploy website to Cloudflare Pages` workflow 可从 GitHub Actions 手动执行：
+The repository's `Deploy website to Cloudflare Pages` workflow can be run by hand
+from GitHub Actions:
 
 1. `npm ci`
 2. `npm run build:web`
-3. 将 `.site-cache/site-dist` 发布到 Cloudflare Pages 项目 `zeppbridge`
+3. Publish `.site-cache/site-dist` to the Cloudflare Pages project `zeppbridge`
 
-该 workflow 为手动触发，独立准备录制工具并缓存已有视频；不会由 v3 分支推送自动发布。首次全量录制比复用缓存耗时更长。
+The workflow is manual only, prepares its own recording tools and caches existing
+videos; pushes to the v3 branch never publish automatically. The first full
+recording takes much longer than a cached run.
 
-首次部署前，需要在 GitHub 仓库的 Actions secrets 中配置：
+Before the first deployment, add these Actions secrets to the GitHub repository:
 
-- `CLOUDFLARE_API_TOKEN`：具备 Cloudflare Pages 编辑权限的令牌。
-- `CLOUDFLARE_ACCOUNT_ID`：Cloudflare 账户 ID。
+- `CLOUDFLARE_API_TOKEN`: a token with Cloudflare Pages edit permission.
+- `CLOUDFLARE_ACCOUNT_ID`: the Cloudflare account ID.
 
-下载区只在找到完整的 v3 正式版资源时启用下载，测试版或 v2 不会被当作 v3 正式版。Star 按钮直接链接 GitHub 仓库。
+The download section only enables downloads once it finds a complete v3 stable
+release; betas and v2 are never treated as v3 stable. The Star button links
+straight to the GitHub repository.

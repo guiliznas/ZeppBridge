@@ -1,5 +1,7 @@
 # Feedback triage
 
+[简体中文](feedback-triage.zh-CN.md)
+
 ZeppBridge's in-app diagnostic report posts to `POST /api/feedback`
 ([`functions/api/feedback.js`](../../functions/api/feedback.js)), which writes a
 row into a private Cloudflare D1 database. There is no admin page, and
