@@ -454,7 +454,7 @@ fn cli_errors_never_print_chinese() {
         ZeppBridgeError::Cancelled,
         ZeppBridgeError::AccountMismatch,
         ZeppBridgeError::TrainingPlan {
-            code: "err.training_plan.not_found",
+            code: "err.training_plan.draft_not_found",
             message: "草稿不存在".into(),
         },
         ZeppBridgeError::CloudRejected {
