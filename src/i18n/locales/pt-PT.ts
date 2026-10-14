@@ -171,6 +171,9 @@ export default {
       privacyTelemetryTitle: 'Sem telemetria nem rastreio de utilização',
       privacyTelemetryBody:
         'A app não envia telemetria. Apenas ao clicares em «Enviar relatório de erro» é que os dados anónimos descritos são transmitidos.',
+      starTitle: 'O ZeppBridge foi-te útil?',
+      starBody: 'Uma estrela no GitHub ajuda mais pessoas a encontrá-lo.',
+      starAction: 'Dar uma estrela',
       privacyReportTitle: 'Dispositivo ou treino não reconhecido?',
       privacyReportBody:
         'Sem conta GitHub nem cópia de dados. Ao confirmar, vão apenas a estrutura de campos, o firmware, códigos de modelo (inteiros — que modelo, não que unidade) e códigos de treino desconhecidos com contagens para o repositório privado de relatórios do ZeppBridge. Nunca conta, tokens, série, ID de dispositivo, MAC, GPS, valores de saúde, respostas em bruto ou caminhos locais.',
@@ -2714,6 +2717,12 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
       issuesTitle: 'Requer atenção',
       kilometers: (value: string) => `${value} km`,
       ledgerNote: 'A Zepp não permite consultar os planos. Este é o registo do que o ZeppBridge enviou; os planos que apagaste noutro local não aparecem aqui.',
+      clearAllTitle: 'Limpar o plano do relógio?',
+      clearDaysTitle: 'Remover alguns dias do relógio?',
+      clearDaysBody:
+        'Este plano transforma alguns dias que já estão no relógio em dias de descanso. Ao enviá-lo, os treinos desses dias serão removidos do relógio. Planos de outras fontes (como RQrun) não são afetados. Podes recuperá-los com «Anular o último envio».',
+      clearAllBody:
+        'Remove do relógio todos os planos enviados pelo ZeppBridge para hoje e os dias seguintes. Planos de outras fontes (como RQrun) não são afetados. Podes recuperá-los com «Anular o último envio».',
       meters: (value: number) => `${value} m`,
       minuteUnit: 'min',
       minutes: (count: number) => `${count} min`,
@@ -2729,6 +2738,7 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
       noticeSent: 'Entregue. Abre a aplicação Zepp e sincroniza o relógio uma vez; o plano aparecerá em «Planos de treino de terceiros».',
       noticeUnconfirmed: 'A entrega não foi confirmada (falha de rede ou tempo limite). O plano ficou registado como enviado e será reenviado após a próxima sincronização.',
       noticeUndone: 'Ação anulada. O relógio voltou ao estado anterior ao último envio.',
+      noticeClearedAll: 'O plano do relógio foi limpo.',
       outsideNote: 'Este dia está fora da janela de 7 dias e não será enviado agora; será enviado automaticamente quando a janela chegar a esse dia.',
       active: 'Principal',
       added: (count: number) => `${count} novos`,

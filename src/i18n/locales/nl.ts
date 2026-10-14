@@ -1477,6 +1477,9 @@ Als je iets van mij nodig hebt (welke client ik gebruik, waar het bestand staat)
         `Na de volgende geslaagde synchronisatie worden gegevens ouder dan ${date} gesnoeid`,
       retry: 'Opnieuw proberen',
       scaleLabel: 'Interface-schaling',
+      starAction: 'Een ster geven',
+      starBody: 'Een ster op GitHub helpt meer mensen het te vinden.',
+      starTitle: 'Heeft ZeppBridge je geholpen?',
       stream: {
         blood_pressure: 'Bloeddruk',
         daily_activity: 'Dagelijkse activiteit',
@@ -2541,6 +2544,7 @@ Regels: vergelijk me alleen met mijn eigen historie, niet met populatiegemiddeld
       minuteUnit: 'minuten',
       minutes: (count: number) => `${count} minuten`,
       noPlanDay: 'Geen training op deze dag',
+      noticeClearedAll: 'Het plan op je horloge is gewist.',
       noticeError: 'Deze stap is niet voltooid. Probeer het zo opnieuw.',
       noticeInvalid: 'Er zijn nog punten in het plan die je moet aanpassen voordat je het verstuurt.',
       noticeNotNeeded: 'Dit plan is hetzelfde als het vorige; er hoeft niets te worden verstuurd.',
@@ -2559,7 +2563,13 @@ Regels: vergelijk me alleen met mijn eigen historie, niet met populatiegemiddeld
       chartAria: 'Grafiek van de doelhartslag tijdens de training',
       chartNoHr: 'Deze training heeft geen hartslagdoel; alleen de duur is getekend',
       chartTitle: 'Intensiteitsverloop',
+      clearAllBody:
+        'Dit verwijdert alle door ZeppBridge verzonden plannen voor vandaag en later van je horloge. Plannen uit andere bronnen (zoals RQrun) worden niet beïnvloed. Na het verwijderen kun je ze herstellen met „Laatste verzending ongedaan maken”.',
+      clearAllTitle: 'Het plan op je horloge wissen?',
       clearConfirm: 'Wissen',
+      clearDaysBody:
+        'Dit plan verandert enkele dagen die al op je horloge staan in rustdagen. Bij het versturen worden de trainingen van die dagen van je horloge verwijderd. Plannen uit andere bronnen (zoals RQrun) worden niet beïnvloed. Na het verwijderen kun je ze herstellen met „Laatste verzending ongedaan maken”.',
+      clearDaysTitle: 'Enkele dagen van je horloge verwijderen?',
       cooldown: 'Cooling-down',
       discard: 'Verwijderen',
       dismiss: 'Begrepen',
