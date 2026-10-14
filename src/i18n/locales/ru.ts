@@ -257,32 +257,10 @@ export default {
       updateVersion: (version: string) => `Версия ${version}`,
       buildStamp: (stamp: string) => `Сборка ${stamp}`,
       updateVersionLoading: 'загрузка',
-      updateSeeNotes: 'Что изменилось',
-      updateStatusIdle: 'Ещё не проверялось',
       updateStatusChecking: 'Проверка GitHub Releases',
-      updateStatusAvailable: (version: string) => `Доступна версия ${version}`,
-      updateStatusDownloading: 'Обновление загружается',
-      updateStatusDownloadingPercent: (percent: number) => `Загрузка: ${percent}%`,
-      updateStatusInstalling: 'Установка: приложение перезапустится по завершении',
       updateStatusFailed: 'Обновление не удалось',
       updateStatusUpToDate: 'Установлена актуальная версия',
       updateStatusUnmanaged: 'Обновления управляются пакетным менеджером',
-      releaseNotesEmpty: 'У этого выпуска нет описания изменений.',
-      updateModalTitle: (version: string) => `Что нового в ZeppBridge ${version}`,
-      updateModalCurrent: (version: string) => `Текущая версия: ${version}`,
-      updateModalUnknownVersion: 'неизвестная версия',
-      updateModalReleased: (date: string) => ` · опубликовано ${date}`,
-      updateInstalling: 'Установка…',
-      updateDownloading: 'Обновление загружается',
-      updateInstallNote: 'Приложение перезапустится после установки. Данные о здоровье сохраняются.',
-      updateDownloadNoteTail: ' · по завершении установится автоматически; пока можно дочитать описание выше',
-      updateDownloadNote: 'Установится автоматически по завершении загрузки; пока можно дочитать описание выше.',
-      updateFailedPrefix: (reason: string) => `Обновление не удалось: ${reason}`,
-      updateRestartNote: 'При установке приложение перезапустится. Данные о здоровье сохраняются.',
-      updateBackground: 'Продолжить в фоне',
-      updateLater: 'Не сейчас',
-      updateRetry: 'Повторить',
-      updateInstall: 'Скачать и установить',
 
       syncIntervalAria: 'Интервал автоматической синхронизации',
       minutes: (minutes: number) => `${minutes} мин`,
@@ -1497,9 +1475,6 @@ export default {
       shortImperial: 'фт',
     },
 
-    'services/updateService': {
-      nothingToInstall: 'Нечего устанавливать — проверьте наличие обновлений ещё раз.',
-    },
 
     'views/ActivityDetail': {
       title: 'Дневная активность',
@@ -3448,9 +3423,6 @@ export default {
     'err.data_folder.open_failed': 'Не удалось открыть папку данных',
     'err.data_folder.unsupported_os': 'Открытие папки данных поддерживается только в Windows и macOS',
     'err.update.localappdata_missing': 'Системная папка LOCALAPPDATA недоступна',
-    'err.update.launch_failed': 'Не удалось запустить обновлённую версию ZeppBridge',
-    'err.update.installed_build_missing': 'После установки файл новой версии ZeppBridge не найден',
-    'err.update.portable_windows_only': 'Переход с portable на установленную версию доступен только в Windows',
     'err.update.unsafe_data_location':
       'Установка остановлена: расположение данных небезопасно для обновлений. Закройте приложение, '
       + 'скопируйте папку data из пакета приложения в пользовательский каталог Application Support '

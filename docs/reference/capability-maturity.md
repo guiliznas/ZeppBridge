@@ -72,7 +72,15 @@ as `3.0.0-beta.N`, so beta builds from CI ship NSIS only on Windows.
   does not tell the user.
 - **Official workout details**: when one is permanently unavailable it is set
   aside and retried later (`7df3252`).
-- **Self-update**: `self_update_supported()` is hard-wired off during the beta.
+- **Self-update**: silent — the app checks on launch and downloads a new
+  version in the background (signature-checked); a ring around the top-left
+  logo shows progress and glows once it is ready, and nothing is replaced until
+  the user clicks **Update**, which first waits for any sync or backfill to
+  finish. The installer build updates through NSIS (passive), the portable build
+  swaps its own exe in place, Apple-silicon macOS replaces the `.app`. Linux and
+  Intel macs are left to their package manager / manual download. The portable
+  path needs each release to carry the `windows-x86_64-portable` package
+  (`scripts/release/package-portable.ps1`).
 - **Upgrades**: one-way; there is no going back. Returning to 2.x only works
   from the pre-upgrade snapshot, and that snapshot is deleted automatically once
   the library is confirmed intact.

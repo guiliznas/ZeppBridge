@@ -1171,9 +1171,6 @@ export default {
       bigImperial: 'mi',
       shortImperial: 'ft',
     },
-    'services/updateService': {
-      nothingToInstall: 'Geen update om te installeren — controleer opnieuw.',
-    },
     'views/Settings': {
       apiAuthNoteA: 'Elk verzoek moet ',
       apiAuthNoteB:
@@ -1427,7 +1424,6 @@ Als je iets van mij nodig hebt (welke client ik gebruik, waar het bestand staat)
       refreshFailedReason: (reason: string) => `: ${reason}`,
       refreshFailedPeriod: '. ',
       refreshNoNewList: 'Geen nieuwe apparatenlijst ontvangen — de lokale cache wordt getoond.',
-      releaseNotesEmpty: 'Deze release heeft geen notities.',
       reportCategory: {
         data: {
           hint: 'iets is altijd leeg, of wijkt af van de Zepp-app',
@@ -1511,35 +1507,10 @@ Als je iets van mij nodig hebt (welke client ik gebruik, waar het bestand staat)
       unknownDeviceReport:
         'Een foutrapport voegt de nummers van dit apparaat toe aan de ingebouwde catalogus — daarna hoeft niemand het meer handmatig aan te wijzen. Het bevat alleen de vaste whitelist-velden; geen GitHub-account nodig.',
       unknownDeviceTitle: 'Een niet-herkend apparaat',
-      updateBackground: 'Op de achtergrond doorgaan',
       updateCheck: 'Controleren op updates',
       updateChecking: 'Controleren…',
-      updateDownloadNote:
-        'Het installeert vanzelf als het klaar is; je kunt de notities hierboven blijven lezen.',
-      updateDownloadNoteTail:
-        ' · het installeert vanzelf als het klaar is; je kunt de notities hierboven blijven lezen',
-      updateDownloading: 'De update wordt gedownload',
-      updateFailedPrefix: (reason: string) => `Update mislukt: ${reason}`,
-      updateInstall: 'Downloaden en installeren',
-      updateInstallNote:
-        'De app herstart zichzelf zodra het is geïnstalleerd. Lokale gezondheidsgegevens worden niet verwijderd.',
-      updateInstalling: 'Installeren…',
-      updateLater: 'Nu niet',
-      updateModalCurrent: (version: string) => `Je bent op ${version}`,
-      updateModalReleased: (date: string) => ` · verschenen op ${date}`,
-      updateModalTitle: (version: string) => `Wat is er nieuw in ZeppBridge ${version}`,
-      updateModalUnknownVersion: 'een onbekende versie',
-      updateRestartNote:
-        'De app herstart tijdens de installatie. Lokale gezondheidsgegevens worden niet verwijderd.',
-      updateRetry: 'Opnieuw proberen',
-      updateSeeNotes: 'Bekijk wat er is veranderd',
-      updateStatusAvailable: (version: string) => `Versie ${version} is beschikbaar`,
       updateStatusChecking: 'GitHub Releases wordt gecontroleerd',
-      updateStatusDownloading: 'De update wordt gedownload',
-      updateStatusDownloadingPercent: (percent: number) => `${percent}% gedownload`,
       updateStatusFailed: 'De update is mislukt',
-      updateStatusIdle: 'Nog niet gecontroleerd',
-      updateStatusInstalling: 'Installeren; de app herstart als het klaar is',
       updateStatusUnmanaged: 'Updates komen van je pakketbeheerder',
       updateStatusUpToDate: 'Je hebt de nieuwste versie',
       updateVersion: (version: string) => `Versie ${version}`,
@@ -3492,12 +3463,7 @@ Regels: vergelijk me alleen met mijn eigen historie, niet met populatiegemiddeld
       'Controleer eerst de verbinding voordat je historie ophaalt',
     'err.sync.not_verified_probe':
       'Controleer eerst de verbinding voordat je mogelijkheden test',
-    'err.update.installed_build_missing':
-      'Na de installatie is geen nieuwe geïnstalleerde ZeppBridge-build gevonden',
-    'err.update.launch_failed': 'De bijgewerkte geïnstalleerde build kon niet worden gestart',
     'err.update.localappdata_missing': 'Het Windows-LOCALAPPDATA-pad is niet beschikbaar',
-    'err.update.portable_windows_only':
-      'Migratie van portable naar geïnstalleerd is alleen voor Windows',
     'err.update.unsafe_data_location':
       'Installatie gestopt: niet te bevestigen dat de gegevensmap een update overleeft. Sluit ZeppBridge, kopieer een eventuele data-map in de app-bundel volledig naar de Application Support-map van je gebruiker, corrigeer ZEPPBRIDGE_DATA_DIR en probeer opnieuw. Verwijder de oude gegevens niet.',
     'err.workout.not_found': 'Die training bestaat niet',

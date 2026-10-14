@@ -18,7 +18,7 @@ import { whenFramesSteady } from './lib/motion/steady';
 import { useSyncController } from './composables/useSyncController';
 import { useUiScale } from './composables/useUiScale';
 import { backend, backendLate, isDesktop, whenBackendReady } from './lib/bridge';
-import { checkForDesktopUpdate } from './services/updateService';
+import { startDesktopUpdate } from './services/updateService';
 import { locale, useMessages } from './i18n';
 import { messages } from './App.i18n';
 import { FALLBACK_APP_VERSION } from './lib/appVersion';
@@ -209,8 +209,8 @@ onMounted(() => {
       void refreshStatus();
       markDataChanged();
     }
-    // 更新检查走裸 `invoke`（不过 bridge 的门），得等后端真的管事了再发。
-    void checkForDesktopUpdate(false);
+    // 静默更新：一打开就查，有新版本在后台下载（services/updateService.ts）。走裸 `invoke`，得等后端就绪再发。
+    void startDesktopUpdate();
   });
   void initialize();
   document.addEventListener('keydown', onDocumentKeydown);

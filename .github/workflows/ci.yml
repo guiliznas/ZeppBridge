@@ -433,6 +433,16 @@ jobs:
         shell: pwsh
         run: ./scripts/windows/publish-local.ps1 -SkipShortcuts -SkipStaleInstall
 
+      # 便携版的静默更新包：ZeppBridge.exe + zeppbridge-mcp.exe 的 zip，签名后写进
+      # latest.json 的 windows-x86_64-portable 条目。便携版不走 NSIS，应用自己原地换 exe
+      # （src-tauri/src/updates/portable.rs）；少了这一条，便携版永远拿不到更新。
+      - name: Package portable update
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        shell: pwsh
+        run: ./scripts/release/package-portable.ps1
+
       # CLI 与 MCP 单独分发：需要它们的人不该被迫先装一个 GUI，
       # 装了 GUI 的人也不该被塞进两个用不到的 binary。
       - name: Package CLI and MCP tools
@@ -449,6 +459,7 @@ jobs:
           path: |
             release/ZeppBridge_*-setup.exe
             release/ZeppBridge_*.msi
+            release/ZeppBridge_*_x64-portable.zip
             release/zeppbridge-tools-*.zip
             release/latest.json
           if-no-files-found: error
@@ -918,6 +929,7 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           : > SHA256SUMS.txt
           for file in release/ZeppBridge_*-setup.exe release/ZeppBridge_*.msi \
+                      release/ZeppBridge_*_x64-portable.zip \
                       release/zeppbridge-tools-*.zip release-macos/zeppbridge-tools-*.zip \
                       release-linux/zeppbridge-tools-*.zip \
                       "release-macos/ZeppBridge_${version}_aarch64.dmg" \
@@ -938,6 +950,7 @@ jobs:
           subject-path: |
             release/ZeppBridge_*-setup.exe
             release/ZeppBridge_*.msi
+            release/ZeppBridge_*_x64-portable.zip
             release/zeppbridge-tools-*.zip
             release-macos/zeppbridge-tools-*.zip
             release-macos/ZeppBridge_*.dmg
@@ -968,6 +981,7 @@ jobs:
           gh release create "${GITHUB_REF_NAME}" \
             release/ZeppBridge_*-setup.exe \
             release/ZeppBridge_*.msi \
+            release/ZeppBridge_*_x64-portable.zip \
             release/zeppbridge-tools-*.zip \
             release-macos/zeppbridge-tools-*.zip \
             release-linux/zeppbridge-tools-*.zip \

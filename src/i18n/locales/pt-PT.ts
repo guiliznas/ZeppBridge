@@ -226,36 +226,10 @@ Se precisares de alguma informação minha (que cliente utilizo, onde está o fi
       updateVersion: (version: string) => `Versão ${version}`,
       buildStamp: (stamp: string) => `Build ${stamp}`,
       updateVersionLoading: 'a carregar',
-      updateSeeNotes: 'Ver notas de lançamento',
-      updateStatusIdle: 'Ainda não verificado',
       updateStatusChecking: 'A consultar GitHub Releases',
-      updateStatusAvailable: (version: string) => `Versão ${version} disponível`,
-      updateStatusDownloading: 'A transferir atualização',
-      updateStatusDownloadingPercent: (percent: number) => `A transferir (${percent}%)`,
-      updateStatusInstalling: 'A instalar; a app reiniciará ao terminar',
       updateStatusFailed: 'Atualização falhou',
       updateStatusUpToDate: 'Versão mais recente instalada',
       updateStatusUnmanaged: 'Atualizações geridas pelo gestor de pacotes',
-      releaseNotesEmpty: 'Sem notas para esta versão.',
-      updateModalTitle: (version: string) => `Novidades no ZeppBridge ${version}`,
-      updateModalCurrent: (version: string) => `Versão em execução: ${version}`,
-      updateModalUnknownVersion: 'versão desconhecida',
-      updateModalReleased: (date: string) => ` · lançada a ${date}`,
-      updateInstalling: 'A instalar…',
-      updateDownloading: 'A transferir atualização',
-      updateInstallNote:
-        'A app reinicia automaticamente após a instalação. Os dados de saúde locais são preservados.',
-      updateDownloadNoteTail:
-        ' · instalação automática ao terminar; podes ler as notas acima',
-      updateDownloadNote:
-        'Instalação automática ao terminar; podes ler as notas acima.',
-      updateFailedPrefix: (reason: string) => `Falha na atualização: ${reason}`,
-      updateRestartNote:
-        'A app reinicia durante a instalação. Os dados de saúde locais são preservados.',
-      updateBackground: 'Segundo plano',
-      updateLater: 'Mais tarde',
-      updateRetry: 'Tentar novamente',
-      updateInstall: 'Transferir e instalar',
       syncIntervalAria: 'Intervalo de sincronização automática',
       minutes: (minutes: number) => `${minutes} min`,
       syncing: 'A sincronizar…',
@@ -1335,9 +1309,6 @@ Se precisares de alguma informação minha (que cliente utilizo, onde está o fi
       short: 'm',
       bigImperial: 'mi',
       shortImperial: 'ft',
-    },
-    'services/updateService': {
-      nothingToInstall: 'Sem atualizações pendentes.',
     },
     'views/ActivityDetail': {
       title: 'Atividade diária',
@@ -3416,10 +3387,6 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
     'err.data_folder.open_failed': 'Não foi possível abrir a pasta de dados',
     'err.data_folder.unsupported_os': 'Abertura direta da pasta suportada apenas em Windows e macOS',
     'err.update.localappdata_missing': 'Diretório LOCALAPPDATA do Windows indisponível',
-    'err.update.launch_failed': 'Não foi possível iniciar a versão atualizada',
-    'err.update.installed_build_missing':
-      'Nenhuma versão instalada detetada após a atualização',
-    'err.update.portable_windows_only': 'A migração de portátil para instalado é suportada apenas em Windows',
     'err.update.unsafe_data_location':
       'Instalação interrompida: não foi possível confirmar que os dados sobrevivem à atualização. Fecha o ZeppBridge, copia toda a pasta data do pacote da app para Application Support do teu utilizador, corrige ZEPPBRIDGE_DATA_DIR e tenta de novo. Não apagues os dados antigos.',
     'err.ai_task.invalid': 'Parâmetros da tarefa inválidos',

@@ -258,6 +258,16 @@ pub fn run() {
         std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
     }
 
+    // 便携版刚换完 exe、由旧进程拉起来的这一次：先等旧进程退干净，再初始化单实例——
+    // 不然单实例会把这次启动并进还没退出的旧进程，新版本一闪就没了。平常启动只顺手
+    // 清掉上一次更新留下的 `*.old`（updates/portable.rs）。
+    if let Ok(exe) = std::env::current_exe() {
+        if std::env::args().any(|arg| arg == updates::portable::AFTER_UPDATE_ARG) {
+            updates::portable::wait_for_previous(&exe, std::time::Duration::from_secs(20));
+        }
+        updates::portable::sweep(&exe);
+    }
+
     // WebView2 的用户数据目录必须在 `Builder` 之前定下来：环境变量是
     // WebView2 初始化时读的，`setup()` 里再设已经晚了。
     //
@@ -293,6 +303,7 @@ pub fn run() {
     diagnostics::log("Startup: building Tauri runtime");
     let app = tauri::Builder::default()
         .manage(main_window::MainWindowState::default())
+        .manage(updates::SilentUpdater::default())
         // Single-instance must be registered first so a second launch never
         // reaches tray setup and creates a duplicate icon.
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
@@ -700,10 +711,9 @@ pub fn run() {
             cleanup_old_data,
             compact_raw_payloads,
             open_data_folder,
-            updates::self_update_supported,
-            updates::validate_update_data_location,
-            updates::is_portable_update,
-            updates::launch_migrated_install,
+            updates::silent::update_start,
+            updates::silent::update_view,
+            updates::silent::update_apply,
             list_backups,
             create_manual_backup,
             verify_backup,

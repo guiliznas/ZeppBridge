@@ -50,6 +50,8 @@ pub enum WritePurpose {
     Compaction,
     /// 短写入：偏好、覆盖账本、同步元数据、完整性检查结果。
     Metadata,
+    /// 安装更新：替换程序前拿着同步租约和写锁直到进程退出，退出时没有写到一半的库。
+    Update,
 }
 
 impl WritePurpose {
@@ -65,6 +67,7 @@ impl WritePurpose {
             WritePurpose::Cleanup => "cleanup",
             WritePurpose::Compaction => "compaction",
             WritePurpose::Metadata => "metadata",
+            WritePurpose::Update => "update",
         }
     }
 
@@ -80,6 +83,7 @@ impl WritePurpose {
             WritePurpose::Cleanup => "清理旧数据",
             WritePurpose::Compaction => "压缩历史报文",
             WritePurpose::Metadata => "保存本机设置",
+            WritePurpose::Update => "安装更新",
         }
     }
 }

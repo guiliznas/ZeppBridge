@@ -66,7 +66,10 @@ anyhow = { workspace = true }
 tauri-plugin-clipboard-manager = "=2.3.3"
 # 「连到 Claude Desktop」写出的 .mcpb 就是一个 zip。已经在依赖树里（updater 用它），
 # 只存不压：里面是一份 manifest 和本来就压不小的 MCP 程序。
-zip = { version = "4.6", default-features = false }
+# 便携版的更新包也是 zip（CI 用 Compress-Archive 打，deflate），所以要能解 deflate：
+# 只开 flate2 这一种，后端用下面 flate2 默认的纯 Rust miniz（两者都已在锁文件里）。
+zip = { version = "4.6", default-features = false, features = ["deflate-flate2"] }
+flate2 = "1.1"
 
 # 开机时问系统要用户的界面语言。这一句以前是派生 powershell.exe 去跑
 # `(Get-Culture).Name`，在启动路径上要 0.5~2 秒；windows-sys 本来就在依赖树里
