@@ -7,9 +7,12 @@ export interface DemoPresentation {
   escape(): void;
   pause(value: boolean): void;
   glass(value: boolean): void;
-  /** Slow every web animation in the frame (film speed ramps). JS-driven springs keep their own pace. */
+  /** Scale every web animation in the frame (film speed). Direction is kept, so reverse() still reverses. JS-driven springs keep their own pace. */
   rate(value: number): void;
+  /** Cover the app with a film wall (demo/walls) built from the app's own components; null removes it. */
+  wall(kind: FilmWall | null): void;
 }
+export type FilmWall = 'glass' | 'cards';
 declare global { interface Window { __ZB_PRESENTATION__?: DemoPresentation } }
 
 /** Only installed in disposable demo frames. Desktop code and real input keep native capture. */
@@ -24,10 +27,16 @@ export function installPresentation(router: Router) {
   };
   const observer = new MutationObserver(freeze);
   let rate = 1, rateLoop = 0;
+  /* Which factor each animation already carries: scale relative to it, never overwrite (a reversed animation stays reversed). */
+  const applied = new WeakMap<Animation, number>();
   const applyRate = () => {
-    for (const animation of document.getAnimations()) if (animation.playbackRate !== rate) animation.playbackRate = rate;
+    for (const animation of document.getAnimations()) {
+      const had = applied.get(animation) ?? 1;
+      if (had !== rate) { animation.playbackRate = (animation.playbackRate / had) * rate; applied.set(animation, rate); }
+    }
     rateLoop = rate === 1 ? 0 : requestAnimationFrame(applyRate);
   };
+  let wall: { unmount(): void } | null = null, wallToken = 0;
   const pointer = (el: Element, type: string, x: number, y: number) => {
     // Synthetic events have no browser pointer to capture. Scope the shim to this dispatch,
     // including capture-phase handlers on window; never patch the browser's prototype.
@@ -77,6 +86,11 @@ export function installPresentation(router: Router) {
       rate = value > 0 ? value : 1;
       cancelAnimationFrame(rateLoop);
       applyRate();
+    },
+    wall(kind) {
+      const token = ++wallToken;
+      wall?.unmount(); wall = null;
+      if (kind) void import('./walls/mount').then(({ mountWall }) => { if (token === wallToken) wall = mountWall(kind); });
     },
   };
   window.addEventListener('pagehide', () => { observer.disconnect(); frozen.clear(); }, { once: true });

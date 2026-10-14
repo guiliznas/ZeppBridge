@@ -1,68 +1,65 @@
 import type { Director } from '../director';
 import type { Chapter, Shot } from '../types';
 
-/** 序：黑场里只有标语，同时把应用在后台摆到概览（遮住第一次加载）。 */
+/** 序：黑场里只有标语，同时把应用在后台摆到概览、记下睡眠页地址（遮住第一次加载，后面换页一步到位）。 */
 export const prologue: Chapter = {
   id: 'prologue',
   label: 'tagline',
   shots: [{
-    id: 'tagline', ms: 3600, pose: 'title', caption: 'tagline',
-    async run(d) { await d.clear(); await d.go('/'); },
+    id: 'tagline', ms: 3000, pose: 'title', caption: 'tagline',
+    async run(d) {
+      await d.clear();
+      await d.go('/');
+      const link = await d.find('a.sleep-panel[href]');
+      d.memo.set('sleep', link.getAttribute('href') ?? '/sleep');
+    },
   }],
 };
 
 /** 按位置点（不按文字：访客用别的语言时 iframe 里也是那种语言）。 */
-export const tapNth = async (d: Director, selector: string, index: number, after = 520) => d.tap(await d.find(selector, { index }), { after, travel: 260 });
-export const PAGE_TRACK = '.main-content .page .segment-track';
+export const tapNth = async (d: Director, selector: string, index: number, after = 450) => d.tap(await d.find(selector, { index }), { after, travel: 260 });
 export const ADD_EVENT = '#life-events .le-head .pill-button';
+/** 换到一页：关掉展示墙和浮层、到路由、滚到顶。 */
+export const page = (d: Director, path: string) => d.cut(async () => { await d.clear(); await d.go(path, 200); });
+/** 黑场里直接进最近一晚的睡眠页（第一次跟着概览睡眠卡的链接走并记下地址，之后一步跳到；不演形变）。 */
+export const toSleep = async (d: Director) => {
+  await d.clear();
+  const known = d.memo.get('sleep');
+  if (known) { await d.go(known, 150); return; }
+  await d.go('/', 150);
+  await d.follow('a.sleep-panel');
+  d.memo.set('sleep', d.view.location.pathname);
+};
 
-/** 第一章 外观前半（计划 1.1–1.3）。 */
+/**
+ * 第一章 外观前半（计划 1.1–1.3）。10-14 用户：一镜只停一页，别来回切；玻璃像两排手表那样并排滚。
+ */
 export const lookIntro: Shot[] = [
   {
-    // 1.1 玻璃：顶栏导航 → 关注分类 → 主题 → 时间跨度 → 运动类型滚轮，每根微距一下，最后拉远。
-    id: 'glass', ms: 16000, pose: 'full', caption: 'glass',
+    // 1.1 一见，倾心：玻璃墙——应用里各处的玻璃条三排并排滚，透镜此起彼伏；镜头慢慢推近。
+    id: 'glass', ms: 7000, pose: 'full', caption: 'glass',
     async run(d) {
-      await d.camera('.pill-nav', { zoom: 3.2, ms: 900 });
-      await d.drag('.pill-nav .segment-item', { x: 150, y: 0 }, { roundTrip: true, ms: 1100, settle: 200, grab: 180 });
-      await d.camera(PAGE_TRACK, { zoom: 2.8, ms: 600, hold: 300 });
-      for (const index of [1, 2, 3, 0]) await tapNth(d, `${PAGE_TRACK} .segment-item`, index, 380);
-      await d.camera('.theme-toggle', { zoom: 3.2, ms: 600, hold: 300 });
-      await d.drag('.theme-toggle .segment-item', { x: 70, y: 0 }, { roundTrip: true, ms: 900, settle: 150, grab: 180 });
-      await d.cut(async () => { await d.go('/training', 400); });
-      await d.camera(PAGE_TRACK, { zoom: 2.8, ms: 500, hold: 200 });
-      for (const index of [1, 2, 0]) await tapNth(d, `${PAGE_TRACK} .segment-item`, index, 420);
-      await d.cut(async () => { await d.go('/recent', 300); await d.tap(await d.find(`${PAGE_TRACK} .segment-item`, { index: 2 }), { after: 400, travel: 1 }); });
-      await d.camera('.main-content .page .capsule-wheel', { zoom: 2.8, ms: 500, hold: 200 });
-      await d.drag('.main-content .page .capsule-wheel', { x: -90, y: 0 }, { ms: 600, settle: 350, grab: 150 });
-      await d.drag('.main-content .page .capsule-wheel', { x: 90, y: 0 }, { ms: 600, settle: 300, grab: 150 });
-      await d.camera(null, { ms: 800 });
+      await d.cut(async () => { await d.wall('glass'); });
+      await d.wait(1600);
+      await d.camera(d.all('.film-wall.glass .wall-row'), { zoom: 1.22, fill: 1, ms: 4200, hold: 4200 });
     },
   },
   {
-    // 1.2 从哪里来，回哪里去：首页睡眠卡 ↔ 睡眠页；设置卡 ↔ 卡页。展开那一下放慢。
-    id: 'morph', ms: 13000, pose: 'full', caption: 'morph',
+    // 1.2 从哪里来，回哪里去：首页睡眠卡展开成睡眠页，再收回原位。
+    id: 'morph', ms: 5200, pose: 'full', caption: 'morph',
     async run(d) {
-      await d.cut(async () => { await d.go('/', 500); });
-      d.rate(0.55);
-      try {
-        await d.tap('.sleep-panel', { after: 1700 });
-        await d.tap('.quick-back', { after: 1700 });
-        await d.cut(async () => { await d.go('/settings', 600); });
-        await d.tap('button.list-open', { after: 1700 });
-        await d.tap('.deck-close', { after: 1600 });
-      } finally { d.rate(1); }
+      await page(d, '/');
+      await d.tap('.sleep-panel', { after: 1300 });
+      await d.tap('.quick-back', { after: 1100 });
     },
   },
   {
-    // 1.3 焦点模糊：睡眠时长的说明、添加生活事件。
-    id: 'focus', ms: 9000, pose: 'full', caption: 'focus',
+    // 1.3 一处清晰，万物退后：睡眠页上点「睡眠时长」的说明，居中浮起、四周虚化。
+    id: 'focus', ms: 4600, pose: 'full', caption: 'focus',
     async run(d) {
-      await d.cut(async () => { await d.go('/', 400); await d.tap('.sleep-panel', { after: 900, travel: 1 }); });
-      await d.tap('.hero-duration .metric-info', { after: 1900 });
-      await d.escape(500);
-      await d.cut(async () => { await d.go('/', 300); await d.scrollTo(ADD_EVENT, 260, 1); });
-      await d.tap(ADD_EVENT, { after: 2000 });
-      await d.escape(400);
+      await d.cut(() => toSleep(d));
+      await d.tap('.hero-duration .metric-info', { after: 1700 });
+      await d.escape(300);
     },
   },
 ];

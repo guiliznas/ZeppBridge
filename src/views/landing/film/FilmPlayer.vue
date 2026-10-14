@@ -89,6 +89,7 @@ const run = async (from = 0) => {
   const director = new Director(frame.value.contentWindow, clock, stage, props.locale);
   try {
     director.api.pause(false);
+    director.rate();
     const note = (timing: ShotTiming) => {
       timings.push(timing);
       if (timing.actual > timing.planned) console.info(`[film] ${timing.chapter}/${timing.shot} ran ${timing.actual}ms > ${timing.planned}ms`);
@@ -98,7 +99,14 @@ const run = async (from = 0) => {
       for (const shot of chapter.shots) {
         if (skipTo && shot.id !== skipTo) continue;
         skipTo = null;
-        await playShot(chapter.id, shot, director, note);
+        try {
+          await playShot(chapter.id, shot, director, note);
+        } catch (error) {
+          // 一镜失败不拖垮整片：记下来、揭开黑场、复位镜头，接着放下一镜（录片脚本会看到这条日志）。
+          if (controller.signal.aborted || (error instanceof DOMException && error.name === 'AbortError')) throw error;
+          console.error(`[film] ${chapter.id}/${shot.id} failed:`, error);
+          stage.veil(false, 0); stage.camera({ x: 0, y: 0, zoom: 1 }, 0); director.hidePointer();
+        }
       }
     }
     if (token !== generation) return;
