@@ -18,6 +18,7 @@ import PlanClearDialog from '../../components/plan/PlanClearDialog.vue';
 import GlassPopover from '../../components/GlassPopover.vue';
 import PlanLibraryItems from '../../components/plan/PlanLibraryItems.vue';
 import PlanAddNotice from '../../components/plan/PlanAddNotice.vue';
+import PlanEasySwap from '../../components/plan/PlanEasySwap.vue';
 import { usePlanAdd } from '../../composables/usePlanAdd';
 import { useLibraryText } from '../../components/plan/library.i18n';
 import { addDays } from '../../lib/aiTask/bridgeScale';
@@ -106,6 +107,7 @@ const changes = computed(() => (plan.editingSent.value
     <PlanAddNotice :outcome="library.outcome.value" :need="library.need.value" @supply="library.supply" @cancel="library.cancelNeed" @dismiss="library.dismiss" />
     <div v-if="hub.notice.value" class="ai-message" role="status"><Icon name="info" :size="14" /><span>{{ hub.notice.value }}</span><button class="pill-button quiet" @click="plan.dismissNotice()">{{ pt.dismiss }}</button></div>
 
+    <PlanEasySwap class="week-easy" />
     <div v-if="hub.future.value" class="ai-panel week-panel">
       <p v-if="hub.future.value.check.summary" class="plan-summary" :lang="langOf(hub.future.value.check.summary)">{{ hub.future.value.check.summary }}<small v-if="foreignToUi(hub.future.value.check.summary)" class="ai-original" :title="pt.aiOriginalHint" lang="">{{ pt.aiOriginal }}</small></p>
       <BridgeFuture :preview="hub.future.value" :readonly="!hub.editable.value" :stamped="hub.stamped.value" :today="hub.today.value"
@@ -129,6 +131,7 @@ const changes = computed(() => (plan.editingSent.value
 <style scoped>
 .head-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .week-panel { gap: 14px; }
+.week-easy { margin: 12px 0; }
 .start-from { display: inline-flex; align-items: center; gap: 6px; }
 .plan-summary { margin: 0; color: var(--muted); font-size: var(--fs-sm); line-height: 1.6; }
 .ai-original { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 8%, transparent);

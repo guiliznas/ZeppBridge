@@ -21,6 +21,7 @@ import { dayKey } from '../lib/aiTask/bridgeScale';
 import { upcomingDays, type UpcomingDay } from '../lib/trainingPlan/upcoming';
 import { displayDateTimeFormatter, parseDisplayDate } from '../lib/dateTime';
 import { usePlanText } from './plan/usePlanText';
+import PlanEasySwap from './plan/PlanEasySwap.vue';
 
 import type { InsightFact } from '../types';
 import { useMessages } from '../i18n';
@@ -185,6 +186,9 @@ const dayAria = (day: UpcomingDay) => {
         </RouterLink>
       </div>
     </template>
+
+    <!-- 早上恢复差、今天又排了间歇：一键换成轻松的（改成草稿，到周视图长按发出）。 -->
+    <PlanEasySwap go-to-plan />
 
     <!-- 接下来：账本上发到手表的计划里，明天起三天各是什么；一条都没有时整行不画。 -->
     <footer v-if="nextDays" class="upcoming">
