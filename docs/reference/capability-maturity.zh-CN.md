@@ -45,7 +45,7 @@
 | macOS | CI（run 36687163675，`6ef2767`）格式、检查、Clippy、全部测试通过，dmg / app.tar.gz 能打出来；**没上过真机** |
 | Linux | 同上，deb / rpm / AppImage / Flatpak / Docker 能打出来，Docker 镜像有无网自检；**没上过真机** |
 
-只有真机才验得出、目前都没验的：Mac / Linux WebView 里的毛玻璃效果；Wayland 下把文件拖进 AI 对话框（拖文件插件在 Linux 走 X11）；「在资源管理器里显示」在 Mac 应叫「访达」、Linux 应叫「文件管理器」。Windows 的 MSI 不接受 `3.0.0-beta.N` 这种预发布版本号，CI 出 beta 包时 Windows 只打 NSIS。
+只有真机才验得出、目前都没验的：Mac / Linux WebView 里的毛玻璃效果；Wayland 下把文件拖进 AI 对话框（拖文件插件在 Linux 走 X11）；「在资源管理器里显示」在 Mac 应叫「访达」、Linux 应叫「文件管理器」。Windows 的 MSI 不接受 `3.0.0-beta.N` 这种预发布版本号，而 CI 的 Windows 打包一次同时出 NSIS 和 MSI，所以只有 `3.0.0` 这种纯数字版本号才打得过。
 
 ## 已知限制
 

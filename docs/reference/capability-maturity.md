@@ -58,7 +58,8 @@ Only real hardware can verify these, and none of them have been: frosted glass
 in the macOS / Linux WebViews; dragging a file into an AI chat under Wayland
 (the drag plugin uses X11 on Linux); "Show in Explorer" should read "Finder" on
 macOS and "File Manager" on Linux. Windows MSI rejects prerelease versions such
-as `3.0.0-beta.N`, so beta builds from CI ship NSIS only on Windows.
+as `3.0.0-beta.N`, and the CI Windows packaging job builds NSIS and MSI
+together, so it only succeeds with a plain version such as `3.0.0`.
 
 ## Known limits
 
