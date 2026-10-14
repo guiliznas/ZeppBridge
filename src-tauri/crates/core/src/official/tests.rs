@@ -71,7 +71,7 @@ fn the_start_url_carries_the_claim_hash_never_the_claim_secret() {
     assert_eq!(request.claim_secret().len(), 43);
     assert_ne!(request.state, request.claim_secret());
     let url = request.start_url();
-    assert!(url.starts_with("https://zeppbridge.pages.dev/api/zepp/oauth/start?state="));
+    assert!(url.starts_with("https://zeppbridge.com/api/zepp/oauth/start?state="));
     assert!(!url.contains(request.claim_secret()));
     let hash = hex::encode(Sha256::digest(request.claim_secret().as_bytes()));
     assert!(url.ends_with(&format!("&claim={hash}")));

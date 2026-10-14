@@ -67,7 +67,7 @@ real accounts and regions has not been fully verified against live services.
 
 The official Zepp Open Platform requires a server-held app secret, so this is
 the one part of ZeppBridge that goes through a server we run
-(`zeppbridge.pages.dev`, Cloudflare Pages Functions + D1).
+(`zeppbridge.com`, the same Cloudflare Pages Functions + D1 project as `zeppbridge.pages.dev`).
 
 - **What the server holds permanently:** the app ID and app secret (Cloudflare
   Secrets, never in the repository or the desktop binary), and the SHA-256 of
@@ -90,7 +90,7 @@ the one part of ZeppBridge that goes through a server we run
 - **On this computer:** the access and refresh tokens are two separate entries
   in the OS credential store; `official.json` in the data folder holds only the
   user ID, connection time and expiry. The official client talks to exactly two
-  hosts — `zeppbridge.pages.dev` and `api-open.zepp.com` — and follows no
+  hosts — `zeppbridge.com` and `api-open.zepp.com` — and follows no
   redirects.
 - **Disconnect** asks Zepp to revoke the authorization, then deletes the local
   tokens. It never deletes health data.
@@ -178,7 +178,7 @@ issues.
 
 The desktop app uses a separate HTTPS client with no Zepp cookie jar, sending a
 strongly typed allow-listed report only to
-`https://zeppbridge.pages.dev/api/feedback`. The permitted fields are: app and
+`https://zeppbridge.com/api/feedback`. The permitted fields are: app and
 parser version, operating system, database schema version, the field names and
 JSON types in the device response, catalogue candidates, firmware version, safe
 product-name and short-model hints, model-class numbers, the count of

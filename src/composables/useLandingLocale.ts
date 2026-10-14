@@ -2,7 +2,7 @@ import { readonly, ref } from 'vue';
 import type { LandingCopy } from '../views/landing/types';
 
 /**
- * 落地页（zeppbridge.pages.dev）专用的语言层。
+ * 落地页（zeppbridge.com）专用的语言层。
  *
  * 只服务落地页这一个文件，**不是**应用的 i18n 方案：应用界面有自己的一套
  * （`src/i18n/`），这里的判定规则不一样——落地页面向全网访客，猜不准时给

@@ -160,7 +160,7 @@ pub(super) fn collect_assigned_models(
     out
 }
 
-pub(super) const FEEDBACK_ENDPOINT: &str = "https://zeppbridge.pages.dev/api/feedback";
+pub(super) const FEEDBACK_ENDPOINT: &str = "https://zeppbridge.com/api/feedback";
 
 #[tauri::command]
 pub async fn submit_diagnostic_report(

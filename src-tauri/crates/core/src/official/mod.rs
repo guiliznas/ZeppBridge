@@ -21,8 +21,10 @@ use base64::Engine;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-/// 中转站。授权回调地址在 Zepp 控制台登记的就是这个域名。
-pub const RELAY_BASE: &str = "https://zeppbridge.pages.dev";
+/// 中转站（2026-10-14 起用正式域名）。zeppbridge.com 和 zeppbridge.pages.dev 是同一个 Cloudflare Pages 项目、
+/// 同一套 D1：Zepp 控制台登记的授权回调仍是 pages.dev（server/zepp/official.js 的 REDIRECT_URI），
+/// 授权从这里开始、回调落在 pages.dev，状态在同一个库里，互不影响。旧版本应用继续用 pages.dev 也照常可用。
+pub const RELAY_BASE: &str = "https://zeppbridge.com";
 /// 官方数据接口。
 pub const API_BASE: &str = "https://api-open.zepp.com";
 

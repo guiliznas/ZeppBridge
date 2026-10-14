@@ -27,7 +27,7 @@
 ## Zepp 账号授权（官方接口）
 
 Zepp 官方开放平台要求把应用密钥放在服务器上，所以这是 ZeppBridge 里唯一经过我们自己
-服务器（`zeppbridge.pages.dev`，Cloudflare Pages Functions + D1）的部分。
+服务器（`zeppbridge.com`，与 `zeppbridge.pages.dev` 是同一个 Cloudflare Pages Functions + D1 项目）的部分。
 
 - **服务器长期保存的：** App ID 与 App Secret（Cloudflare Secrets，不进仓库、不进桌面二进制），
   以及完成过授权的 Zepp 用户编号的 SHA-256——没有姓名，也没有原始编号。
@@ -41,7 +41,7 @@ Zepp 官方开放平台要求把应用密钥放在服务器上，所以这是 Ze
 - **浏览器只看得到固定文案。** 授权码、state、令牌、Zepp 的错误描述一律不回显到页面或跳转地址里。
 - **在你的电脑上：** 访问令牌和刷新令牌在系统凭据存储里各占一条；数据目录里的
   `official.json` 只有用户编号、连接时间和到期时间。官方客户端只连两个主机——
-  `zeppbridge.pages.dev` 和 `api-open.zepp.com`——且不跟随跳转。
+  `zeppbridge.com` 和 `api-open.zepp.com`——且不跟随跳转。
 - **断开**会先请 Zepp 撤销授权，再删掉本机令牌，**不删任何健康数据**。
 
 ## 三种「导出」的边界不同
@@ -85,7 +85,7 @@ Zepp 官方开放平台要求把应用密钥放在服务器上，所以这是 Ze
 
 当设备或运动类型未被识别时，用户可以在设置页点击「提交错误报告」。提交前必须通过一次明确确认；应用不会后台自动上报，也不会创建或回复 GitHub Issue。
 
-桌面端使用一套不带 Zepp cookie jar 的独立 HTTPS client，只向 `https://zeppbridge.pages.dev/api/feedback` 发送强类型白名单报告。允许字段只有应用/解析器版本、操作系统、数据库 schema 版本、设备响应的字段名与 JSON 类型、目录候选、固件版本、安全的产品名/短型号提示、型号类编号、未知设备数量、未知运动编号与记录数、类型冲突数，以及云端最近一次拒绝请求的数字错误码（只有编号、哪条数据流和时间，不包括云端返回的文字）。报告类型没有账号、Token、cookie、序列号、设备 ID、MAC 地址、GPS、健康数值、原始响应或本机路径的字段槽位。
+桌面端使用一套不带 Zepp cookie jar 的独立 HTTPS client，只向 `https://zeppbridge.com/api/feedback` 发送强类型白名单报告。允许字段只有应用/解析器版本、操作系统、数据库 schema 版本、设备响应的字段名与 JSON 类型、目录候选、固件版本、安全的产品名/短型号提示、型号类编号、未知设备数量、未知运动编号与记录数、类型冲突数，以及云端最近一次拒绝请求的数字错误码（只有编号、哪条数据流和时间，不包括云端返回的文字）。报告类型没有账号、Token、cookie、序列号、设备 ID、MAC 地址、GPS、健康数值、原始响应或本机路径的字段槽位。
 
 型号类编号（`modelIdentifierHints`）是严格形如 `名字:整数` 的字符串，名字只接受 `deviceSource` 和 `deviceType` 两个；取值必须是设备响应里 0–99,999,999 范围内的 JSON 整数，其余一律在组装报告前就丢掉。有些 Zepp 账号的设备响应里根本没有任何产品名字段，这两个数字是仅有的型号线索；它们描述的是「哪一款表」而不是「哪一台表」，形状在客户端和 Pages Function 两侧都被钉死成 `名字:整数`，序列号、MAC 或任何字符串都进不来。没有它们，这类设备在内置目录里永远补不上，对每个用户都会一直显示未识别。
 

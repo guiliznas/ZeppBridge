@@ -32,7 +32,7 @@ ones that never responded inside the old sign-in window.
 4. The browser shows **Authorized**. Go back to ZeppBridge: it finishes
    connecting by itself within a few seconds. You can close the browser tab.
 
-What passes through our server (`zeppbridge.pages.dev`, Cloudflare) and why:
+What passes through our server (`zeppbridge.com`, also reachable as `zeppbridge.pages.dev`; Cloudflare) and why:
 Zepp requires a server-held app secret to turn the authorization into tokens,
 so that one step happens there. The tokens are encrypted while they wait,
 handed to your ZeppBridge exactly once, and deleted the moment it picks them
