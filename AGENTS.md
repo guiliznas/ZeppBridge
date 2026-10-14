@@ -21,3 +21,8 @@ v3 测试版改回叫 ZeppBridge：
 - **禁止** `gh release create` / 把 v3 产物当正式发布。
 - 分支 `v3` 本身的 push 不触发打包，但也先等用户发话再推。
 - 当前状态（2026-09-30）：桌面 / 开始菜单 `ZeppBridge.lnk` 与 App Paths `ZeppBridge.exe` 指向 `release\ZeppBridge.exe`；`release\data` 是真实库本体（schema 34；beta.28 首次打开会升到 35）。2.x 程序文件与升级前快照已按用户要求清进回收站。
+
+## 多语言翻译规则
+
+- 翻译多语言任务时，必须为每种语言单独派发一个独立的 Agent 并行执行（例如 7 种语言派 7 个 Agent），禁止将多种语言打包给单个 Agent，以最大化并行效率。
+
