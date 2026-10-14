@@ -62,7 +62,11 @@ const syncScore = () => {
   if (finished.value) { audio.playbackRate = 1; return; }
   const slot = SHOT_AT.get(active.value.shot);
   if (!slot) return;
-  const target = slot.start + Math.min(slot.length, Math.max(0, (clock.elapsed() - shotStarted) / 1000));
+  const into = Math.max(0, (clock.elapsed() - shotStarted) / 1000);
+  // 这一镜超时：超得少，音乐照常往下放，下一镜开始后再微调速度追回来；超得多才停在镜尾等下一镜。
+  // 不能把目标钉在镜尾——那样每半秒就拉回镜尾一次，听起来是卡带。
+  if (into > slot.length + 1.2) { audio.pause(); return; }
+  const target = slot.start + into;
   const drift = audio.currentTime - target;
   if (audio.paused || Math.abs(drift) > 0.6) { audio.currentTime = target; audio.playbackRate = 1; }
   else audio.playbackRate = Math.abs(drift) < 0.03 ? 1 : Math.min(1.1, Math.max(0.9, 1 - drift * 0.25));

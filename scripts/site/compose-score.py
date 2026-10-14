@@ -1,6 +1,6 @@
 """一分钟短片的配乐：纯 numpy 合成（原创，不含任何采样），按短片的切点编排。
 
-    python scripts/site/compose-score.py            # → output/film/score.wav + public/landing/media/film-score.m4a
+    python scripts/site/compose-score.py            # → output/film/score.wav + .site-cache/media/film-score.m4a
 
 120 BPM（一拍 0.5 秒），A 大调，A – F#m – D – E 每小节一个和弦。段落对着 film/chapters/short.ts 的镜头（时刻见 SHOTS）：
   0–3      片头：先一拍半光晕长音，标语入焦时钟片动机，噪声上扬进第一镜
@@ -422,7 +422,9 @@ def main():
     write_wav(wav, mix)
     print('wrote', wav)
     # 网站用的压缩版：响度对齐到 -16 LUFS（网页里别比视频平台还响）。
-    web = ROOT / 'public' / 'landing' / 'media' / 'film-score.m4a'
+    # 网站媒体都在 .site-cache/media（不进 git），开发服务器和网站构建都从那里取（scripts/site/assets.mjs）。
+    web = ROOT / '.site-cache' / 'media' / 'film-score.m4a'
+    web.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(['ffmpeg', '-v', 'error', '-y', '-threads', '2', '-i', str(wav), '-af', 'loudnorm=I=-16:TP=-1.5:LRA=9',
                     '-ar', '48000', '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', str(web)], check=True,
                    creationflags=0x00004000 if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0)

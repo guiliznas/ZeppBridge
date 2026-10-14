@@ -15,7 +15,7 @@ export function siteAssets(site) {
         if (!/^[\w.-]+$/.test(name)) { res.statusCode = 404; return res.end(); }
         const file = join(root, '.site-cache/media', name);
         if (!existsSync(file)) { res.statusCode = 404; return res.end(); }
-        res.setHeader('Content-Type', name.endsWith('.mp4') ? 'video/mp4' : name.endsWith('.webp') ? 'image/webp' : 'application/json');
+        res.setHeader('Content-Type', name.endsWith('.mp4') ? 'video/mp4' : name.endsWith('.m4a') ? 'audio/mp4' : name.endsWith('.webp') ? 'image/webp' : 'application/json');
         res.setHeader('Cache-Control', 'no-cache');
         createReadStream(file).pipe(res);
       });

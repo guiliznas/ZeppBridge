@@ -68,8 +68,10 @@ const glass: Shot = {
 
 const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
 const pileOnto = async (d: Director, from: HTMLElement, onto: HTMLElement) => {
+  await d.steady(from); await d.steady(onto);
   const a = d.center(from), b = d.center(onto);
   await d.drag(from, { x: b.x - a.x, y: b.y - a.y }, { ms: 480, settle: 380, grab: 140 });
+  return b;
 };
 
 export const short: Chapter = {
@@ -94,16 +96,17 @@ export const short: Chapter = {
       // 叠成一叠、长按整叠飞进箱子；打开收集箱，一手牌摊开；清空，逐张落下消失（也把箱子收掉，不挡下一镜）。
       id: 'pile', ms: 7500, pose: 'full', caption: 'pile',
       async run(d) {
+        // 上一镜最后点进一周，日牌还在发牌途中：等它们落定再量位置，不然按半路的位置拖，落点偏出一百多像素、叠不上。
+        await d.settle();
         const days = d.all(DAY);
         if (days.length >= 3) {
-          const target = d.center(days[days.length - 2]!);
-          await pileOnto(d, days[days.length - 1]!, days[days.length - 2]!);
+          const target = await pileOnto(d, days[days.length - 1]!, days[days.length - 2]!);
           // 叠好后牌会重新渲染，原来那个元素可能已经不在了：按落点重新找那一叠再长按。
           await d.settle(800);
           const nearest = d.all(DAY).sort((a, b) => dist(d.center(a), target) - dist(d.center(b), target))[0];
           if (nearest) await d.hold(nearest, 600, { after: 400 });
         }
-        // 偶尔叠牌落在了动画半途、长按没把整叠送进去（录片时三次里会碰上一次）：改用翻面点「✓ 交给 AI」送一张，箱子不能空着开。
+        // 万一长按没把整叠送进去：改用翻面点「✓ 交给 AI」送一张，箱子不能空着开。
         // 牌飞进箱子要一会儿，箱子落定才变成「有牌」：先等它，真没进去再兜底。
         const filled = await d.find(BOX, { limit: 2500 }).then(() => true, () => false);
         if (!filled) {
