@@ -14,6 +14,8 @@ import { useDownloads } from './landing/useDownloads';
 import SiteNav, { type NavTarget } from './landing/SiteNav.vue';
 import { scrollToSection, useScrollMotion } from './landing/motion';
 import FilmPlayer from './landing/film/FilmPlayer.vue';
+import P4Features from './landing/P4Features.vue';
+import { P4_COPY } from './landing/p4Copy';
 
 /** `?film=record`：只放宣传片（scripts/site/record-film.py 录对外视频用）。 */
 const recordFilm = new URLSearchParams(location.search).get('film') === 'record';
@@ -22,12 +24,14 @@ const skipFilm = () => window.scrollTo({ top: window.innerHeight, behavior: 'smo
 const { locale, localeLoadError, initializeLocale, setLocale, landingCopyFor } = useLandingLocale();
 const t = computed(() => (locale.value === 'zh' || locale.value === 'en' ? COPY[locale.value] : landingCopyFor(locale.value) ?? COPY.en));
 const journey = computed(() => JOURNEY[locale.value]);
+/** 新版章节只给已有译文的语言；其余语言保持旧版布局，不出现半页中文。 */
+const p4 = computed(() => P4_COPY[locale.value]);
 const downloads = useDownloads(t);
 const page = ref<HTMLElement | null>(null);
 useScrollMotion(page);
 const active = ref<NavTarget | ''>('');
 const away = ref(false);
-const targets: NavTarget[] = ['motion', 'records', 'ai', 'connect', 'try-app', 'download'];
+const targets: NavTarget[] = ['motion', 'connection', 'records', 'ai', 'ai-plan', 'connect', 'try-app', 'download'];
 let intent: string | null = null;
 let observer: IntersectionObserver | null = null;
 let tryObserver: IntersectionObserver | null = null;
@@ -97,15 +101,18 @@ onBeforeUnmount(() => {
   <FilmPlayer v-if="recordFilm" :locale="locale" record />
   <div v-else id="top" ref="page" class="lp">
     <a class="lp-skip" href="#motion">{{ journey.nav.motion }}</a>
-    <SiteNav :copy="t" :journey="journey" :locale="locale" :active="active" :away="away" @locale="setLocale" @go="go" />
+    <SiteNav :copy="t" :journey="journey" :locale="locale" :active="active" :away="away" :p4="p4" @locale="setLocale" @go="go" />
     <main>
       <FilmPlayer :locale="locale" @skip="skipFilm" />
       <p v-if="localeLoadError" class="locale-load-error lp-wrap" role="status">{{ COPY.en.rebuild.languageFallback }}</p>
       <HeroLanding :journey="journey" :locale="locale" />
-      <MotionStage :journey="journey" :locale="locale" />
-      <RecordBoard :journey="journey" :locale="locale" />
-      <AiStage :journey="journey" :locale="locale" />
-      <SettingsBoard :journey="journey" :locale="locale" />
+      <P4Features v-if="p4" :copy="p4" :locale="locale" />
+      <template v-else>
+        <MotionStage :journey="journey" :locale="locale" />
+        <RecordBoard :journey="journey" :locale="locale" />
+        <AiStage :journey="journey" :locale="locale" />
+      </template>
+      <SettingsBoard :journey="journey" :locale="locale" :p4="p4" />
       <InteractiveDemoSection :copy="t" :journey="journey" :locale="locale" @back="go('top')" />
       <FinalCta :copy="t" :journey="journey" :windows="downloads.windows.value" :macos="downloads.macos.value" :linux="downloads.linux.value" :available="downloads.state.value === 'ready'" />
     </main>

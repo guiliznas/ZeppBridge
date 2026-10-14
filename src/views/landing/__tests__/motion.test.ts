@@ -16,6 +16,16 @@ describe('landing anchor navigation', () => {
     expect(replaceState).toHaveBeenCalledWith(null, '', '#faq');
   });
 
+  it('cuts to one screen before a far target so the scroll does not boot every reel on the way', () => {
+    const target = { hasAttribute: () => true, setAttribute: vi.fn(), focus: vi.fn(), scrollIntoView: vi.fn(), getBoundingClientRect: () => ({ top: 5000 }) };
+    const scrollTo = vi.fn();
+    vi.stubGlobal('document', { getElementById: () => target });
+    vi.stubGlobal('window', { matchMedia: () => ({ matches: false }), history: { replaceState: vi.fn() }, innerHeight: 900, scrollY: 200, scrollTo });
+    scrollToSection('download');
+    expect(scrollTo).toHaveBeenCalledWith({ top: 4300, behavior: 'instant' });
+    expect(target.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+  });
+
   it('preserves an existing focus contract and ignores missing sections', () => {
     const target = { hasAttribute: () => true, setAttribute: vi.fn(), focus: vi.fn(), scrollIntoView: vi.fn() };
     const replaceState = vi.fn();

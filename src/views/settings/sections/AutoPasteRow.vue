@@ -18,7 +18,7 @@ const supported = autoSupported();
       <span class="s-row-title">{{ a.autoTitle }}</span>
       <span class="s-row-sub">{{ autoPasteOn ? a.autoOn : a.autoOff }}</span>
     </div>
-    <GlassSwitch :model-value="autoPasteOn" :aria-label="a.autoTitle" @update:model-value="setAutoPaste" />
+    <GlassSwitch data-setting="auto-paste" :model-value="autoPasteOn" :aria-label="a.autoTitle" @update:model-value="setAutoPaste" />
   </div>
 </template>
 

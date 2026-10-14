@@ -4,16 +4,18 @@ import BrandMark from '../../components/BrandMark.vue';
 import Icon from '../../components/Icon.vue';
 import SegmentTrack from '../../components/SegmentTrack.vue';
 import CapsuleWheel from '../../components/CapsuleWheel.vue';
+import LandingIcon from './LandingIcon.vue';
 import { landingThemeMode, pickLandingTheme } from './theme';
 import { LANDING_LOCALES, LOCALE_LABELS, ensureLandingCopy, type LandingLocale } from '../../composables/useLandingLocale';
 import { locale as appLocale, setLocale } from '../../i18n';
 import type { ThemeMode } from '../../composables/useTheme';
 import type { LandingCopy } from './types';
 import type { JourneyCopy } from './journeyCopy';
+import type { P4Copy } from './p4Copy';
 
-export type NavTarget = 'motion' | 'records' | 'ai' | 'connect' | 'try-app' | 'download';
+export type NavTarget = 'motion' | 'connection' | 'records' | 'ai' | 'ai-plan' | 'connect' | 'try-app' | 'download';
 
-const props = defineProps<{ copy: LandingCopy; journey: JourneyCopy; locale: LandingLocale; active: NavTarget | ''; away: boolean }>();
+const props = defineProps<{ copy: LandingCopy; journey: JourneyCopy; locale: LandingLocale; active: NavTarget | ''; away: boolean; p4?: P4Copy }>();
 const emit = defineEmits<{ locale: [value: LandingLocale]; go: [target: string] }>();
 const product = ref(false);
 const menu = ref(false);
@@ -21,7 +23,12 @@ const languages = ref(false);
 const root = ref<HTMLElement | null>(null);
 const themeTrack = ref<{ $el: HTMLElement }>();
 const localeWheel = ref<{ $el: HTMLElement }>();
-const localeOptions = LANDING_LOCALES.map(value => ({ value, label: LOCALE_LABELS[value] }));
+/* 窄屏（≤720px）顶栏放不下「Português (Brasil)」：换成短码，胶囊仍按选中项自适应宽度，不再被裁成半截。 */
+const narrowQuery = typeof window !== 'undefined' ? window.matchMedia?.('(max-width: 720px)') : undefined;
+const narrow = ref(narrowQuery?.matches ?? false);
+const onNarrow = (event: MediaQueryListEvent) => { narrow.value = event.matches; };
+const shortLabel = (value: LandingLocale) => value === 'zh' ? LOCALE_LABELS.zh : value.toUpperCase();
+const localeOptions = computed(() => LANDING_LOCALES.map(value => ({ value, label: narrow.value ? shortLabel(value) : LOCALE_LABELS[value] })));
 const highlight = ref({ x: 0, width: 0 });
 const light = (event: Event) => {
   const item = event.currentTarget as HTMLElement;
@@ -30,7 +37,7 @@ const light = (event: Event) => {
   highlight.value = { x: box.left - nav.left, width: box.width };
 };
 
-const columns = computed(() => [
+const columns = computed(() => props.p4?.nav ?? [
   {
     label: props.journey.groups.records,
     links: [
@@ -61,7 +68,7 @@ const themes = computed(() => [
   { value: 'light' as ThemeMode, label: props.journey.themes[1], icon: 'sun' as const },
   { value: 'system' as ThemeMode, label: props.journey.themes[2], icon: 'monitor' as const },
 ]);
-const productOn = computed(() => props.active === 'records' || props.active === 'ai' || props.active === 'connect');
+const productOn = computed(() => ['connection', 'records', 'ai', 'ai-plan', 'connect'].includes(props.active));
 
 const go = (id: string) => { product.value = false; menu.value = false; languages.value = false; emit('go', id); };
 const theme = (value: string | number) => {
@@ -79,8 +86,8 @@ const outside = (event: MouseEvent) => {
   if (!root.value?.contains(event.target as Node)) { product.value = false; languages.value = false; }
 };
 
-onMounted(() => { setLocale(props.locale); document.addEventListener('pointerdown', outside); });
-onBeforeUnmount(() => document.removeEventListener('pointerdown', outside));
+onMounted(() => { setLocale(props.locale); document.addEventListener('pointerdown', outside); narrowQuery?.addEventListener('change', onNarrow); });
+onBeforeUnmount(() => { document.removeEventListener('pointerdown', outside); narrowQuery?.removeEventListener('change', onNarrow); });
 watch(() => props.locale, (value) => { if (appLocale.value !== value) setLocale(value); });
 watch(appLocale, (value) => { if (value !== props.locale) emit('locale', value); }, { flush: 'sync' });
 watch(() => props.away, (away) => { if (away) { product.value = false; menu.value = false; languages.value = false; } });
@@ -110,9 +117,9 @@ watch(() => props.away, (away) => { if (away) { product.value = false; menu.valu
         <div class="site-preferences">
           <SegmentTrack ref="themeTrack" class="site-theme" variant="bare" icon-only :items="themes" :model-value="landingThemeMode" :aria-label="journey.system" @update:model-value="theme" />
           <span class="preference-divider" aria-hidden="true"></span>
-          <CapsuleWheel ref="localeWheel" class="site-locale" variant="bare" plain loop :span="128" :items="localeOptions" :model-value="locale" :aria-label="copy.nav.language" @update:model-value="language" />
+          <CapsuleWheel ref="localeWheel" class="site-locale" variant="bare" plain loop :span="128" :fit-peek="18" :items="localeOptions" :model-value="locale" :aria-label="copy.nav.language" @update:model-value="language" />
         </div>
-        <a class="lp-btn lp-btn-primary nav-download" href="#download" @click.prevent="go('download')"><Icon class="nav-download-icon" name="export" :size="16" /><span class="nav-download-label">{{ journey.nav.download }}</span></a>
+        <a class="lp-btn lp-btn-primary nav-download" href="#download" @click.prevent="go('download')"><span class="nav-download-icon" aria-hidden="true"><LandingIcon name="download" :size="17" /></span><span class="nav-download-label">{{ journey.nav.download }}</span></a>
         <button class="lp-icon-btn mobile-toggle" type="button" :aria-label="journey.nav.menu" :aria-expanded="menu" aria-controls="mobile-nav" @click="menu = !menu"><Icon :name="menu ? 'x' : 'dots'" :size="18" /></button>
       </div>
     </div>
@@ -150,6 +157,13 @@ watch(() => props.away, (away) => { if (away) { product.value = false; menu.valu
 .site-theme { --seg-pad: 1px; }
 .site-theme :deep(.segment-item) { min-height: 30px; width: 30px; padding: 0; }
 .site-locale { font-size: 12px; }
-@media(max-width:720px) { .lp-brand strong { display: none; } .site-locale { max-width: 100px; } }
-@media(max-width:380px) { .site-locale { max-width: 82px; } .site-theme :deep(.segment-item) { width: 27px; } .lp-nav-actions { gap: 3px; } }
+/* 下载：和左边偏好胶囊同高的一枚纯文字绿胶囊（10-14：原来带个「上传」箭头、比胶囊高一截、悬停还往上跳，显得笨重）。
+   图标只在窄屏只剩图标时出现（landing.css 的 480px 断点）；悬停只提亮，不位移。 */
+.nav-download { height: 36px; min-height: 36px; padding: 0 18px; gap: 6px; font-size: 14px; font-weight: 600; letter-spacing: -.01em; box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 22%, transparent); transition: filter 180ms ease, transform 240ms var(--lp-ease); }
+.nav-download:hover:not(:disabled) { transform: none; filter: brightness(1.08); }
+.nav-download:active:not(:disabled) { transform: scale(.96); }
+@media(max-width:720px) { .nav-download { padding: 0 12px; } }
+@media(max-width:480px) { .nav-download { width: 36px; min-width: 36px; padding: 0; } }
+@media(max-width:720px) { .lp-brand strong { display: none; } }
+@media(max-width:380px) { .site-theme :deep(.segment-item) { width: 27px; } .lp-nav-actions { gap: 3px; } }
 </style>

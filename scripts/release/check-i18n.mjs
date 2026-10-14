@@ -33,6 +33,7 @@ const SKIP_FILES = [
   'views/landing/journeyCopy.ts', // Typed ten-language website copy, selected by LandingLocale.
   'views/landing/reelCopy.ts', // Typed ten-language MotionReel controls.
   'views/landing/film/copy.ts', // Film captions per LandingLocale; untranslated locales fall back to English.
+  'views/landing/p4Copy.ts', // P4 chapter copy per LandingLocale (zh here, others in p4/<locale>.ts); untranslated locales keep the older layout.
   'demo/dialogueCopy.ts', // Typed ten-language demo dialogue strings.
 ];
 
@@ -313,10 +314,8 @@ const ALLOWED_PROSE = [
   { file: 'views/ai/AiExchanges.vue', text: 'history.error.value', why: 'useExchanges 已经通过 toUserMessage 按错误码本地化。' },
   { file: 'lib/trainingPlan/importWorkout/common.ts', text: 'out.note', why: '从 .zwo / .fit 读出来的步骤备注原文，写进草稿的书写格式，不渲染、不是后端界面文案。' },
   { file: 'lib/trainingPlan/edit.ts', text: 'step.note', why: '训练计划里 AI / 用户写的步骤备注原文，原样写回草稿，不渲染、不是后端界面文案。' },
-  { file: 'views/landing/HandoffOverlay.vue', text: 'copy.note', why: '落地页自己的文案（landing/copy.ts 与语言包），不是后端字段。' },
   { file: 'views/landing/StageWindow.vue', text: 'copy.note', why: '同上，落地页文案。' },
   { file: 'views/landing/AiHandoff.vue', text: 'copy.note', why: '落地页自己的文案（landing/copy.ts 与语言包），不是后端字段。' },
-  { file: 'views/landing/TrustSummary.vue', text: 'copy.connect.note', why: '网站连接说明，来自独立的十种语言包，不是后端字段。' },
   { file: 'views/landing/FinalCta.vue', text: 'downloads.linux.note', why: '同上，落地页文案。' },
   { file: 'lib/storageEstimateText.ts', text: 'estimate.message', why: '估算文案的唯一实现：按 message_code 分支，取不到才回落到原文。' },
   { file: 'lib/storageEstimateText.ts', text: 'estimate.stop_reason', why: '同上，stop_reason 的兜底。' },

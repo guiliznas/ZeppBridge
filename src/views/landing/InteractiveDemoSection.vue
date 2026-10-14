@@ -28,7 +28,10 @@ const stage = ref<InstanceType<typeof StageWindow>>();
 .interactive-demo { padding-top: 88px; }
 .demo-back { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 999px; background: transparent; color: var(--ink); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
 .demo-back:hover { background: var(--surface); }
-.demo-heading { max-width: 40em; margin-bottom: 28px; }
+/* 标题一行放下（「犹豫不决？不妨试玩一下。」曾被 40em 的容器折成两行，断在「不 / 妨」）；
+   窄屏放不下时只在标点处断（keep-all），不在词中间断。说明文字自己有 38em 的上限。 */
+.demo-heading { margin-bottom: 28px; }
+.demo-heading .lp-h2 { word-break: keep-all; }
 .demo-toolbar { position: sticky; top: 8px; z-index: 4; display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; padding: 6px; border: 1px solid var(--line); border-radius: 999px; min-width: 0; background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(20px); }
 .reset-demo { flex: 0 0 auto; min-height: 40px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--ink); font: inherit; font-size: 14px; cursor: pointer; }
 @media (max-width: 800px) { .interactive-demo { padding-top: 56px; } .demo-toolbar { flex-wrap: wrap; } .reset-demo { margin-left: auto; } }

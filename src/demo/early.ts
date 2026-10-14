@@ -8,7 +8,7 @@
  *   3. 如果带了 `route`，在路由器创建之前把地址改成它——应用一开始就落在那一页，不会先闪一下概览。
  */
 /** `tour` / `welcome` / `ret`：新手引导的示例沙盒（lib/tour/sandbox.ts）——要看的章节、要不要先出语言轮、结束回哪一页。 */
-interface DemoFlags { demo: boolean; theme: string | null; lang: string | null; showcase: boolean; tour?: string; welcome?: boolean; ret?: string }
+interface DemoFlags { demo: boolean; theme: string | null; lang: string | null; showcase: boolean; scene?: string; tour?: string; welcome?: boolean; ret?: string }
 
 declare global {
   interface Window { __ZB_DEMO__?: DemoFlags }
@@ -24,7 +24,7 @@ const read = (): DemoFlags | undefined => {
     const tour = params.get('tour') ?? undefined;
     return {
       demo: true, theme: params.get('theme'), lang: params.get('lang'), showcase: params.get('showcase') === '1',
-      tour, welcome: params.get('welcome') === '1', ret: params.get('ret') ?? undefined,
+      scene: params.get('scene') ?? undefined, tour, welcome: params.get('welcome') === '1', ret: params.get('ret') ?? undefined,
     };
   } catch {
     return undefined;

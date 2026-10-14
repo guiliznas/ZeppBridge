@@ -19,16 +19,20 @@ const show = useShowcase(root);
 const reel = computed(() => reelCopy(props.locale));
 let resize: ResizeObserver | undefined, controller: AbortController | undefined, clock: PlaybackClock | undefined;
 let loadTimer = 0, generation = 0;
+let hasPlayed = false;
 const post = (payload: Record<string, unknown>) => frame.value?.contentWindow?.postMessage({ source: 'zeppbridge-site', ...payload }, location.origin);
 const load = () => {
   clearTimeout(loadTimer);
-  src.value = '/?' + new URLSearchParams({ demo: '1', showcase: '1', route: reelRoute(props.id), theme: landingTheme.value, lang: props.locale }).toString();
+  src.value = '/?' + new URLSearchParams({ demo: '1', showcase: '1', scene: props.id, route: reelRoute(props.id), theme: landingTheme.value, lang: props.locale }).toString();
   loadTimer = window.setTimeout(() => { if (!ready.value) failed.value = true; }, 20000);
 };
 const stop = () => { generation++; controller?.abort(); clock?.dispose(); cursor.value.visible = false; };
 const sync = () => {
   clock?.setPaused(!show.running.value);
-  frame.value?.contentWindow?.__ZB_PRESENTATION__?.pause(!show.running.value);
+  if (show.running.value) hasPlayed = true;
+  // Let a new frame finish its initial render even when reduced motion awaits Play.
+  // Otherwise its entrance can be frozen at opacity zero, leaving an empty preview.
+  frame.value?.contentWindow?.__ZB_PRESENTATION__?.pause(hasPlayed && !show.running.value);
   if (!failed.value && ready.value) phase.value = finished.value ? 'complete' : show.running.value ? 'run' : 'paused';
 };
 const run = async () => {
@@ -50,7 +54,7 @@ const run = async () => {
     });
     if (token !== generation) return;
     cursor.value.visible = false; finished.value = true; phase.value = 'complete';
-    await clock.wait(1800);
+    await clock.wait(650);
     if (props.autoAdvance && !show.reduced.value) emit('complete');
     else show.finish();
   } catch (error) {
@@ -103,7 +107,7 @@ onBeforeUnmount(() => { stop(); clearTimeout(loadTimer); resize?.disconnect(); w
 .motion-reel { margin: 0; min-width: 0; }
 .reel-scaler { position: relative; overflow: hidden; aspect-ratio: 8 / 5; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); isolation: isolate; }
 .reel-device { width: 1280px; height: 800px; transform-origin: 0 0; }
-.reel-camera { width: 1280px; height: 800px; transform-origin: 0 0; transition: transform 1000ms cubic-bezier(.22,1,.36,1); }
+.reel-camera { width: 1280px; height: 800px; transform-origin: 0 0; transition: transform 450ms cubic-bezier(.22,1,.36,1); }
 iframe { position: absolute; inset: 0; width: 1280px; height: 800px; border: 0; opacity: 0; pointer-events: none; transition: opacity 550ms ease; }
 iframe.shown { opacity: 1; }
 .reel-pointer { position: absolute; top: -10px; left: -10px; width: 20px; height: 20px; border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); border-radius: 50%; pointer-events: none; transition: transform 140ms linear, background 150ms ease; box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 12%, transparent); }

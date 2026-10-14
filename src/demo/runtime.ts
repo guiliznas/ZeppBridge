@@ -36,6 +36,17 @@ const sleep = (ms: number) => new Promise<void>((resolve) => { window.setTimeout
 export const installDemoRuntime = (now: Date = new Date()): DemoData => {
   const data = buildDemoData(now);
   const plan = createDemoPlan(now);
+  // A disposable website scene: measured low readiness + intervals scheduled today.
+  // Never changes the visitor's library or the normal interactive demo dataset.
+  if (window.__ZB_DEMO__?.showcase && window.__ZB_DEMO__.scene === 'easy') {
+    const today = dayKey(now);
+    const document = structuredClone(plan.state().drafts[0]!.document);
+    const workout = document.workouts.find(item => item.steps.some(step => 'repeat' in step));
+    if (workout) { workout.date = today; document.from = today; plan.saveDraft(document); }
+    const reading = data.metrics.readiness.find(point => point.date === today);
+    if (reading) reading.value = 48;
+    else data.metrics.readiness.push({ date: today, value: 48 });
+  }
   const operations = createDemoOperations(data, plan);
   let zonePreference: HeartRateZonePreference = { model: 'max_hr', maxBasis: 'workout_max' };
   let clipboard = JSON.stringify(plan.state().drafts[0].document, null, 2);

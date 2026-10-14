@@ -15,7 +15,14 @@ export const scrollToSection = (id: string, history: 'replace' | 'push' | 'none'
   if (!target) return;
   if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
   target.focus({ preventScroll: true });
-  target.scrollIntoView({ behavior: prefersReducedMotion() ? 'instant' : 'smooth', block: 'start' });
+  const reduced = prefersReducedMotion();
+  // 远跳（顶栏「下载」从页首到页尾）先瞬移到目标前一屏，再平滑滚完：一路平滑滚过去会让沿途每段演示片
+  // 都被「快到了」预载起来，一个 iframe 启动就是几百毫秒的长任务，滚动一卡一卡的（10-14 降速实测 7 次 ~650ms）。
+  const top = target.getBoundingClientRect?.().top;
+  if (!reduced && top !== undefined && typeof window.scrollTo === 'function' && Math.abs(top) > window.innerHeight * 2) {
+    window.scrollTo({ top: window.scrollY + top - Math.sign(top) * window.innerHeight, behavior: 'instant' });
+  }
+  target.scrollIntoView({ behavior: reduced ? 'instant' : 'smooth', block: 'start' });
   if (history === 'push') window.history.pushState(window.history.state, '', `#${id}`);
   else if (history === 'replace') window.history.replaceState(null, '', `#${id}`);
 };
@@ -23,14 +30,24 @@ export const scrollToSection = (id: string, history: 'replace' | 'push' | 'none'
 /**
  * 滚到哪一段，哪一段的 `[data-reveal]` 依次浮上来（加 `.is-in`，CSS 里按 `--i` 错开）。
  * 同时给带 `[data-live]` 的块在视口内时挂 `.is-live`，离开就摘掉——循环动画离屏不跑。
+ * 挂载以后才渲染出来的块（换语言、新旧版布局切换）由 MutationObserver 补登记：以前只在挂载时扫一遍，
+ * 换语言后新出现的设置条目永远停在透明（10-14 反馈「其他语言设置页缺失」）。
  */
 export const useScrollMotion = (root: Ref<HTMLElement | null>) => {
   let reveal: IntersectionObserver | null = null;
   let live: IntersectionObserver | null = null;
+  let added: MutationObserver | null = null;
   let preference: MediaQueryList | null = null;
+  const track = (node: Element) => {
+    const reveals = [...(node.matches('[data-reveal]') ? [node] : []), ...node.querySelectorAll('[data-reveal]')];
+    const lives = [...(node.matches('[data-live]') ? [node] : []), ...node.querySelectorAll('[data-live]')];
+    reveals.forEach((el) => { if (!el.classList.contains('is-in')) reveal?.observe(el); });
+    lives.forEach((el) => live?.observe(el));
+  };
   const configure = () => {
     reveal?.disconnect();
     live?.disconnect();
+    added?.disconnect();
     const el = root.value;
     if (!el) return;
     const reveals = el.querySelectorAll<HTMLElement>('[data-reveal]');
@@ -54,6 +71,10 @@ export const useScrollMotion = (root: Ref<HTMLElement | null>) => {
       for (const entry of entries) entry.target.classList.toggle('is-live', entry.isIntersecting);
     }, { threshold: 0 });
     lives.forEach((node) => live?.observe(node));
+    added = new MutationObserver((records) => {
+      for (const record of records) record.addedNodes.forEach((node) => { if (node instanceof Element) track(node); });
+    });
+    added.observe(el, { childList: true, subtree: true });
   };
   onMounted(() => {
     preference = window.matchMedia?.('(prefers-reduced-motion: reduce)') ?? null;
@@ -63,6 +84,7 @@ export const useScrollMotion = (root: Ref<HTMLElement | null>) => {
   onBeforeUnmount(() => {
     reveal?.disconnect();
     live?.disconnect();
+    added?.disconnect();
     preference?.removeEventListener('change', configure);
   });
 };

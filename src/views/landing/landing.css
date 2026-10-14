@@ -20,6 +20,7 @@ html:has(.lp) { scroll-behavior: auto; background: var(--bg); }
 .lp :is(section,article,div)[id] { scroll-margin-top: 80px; }
 .lp :focus-visible { outline: 2px solid var(--focus); outline-offset: 5px; }
 .lp :focus:not(:focus-visible) { outline: none; }
+.lp section[tabindex='-1']:focus-visible { outline: none; }
 .lp-wrap,.lp-section { width: min(1320px,calc(100% - 112px)); margin: 0 auto; }
 .lp-section { position: relative; }
 .lp-h2 { margin: 0; font-size: clamp(34px,4vw,58px); line-height: 1.2; letter-spacing: -.04em; font-weight: 600; text-wrap: balance; }
