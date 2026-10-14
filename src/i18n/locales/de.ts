@@ -2840,6 +2840,18 @@ Antworte in Markdown.`,
       needGo: 'Importieren',
       needCancel: 'Abbrechen',
     },
+    'components/plan/easySwap': {
+      readiness: (today: number, usual: number) => `Bereitschaft ${today}, üblich ${usual}`,
+      swapRun: 'In lockeren Lauf ändern',
+      swapRide: 'In lockere Fahrt ändern',
+      swapSwim: 'In lockeres Schwimmen ändern',
+      notToday: 'Heute nicht',
+      nameRun: 'Lockerer Lauf',
+      nameRide: 'Lockere Fahrt',
+      nameSwim: 'Lockeres Schwimmen',
+      focus: 'Erholung',
+      description: (original: string) => `Niedrige Bereitschaft: „${original}“ wurde in eine lockere Einheit geändert`,
+    },
     'views/settings/sections/McpTaskScopes': {
       title: 'Aufgaben für MCP freigeben',
       empty: 'Noch keine Aufgaben gespeichert. Sobald du einmal etwas an eine KI übergibst, erscheint die Aufgabe hier.',
@@ -3238,6 +3250,8 @@ Antworte in Markdown.`,
       publishTitle: 'Der KI erlauben, Trainingspläne direkt zu veröffentlichen',
       sidecarMissing:
         'Dieser Build enthält kein MCP-Programm; verbinde manuell über den Prompt oder die Konfiguration unten',
+      sidecarAppImage:
+        'Ein AppImage startet jedes Mal an einem neuen temporären Ort, sodass KI-Werkzeuge den Pfad nicht behalten können: Lade das separate CLI-/MCP-Paket herunter und verbinde es mit der Konfiguration unten',
       staleClients: (names: string) =>
         `${names} verweisen noch auf ein anderes zeppbridge-mcp, vermutlich eine veraltete Version, die diese Datenbank nicht lesen kann: Klicke auf die entsprechende Schaltfläche, um die Verbindung zu erneuern`,
       toolAthleteProfile:
