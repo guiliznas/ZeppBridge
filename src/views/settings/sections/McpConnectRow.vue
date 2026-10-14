@@ -68,7 +68,7 @@ const saveBundle = async () => {
   <div class="s-row is-block">
     <div class="s-row-main">
       <span class="s-row-title">{{ a.connectTitle }}</span>
-      <span class="s-row-sub">{{ sidecar?.path ? a.connectSub : a.sidecarMissing }}</span>
+      <span class="s-row-sub">{{ sidecar?.path ? a.connectSub : sidecar?.appimage ? a.sidecarAppImage : a.sidecarMissing }}</span>
     </div>
     <div class="s-actions connect-actions">
       <button class="button secondary" type="button" :disabled="!sidecar?.path" @click="copyCommands(claudeCodeCommands)">

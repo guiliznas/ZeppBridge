@@ -10,3 +10,4 @@ components/plan/easySwap.readiness
 components/plan/easySwap.swapRide
 components/plan/easySwap.swapRun
 components/plan/easySwap.swapSwim
+views/settings/sections/ai.sidecarAppImage

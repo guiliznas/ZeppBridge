@@ -485,13 +485,19 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      # 和 Windows 一样带上 zeppbridge-mcp：装在 ZeppBridge.app/Contents/MacOS/ 里、
+      # 主程序旁边，设置「交给 AI 工具」卡据此给出带真实路径的连接命令。
+      - name: Stage MCP sidecar
+        shell: pwsh
+        run: ./scripts/release/stage-mcp-sidecar.ps1
+
       - name: Build and bundle (app + dmg)
         # beforeBuildCommand (icons:generate + vite build) runs as part of this.
         # The bundle is ad-hoc signed: no Apple Developer ID, no notarization.
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: npm run tauri build -- --bundles app,dmg
+        run: npm run tauri build -- --config src-tauri/tauri.sidecar.conf.json --bundles app,dmg
 
       - name: Collect macOS artifacts
         shell: bash
@@ -574,6 +580,13 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      # deb / rpm 把 zeppbridge-mcp 装到 /usr/bin、主程序旁边。AppImage 里也会带一份，
+      # 但它每次启动挂到新的 /tmp/.mount_*，路径记不住：应用在 AppImage 里不给路径
+      # （ai_clients.rs 的 running_from_appimage），界面指向单独的工具包。
+      - name: Stage MCP sidecar
+        shell: pwsh
+        run: ./scripts/release/stage-mcp-sidecar.ps1
+
       # deb/rpm/appimage 三样都出。三种发行版家族，不要求用户去转换包格式。
       #
       # `--config src-tauri/tauri.linux.conf.json` 把 createUpdaterArtifacts
@@ -593,6 +606,7 @@ jobs:
           for attempt in 1 2 3; do
             if npm run tauri build -- \
               --config src-tauri/tauri.linux.conf.json \
+              --config src-tauri/tauri.sidecar.conf.json \
               --bundles deb,rpm,appimage; then
               exit 0
             fi

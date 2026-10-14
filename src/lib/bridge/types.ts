@@ -458,6 +458,8 @@ export interface BridgeBackend {
 export interface McpSidecar {
   path: string | null;
   data_dir_env: string | null;
+  /** 正从 AppImage 里运行：挂载路径每次启动都变，不给路径（界面指向单独的工具包）。 */
+  appimage?: boolean;
   /** 本机 AI 客户端里登记了另一份 zeppbridge-mcp 的（多半是 2.x 的旧版，读不了升级后的库）。 */
   stale_clients?: McpClientId[];
 }

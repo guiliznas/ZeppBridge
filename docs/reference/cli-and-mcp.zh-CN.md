@@ -147,15 +147,15 @@ macOS 下 cron 需要「完全磁盘访问权限」才能读到数据目录。
 stdio 传输，**不监听任何端口，不发出任何网络请求**。只读由连接层保证（`PRAGMA query_only`），不是靠工具列表里恰好没有写操作。
 每行请求上限为 1 MiB；非法 UTF-8/JSON 和超长行会收到错误响应，后续行仍可继续处理。工具执行失败通过 `result` 返回 `isError: true` 和说明文字；未知工具及调用结构错误仍使用 JSON-RPC 错误。
 
-### 从桌面应用连接（Windows）
+### 从桌面应用连接
 
-Windows 安装包和便携版会把 `zeppbridge-mcp.exe` 放在 `ZeppBridge.exe` 旁边。
+安装包会把 `zeppbridge-mcp` 放在应用自己的可执行文件旁边：Windows（安装包和便携版）在 `ZeppBridge.exe` 旁边，macOS 在 `ZeppBridge.app/Contents/MacOS/` 里，Linux 的 deb / rpm 在 `/usr/bin`。
 **设置 › 交给 AI 工具 › 连到 AI 工具**会替你填好真实路径：
 
 - **Claude Code** 和 **Codex**：复制三行命令——注册 MCP（带 `--scope task`）、把本仓库加为插件市场、装上 `zepp-coach` 教练技能。粘到终端运行。分隔符写成 `"--"`，因为 PowerShell 会在 npm 装的 CLI 收到之前吞掉裸的 `--`。
-- **Claude Desktop**：保存 `ZeppBridge.mcpb`，双击安装。扩展启动的是装在应用旁边的那份 `zeppbridge-mcp.exe`，随 ZeppBridge 一起升级。
+- **Claude Desktop**：保存 `ZeppBridge.mcpb`，双击安装。扩展启动的是装在应用旁边的那份 `zeppbridge-mcp`，随 ZeppBridge 一起升级。
 
-应用用的库不是可执行文件旁边的 `data` 时，生成的配置会带上 `ZEPPBRIDGE_DATA_DIR`。没附带 sidecar 的构建（开发构建）里这几个按钮不可点，照下面的配置手动接。
+应用用的库不是可执行文件旁边的 `data` 时，生成的配置会带上 `ZEPPBRIDGE_DATA_DIR`。没附带 sidecar 的构建（开发构建）里这几个按钮不可点，照下面的配置手动接。Linux 的 AppImage 里也带了一份，但它每次启动都挂到新的临时路径，应用不会把这个路径交给 AI 工具：请下载单独的 CLI / MCP 工具包，照下面的配置接。
 
 ### 配置示例
 

@@ -1,6 +1,7 @@
 //! 设置「交给 AI 工具」卡的「连到 Claude Code / Codex / Claude Desktop」。
 //!
-//! 安装包把 `zeppbridge-mcp` 作为 sidecar 放在 `ZeppBridge.exe` 旁边（3B 打包决定），
+//! 安装包把 `zeppbridge-mcp` 作为 sidecar 放在 `ZeppBridge.exe` 旁边（3B 打包决定；
+//! macOS 在 `ZeppBridge.app/Contents/MacOS/`，deb / rpm 在 `/usr/bin/`，都在主程序旁边），
 //! 所以应用知道它的真实路径，按钮可以直接给出能用的命令，不用让用户自己找。
 //! 这里只回答两件事：sidecar 在哪、它自己能不能找到这份数据；再加一个把
 //! Claude Desktop 的 `.mcpb` 写到用户选的目录。
@@ -29,16 +30,25 @@ pub struct McpSidecar {
     /// 本机 AI 客户端里登记了**另一份** zeppbridge-mcp 的（多半是 2.x 工具包里的旧版）：
     /// `claude_desktop` / `claude_code` / `codex`。没附带 sidecar 时为空。见 [`stale`]。
     pub stale_clients: Vec<&'static str>,
+    /// 正从 AppImage 里运行（Linux）：sidecar 虽然在包里，但每次启动都挂到一个新的
+    /// `/tmp/.mount_*` 下，登记进 AI 客户端的路径下次就不存在了。这时 `path` 为空，
+    /// 界面说清原因、指向单独的工具包。
+    pub appimage: bool,
+}
+
+fn not_bundled(appimage: bool) -> McpSidecar {
+    McpSidecar {
+        path: None,
+        data_dir_env: None,
+        stale_clients: Vec::new(),
+        appimage,
+    }
 }
 
 pub(crate) fn locate_sidecar(exe_dir: &Path, data_dir: &Path) -> McpSidecar {
     let candidate = exe_dir.join(format!("{SIDECAR_STEM}{}", std::env::consts::EXE_SUFFIX));
     if !candidate.is_file() {
-        return McpSidecar {
-            path: None,
-            data_dir_env: None,
-            stale_clients: Vec::new(),
-        };
+        return not_bundled(false);
     }
     let data_dir_env =
         (exe_dir.join("data") != data_dir).then(|| data_dir.to_string_lossy().into_owned());
@@ -46,20 +56,25 @@ pub(crate) fn locate_sidecar(exe_dir: &Path, data_dir: &Path) -> McpSidecar {
         path: Some(candidate.to_string_lossy().into_owned()),
         data_dir_env,
         stale_clients: Vec::new(),
+        appimage: false,
     }
 }
 
+/// AppImage 的运行时会给进程设 `APPIMAGE`（包本身的路径）。
+fn running_from_appimage() -> bool {
+    cfg!(target_os = "linux") && std::env::var_os("APPIMAGE").is_some()
+}
+
 fn current_sidecar(data_dir: &Path) -> McpSidecar {
+    if running_from_appimage() {
+        return not_bundled(true);
+    }
     let exe_dir = std::env::current_exe()
         .ok()
         .and_then(|exe| exe.parent().map(Path::to_path_buf));
     match exe_dir {
         Some(dir) => locate_sidecar(&dir, data_dir),
-        None => McpSidecar {
-            path: None,
-            data_dir_env: None,
-            stale_clients: Vec::new(),
-        },
+        None => not_bundled(false),
     }
 }
 
