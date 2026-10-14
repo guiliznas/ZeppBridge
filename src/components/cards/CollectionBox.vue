@@ -174,7 +174,8 @@ const gather = (toBox = true) => {
   return settled(seq.track(cards.map((card, i) => animateFromNow(
     card,
     toBox ? [{ transform: atBox(card, 0.5, 90), opacity: 1, offset: 0.6 }, { transform: atBox(card, 0.22), opacity: 0 }]
-      : { transform: `${restTransform(card)} translateY(40px) scale(.8)`, opacity: 0 },
+      // 牌没有内联 transform 时 restTransform 是 'none'，不能拼在别的函数前面（'none translateY(…)' 是无效值，整段动画会被丢掉、牌瞬间消失）。
+      : { transform: `${card.style.transform ? `${card.style.transform} ` : ''}translateY(40px) scale(.8)`, opacity: 0 },
     { duration: reducedMotion() ? 140 : 420, delay: reducedMotion() ? 0 : Math.min(count - 1 - i, 24) * 12, easing: 'cubic-bezier(.4, 0, .2, 1)', fill: 'forwards' },
   ))));
 };
