@@ -59,13 +59,16 @@ export class Director {
   }
   center(el: Element): Point { const r = el.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }
 
-  /** 等应用里有限时长的动画都放完（无限循环的跑马灯不算），最多等 `limit` 真实毫秒。 */
+  /**
+   * 等应用里的转场动画放完，最多等 `limit` 真实毫秒。只算一次性、3 秒以内的动画：
+   * 跑马灯、对比条流光、生活事件节点呼吸这类循环装饰一直在跑，算上就每一下都白等到上限。
+   */
   async settle(limit = 1600) {
     for (let elapsed = 0; elapsed < limit; elapsed += 50) {
       const busy = this.doc.getAnimations().some((animation) => {
         if (animation.playState !== 'running') return false;
-        const end = animation.effect?.getComputedTiming().endTime;
-        return typeof end === 'number' && Number.isFinite(end);
+        const timing = animation.effect?.getComputedTiming();
+        return !!timing && timing.iterations === 1 && typeof timing.endTime === 'number' && timing.endTime <= 3000;
       });
       if (!busy) return;
       await this.clock.wait(50);
@@ -136,6 +139,21 @@ export class Director {
     const href = (await this.find(`${selector}[href]`)).getAttribute('href');
     if (!href) throw new Error(`Film link has no href: ${selector}`);
     await this.go(href, settle);
+  }
+
+  /** 往输入框里一个字一个字地打（真 input 事件，应用照常响应）。`replace` 先清空。 */
+  async type(target: Target, text: string, options: { replace?: boolean; perChar?: number } = {}) {
+    const el = await this.tap(target, { after: 120 }) as HTMLInputElement | HTMLTextAreaElement;
+    const win = this.view as Window & typeof globalThis;
+    const proto = el instanceof win.HTMLTextAreaElement ? win.HTMLTextAreaElement.prototype : win.HTMLInputElement.prototype;
+    const setValue = Object.getOwnPropertyDescriptor(proto, 'value')!.set!;
+    let value = options.replace ? '' : el.value;
+    for (const char of [...text]) {
+      value += char;
+      setValue.call(el, value);
+      el.dispatchEvent(new win.InputEvent('input', { bubbles: true, data: char, inputType: 'insertText' }));
+      await this.wait(options.perChar ?? 45);
+    }
   }
 
   /** 长按：指针上出进度环，`ms`（真实毫秒，应用按真实时间计长按）之后松开。 */

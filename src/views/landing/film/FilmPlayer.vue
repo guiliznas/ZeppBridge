@@ -78,7 +78,7 @@ const fromParam = props.record ? new URLSearchParams(location.search).get('from'
 const startChapter = fromParam ? Math.max(0, FILM.findIndex((chapter) => chapter.id === fromParam[0])) : 0;
 const startShot = fromParam?.[1] ?? null;
 const stop = () => { generation++; controller?.abort(); clock?.dispose(); };
-const run = async (from = 0) => {
+const run = async (from = 0, fromShot: string | null = from === startChapter ? startShot : null) => {
   stop();
   if (!ready.value || !frame.value?.contentWindow) return;
   const token = generation;
@@ -94,7 +94,7 @@ const run = async (from = 0) => {
       timings.push(timing);
       if (timing.actual > timing.planned) console.info(`[film] ${timing.chapter}/${timing.shot} ran ${timing.actual}ms > ${timing.planned}ms`);
     };
-    let skipTo = from === startChapter ? startShot : null;
+    let skipTo = fromShot;
     for (const chapter of FILM.slice(from)) {
       for (const shot of chapter.shots) {
         if (skipTo && shot.id !== skipTo) continue;
@@ -126,8 +126,11 @@ const toggle = () => { if (finished.value || failed.value) { failed.value = fals
 const message = (event: MessageEvent) => {
   if (event.origin !== location.origin || event.source !== frame.value?.contentWindow) return;
   if (event.data?.source !== 'zeppbridge-demo' || event.data.type !== 'ready') return;
+  // iframe 中途重载（开发服务器整页刷新、浏览器回收内存）会再报一次就绪：从正在放的这一镜接着放，不从头来。
+  const resume = ready.value && !finished.value ? FILM.findIndex((chapter) => chapter.id === active.value.chapter) : -1;
   ready.value = true;
-  void run(startChapter);
+  if (resume >= 0) void run(resume, active.value.shot || null);
+  else void run(startChapter);
 };
 watch(show.running, (running) => {
   clock?.setPaused(!running);

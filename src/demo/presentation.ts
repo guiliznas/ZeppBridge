@@ -11,8 +11,10 @@ export interface DemoPresentation {
   rate(value: number): void;
   /** Cover the app with a film wall (demo/walls) built from the app's own components; null removes it. */
   wall(kind: FilmWall | null): void;
+  /** Pace of the scripted demo conversation (1 = as on the website's try-it; the film plays it faster). */
+  pace(value: number): void;
 }
-export type FilmWall = 'glass' | 'cards';
+export type FilmWall = 'glass' | 'cards' | 'devices' | 'metrics';
 declare global { interface Window { __ZB_PRESENTATION__?: DemoPresentation } }
 
 /** Only installed in disposable demo frames. Desktop code and real input keep native capture. */
@@ -87,6 +89,7 @@ export function installPresentation(router: Router) {
       cancelAnimationFrame(rateLoop);
       applyRate();
     },
+    pace(value) { (window as Window & { __ZB_DEMO_PACE__?: number }).__ZB_DEMO_PACE__ = value > 0 ? value : 1; },
     wall(kind) {
       const token = ++wallToken;
       wall?.unmount(); wall = null;

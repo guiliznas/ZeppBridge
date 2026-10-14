@@ -36,8 +36,11 @@ const zh = {
   coach: { title: '一键复制，一键粘回。', sub: '最聪明的教练，就在你手边。' },
   plan: { title: '计划由你，落笔成训。' },
   formats: { title: '四种格式，一次满足。', sub: 'JSON · CSV · GPX · FIT' },
-  settings: { title: '细节，都由你定。' },
-  free: { title: '免费 · 开源 · Windows / macOS / Linux' },
+  mcp: { title: '本机 AI，直接来问。', sub: 'MCP 让 Claude Code、Codex 这类本机工具读你的数据；你点头，它还能直接发布训练计划。' },
+  display: { title: '公里或英里，12 或 24，大小随心。' },
+  backup: { title: '快照在手，进退有据。', sub: '数据库快照，一键生成，随时恢复。' },
+  api: { title: '本机 API，只对你开门。', sub: '只绑 127.0.0.1，只读，要令牌。' },
+  free: { title: '免费，开源，处处可用。', sub: 'Windows · macOS · Linux · 十种语言' },
   tryIt: { title: '犹豫不决？不妨试玩一下。' },
 } satisfies Record<string, Caption>;
 
@@ -73,8 +76,11 @@ const en: Record<CaptionKey, Caption> = {
   coach: { title: 'Copy. Paste back.', sub: 'The smartest coach is already at hand.' },
   plan: { title: 'Your plan, your call.' },
   formats: { title: 'Four formats. One click.', sub: 'JSON · CSV · GPX · FIT' },
-  settings: { title: 'Every detail, yours to set.' },
-  free: { title: 'Free · Open source · Windows / macOS / Linux' },
+  mcp: { title: 'Your local AI, straight to the source.', sub: 'Over MCP, local tools like Claude Code and Codex read your data. With your say-so, they publish the plan too.' },
+  display: { title: 'Kilometres or miles. 12 or 24 hours. Any size you like.' },
+  backup: { title: 'Snapshots to step back to.', sub: 'Save the database in one click. Restore whenever you need.' },
+  api: { title: 'A local API that answers only you.', sub: 'Bound to 127.0.0.1, read-only, token required.' },
+  free: { title: 'Free. Open source. Everywhere.', sub: 'Windows · macOS · Linux · Ten languages' },
   tryIt: { title: 'Try it before you download it.' },
 };
 

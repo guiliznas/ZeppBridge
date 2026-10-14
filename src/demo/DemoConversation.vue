@@ -14,6 +14,8 @@ const labels = computed(() => dialogueCopy(locale.value));
 const turns = computed(() => [...copy.value.turns.slice(0, 2), labels.value.finalTurn]);
 const shown = ref(0), answered = ref(0), thinking = ref(false), status = ref('ready');
 let controller: AbortController | undefined, clock: PlaybackClock | undefined;
+/** 宣传片会把整段对话压快（presentation.pace）；网站的试玩和引导照原速。 */
+const pace = () => Math.max(0.05, (window as Window & { __ZB_DEMO_PACE__?: number }).__ZB_DEMO_PACE__ ?? 1);
 let parentPaused = false;
 const sync = () => clock?.setPaused(document.hidden || parentPaused);
 const playback = (event: Event) => { parentPaused = (event as CustomEvent<boolean>).detail; sync(); };
@@ -49,7 +51,8 @@ const review = async () => {
 const send = async () => {
   if (status.value !== 'ready') return;
   controller = new AbortController(); const signal = controller.signal;
-  clock = new PlaybackClock(signal); const timeline = clock; sync();
+  clock = new PlaybackClock(signal); const playing = clock; sync();
+  const timeline = { wait: (ms: number) => playing.wait(ms * pace()) };
   status.value = 'chat';
   try {
     for (let index = 0; index < 3; index++) {
