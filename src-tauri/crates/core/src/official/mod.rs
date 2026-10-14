@@ -71,9 +71,10 @@ impl OfficialMeta {
     }
 }
 
-/// 同一进程里同一时间只跑一次刷新（代码审查 R05）：状态读取和同步可能同时
-/// 发现令牌快过期，两次刷新会用同一把刷新令牌，后到的那次可能被拒而把刚续上
-/// 的账号标成「要重新授权」。
+/// 同一时间只跑一次刷新（代码审查 R05）：状态读取和同步可能同时发现令牌快
+/// 过期，两次刷新会用同一把刷新令牌，后到的那次可能被拒而把刚续上的账号标成
+/// 「要重新授权」。进程内用这把锁排队，跨进程（桌面与 CLI / MCP）再加一把
+/// 数据目录里的文件锁，见 [`OfficialStore::refresh_flight`]。
 static REFRESH_FLIGHT: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 /// 强制刷新一次（令牌快到期，或数据接口拒了它）。
@@ -88,6 +89,7 @@ pub async fn refresh_tokens(
     now: i64,
 ) -> Result<OfficialTokens> {
     let _flight = REFRESH_FLIGHT.lock().await;
+    let _other_processes = store.refresh_flight().await;
     let reauth = || ZeppBridgeError::NeedsReauth("官方授权已失效，请重新授权".into());
     match store.load()? {
         None => return Err(reauth()),
@@ -182,5 +184,7 @@ fn random_token() -> Result<String> {
     Ok(base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes))
 }
 
+#[cfg(test)]
+mod cross_process_tests;
 #[cfg(test)]
 mod tests;

@@ -149,7 +149,7 @@ pub fn acquire_with_timeout(
     purpose: WritePurpose,
     timeout: Duration,
 ) -> Result<ExclusiveWriteGuard, WriteLockError> {
-    acquire_file(data_dir, LOCK_FILE, HOLDER_FILE, purpose, timeout)
+    acquire_file(data_dir, LOCK_FILE, HOLDER_FILE, purpose.label(), timeout)
 }
 
 /// 联网同步 / 历史补拉的租约：同一个数据目录同一时刻只跑一个。
@@ -164,14 +164,52 @@ pub fn acquire_sync_lease(
     purpose: WritePurpose,
     timeout: Duration,
 ) -> Result<ExclusiveWriteGuard, WriteLockError> {
-    acquire_file(data_dir, SYNC_LOCK_FILE, SYNC_HOLDER_FILE, purpose, timeout)
+    acquire_file(
+        data_dir,
+        SYNC_LOCK_FILE,
+        SYNC_HOLDER_FILE,
+        purpose.label(),
+        timeout,
+    )
+}
+
+/// 官方授权状态的两把跨进程锁（见 `official/store.rs`）。
+///
+/// 桌面、CLI、MCP 都会读写同一份官方令牌：桌面断开时 CLI 可能正在刷新，两边
+/// 进程内的锁互相看不见。它们不碰 `zepp.db`，所以和写锁、同步租约分开。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OfficialLock {
+    /// 写凭据 / `official.json` 的那一小段（比较后交换、断开、登录落盘）。
+    Commit,
+    /// 一次刷新的整个往返：两个进程拿同一把刷新令牌各刷一次，后到的那次会被拒。
+    Refresh,
+}
+
+pub fn acquire_official(
+    data_dir: &Path,
+    which: OfficialLock,
+    timeout: Duration,
+) -> Result<ExclusiveWriteGuard, WriteLockError> {
+    let (lock_file, holder_file, label) = match which {
+        OfficialLock::Commit => (
+            "official.commit-lock",
+            "official.commit-lock.holder",
+            "更新官方授权",
+        ),
+        OfficialLock::Refresh => (
+            "official.refresh-lock",
+            "official.refresh-lock.holder",
+            "刷新官方令牌",
+        ),
+    };
+    acquire_file(data_dir, lock_file, holder_file, label, timeout)
 }
 
 fn acquire_file(
     data_dir: &Path,
     lock_file: &str,
     holder_file: &str,
-    purpose: WritePurpose,
+    label: &str,
     timeout: Duration,
 ) -> Result<ExclusiveWriteGuard, WriteLockError> {
     std::fs::create_dir_all(data_dir).map_err(WriteLockError::Unavailable)?;
@@ -183,10 +221,7 @@ fn acquire_file(
         match open_exclusive(&lock_path) {
             Ok(file) => {
                 // 自报用途，供另一个进程在等锁时显示。写失败不影响加锁本身。
-                let _ = std::fs::write(
-                    &holder_path,
-                    format!("{}|{}", purpose.label(), std::process::id()),
-                );
+                let _ = std::fs::write(&holder_path, format!("{label}|{}", std::process::id()));
                 return Ok(ExclusiveWriteGuard {
                     file: Some(file),
                     holder_path,

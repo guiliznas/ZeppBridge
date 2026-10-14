@@ -7,10 +7,14 @@
 use super::OfficialTokens;
 use crate::auth::{default_credential_backend_in, CredentialBackend};
 use crate::models::{error::Result, ZeppBridgeError};
+use crate::storage::write_lock::{
+    acquire_official, ExclusiveWriteGuard, OfficialLock, WriteLockError,
+};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
+use std::time::Duration;
 
 const META_FILE: &str = "official.json";
 
@@ -20,23 +24,39 @@ const META_FILE: &str = "official.json";
  * 登录、取消、断开、刷新都会在网络等待之后写凭据。没有协调时，旧操作的
  * 回执能把令牌写回已断开的账号、覆盖新登录，或者把刚续上的状态改成
  * 「要重新授权」。所以：
- * - 所有写凭据 / 元数据的动作都在同一把进程内提交锁里做；
+ * - 所有写凭据 / 元数据的动作都在同一把提交锁里做。它是两层：进程内的
+ *   `Mutex`，加数据目录里由操作系统持有的文件锁——桌面断开时 CLI / MCP
+ *   可能正在另一个进程里刷新，只有进程内的锁时，那边的「核对 → 写回」会
+ *   夹在这边的断开中间，把令牌写回已断开的账号；
  * - `GENERATION` 是账号状态的代次：开始登录、取消、断开都加一。登录拿着
- *   开始时的代次，写之前核对——代次变了说明用户已经取消或换了主意；
+ *   开始时的代次，写之前核对——代次变了说明用户已经取消或换了主意。登录和
+ *   取消只发生在桌面进程里，所以代次留在进程内就够；
  * - 刷新写回之前核对库里的刷新令牌还是拿去刷新的那一把（比较后交换）。
  */
 static COMMIT: Mutex<()> = Mutex::new(());
 static GENERATION: AtomicU64 = AtomicU64::new(0);
 
-fn commit() -> MutexGuard<'static, ()> {
+/// 等另一个进程放开提交锁的上限。锁里只有几次凭据读写，正常是毫秒级。
+const COMMIT_WAIT: Duration = Duration::from_secs(10);
+/// 等另一个进程刷新完的上限：比一次刷新请求的超时（20 秒）多留一点。
+const REFRESH_WAIT: Duration = Duration::from_secs(25);
+
+fn in_process() -> MutexGuard<'static, ()> {
     COMMIT
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
 }
 
+/// 持有期间，本机任何 ZeppBridge 进程都不能改这个数据目录的官方授权状态。
+struct CommitGuard {
+    // 先放文件锁再放进程内锁（字段按声明顺序 drop）。
+    _file: ExclusiveWriteGuard,
+    _local: MutexGuard<'static, ()>,
+}
+
 /// 作废所有在途的登录（开始新登录、取消、断开时调用），返回新的代次。
 pub fn invalidate_pending_logins() -> u64 {
-    let _commit = commit();
+    let _commit = in_process();
     GENERATION.fetch_add(1, Ordering::SeqCst) + 1
 }
 
@@ -84,6 +104,40 @@ impl OfficialStore {
         }
     }
 
+    /// 进程内锁在前、文件锁在后：同一进程的两个线程不去抢文件锁空转。
+    fn commit(&self) -> Result<CommitGuard> {
+        let local = in_process();
+        let file =
+            acquire_official(&self.dir, OfficialLock::Commit, COMMIT_WAIT).map_err(|error| {
+                ZeppBridgeError::CredentialStore(format!(
+                    "官方授权正被另一个 ZeppBridge 进程更新：{error}"
+                ))
+            })?;
+        Ok(CommitGuard {
+            _file: file,
+            _local: local,
+        })
+    }
+
+    /// 跨进程的刷新单飞（进程内那层在 `refresh_tokens` 里）。拿不到就隔一会儿
+    /// 再试，最多等一次刷新往返的上限；等不到也照常往下走——写回本来就按比较后
+    /// 交换，最坏只是多刷一次。
+    pub(crate) async fn refresh_flight(&self) -> Option<ExclusiveWriteGuard> {
+        let deadline = tokio::time::Instant::now() + REFRESH_WAIT;
+        loop {
+            match acquire_official(&self.dir, OfficialLock::Refresh, Duration::ZERO) {
+                Ok(guard) => return Some(guard),
+                Err(WriteLockError::Busy { .. }) if tokio::time::Instant::now() < deadline => {
+                    tokio::time::sleep(Duration::from_millis(120)).await;
+                }
+                Err(error) => {
+                    tracing::warn!("没拿到官方令牌的跨进程刷新锁，照常刷新: {error}");
+                    return None;
+                }
+            }
+        }
+    }
+
     fn meta_path(&self) -> PathBuf {
         self.dir.join(META_FILE)
     }
@@ -125,7 +179,7 @@ impl OfficialStore {
         connected_at: i64,
         generation: u64,
     ) -> Result<bool> {
-        let _commit = commit();
+        let _commit = self.commit()?;
         if GENERATION.load(Ordering::SeqCst) != generation {
             return Ok(false);
         }
@@ -143,7 +197,7 @@ impl OfficialStore {
         fresh: &OfficialTokens,
         now: i64,
     ) -> Result<bool> {
-        let _commit = commit();
+        let _commit = self.commit()?;
         if !self.holds(used)? {
             return Ok(false);
         }
@@ -154,7 +208,7 @@ impl OfficialStore {
     /// 刷新被 Zepp 明确拒绝：只有库里仍是那把令牌才标「要重新授权」——
     /// 并发的另一次刷新可能已经换上了新令牌，不能被这次的拒绝抹掉。
     pub fn mark_needs_reauth_if_current(&self, used: &OfficialTokens) -> Result<bool> {
-        let _commit = commit();
+        let _commit = self.commit()?;
         if !self.holds(used)? {
             return Ok(false);
         }
@@ -164,7 +218,7 @@ impl OfficialStore {
 
     /// 断开：作废在途登录，再删令牌和元数据。**不碰任何健康数据。**
     pub fn disconnect(&self) -> Result<()> {
-        let _commit = commit();
+        let _commit = self.commit()?;
         GENERATION.fetch_add(1, Ordering::SeqCst);
         self.clear()
     }
