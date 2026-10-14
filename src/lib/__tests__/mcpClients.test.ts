@@ -13,7 +13,7 @@ describe('mcpClients', () => {
   it('引号包住 "--" 和带空格的路径，服务参数在最后', () => {
     const [mcp, market, install] = claudeCodeCommands({ path, data_dir_env: null })!.split('\n');
     expect(mcp).toBe(`claude mcp add --scope user zeppbridge "--" "${path}" --scope task`);
-    expect(market).toBe('claude plugin marketplace add lingcang728/ZeppBridge#v3');
+    expect(market).toBe('claude plugin marketplace add lingcang728/ZeppBridge#main');
     expect(install).toBe('claude plugin install zepp-coach@zeppbridge');
   });
 

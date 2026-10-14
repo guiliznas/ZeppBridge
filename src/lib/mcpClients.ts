@@ -19,8 +19,8 @@ export const MCP_CLIENT_NAMES: Record<McpClientId, string> = {
 
 const isStale = (sidecar: McpSidecar, client: McpClientId) => !!sidecar.stale_clients?.includes(client);
 
-/** 插件市场所在的分支。v3 还没合进 main，发 3.0 时改成 main（见计划 5F）。 */
-export const PLUGIN_MARKETPLACE_REF = 'v3';
+/** 插件市场所在的分支：3.0 起 v3 已合进 main。 */
+export const PLUGIN_MARKETPLACE_REF = 'main';
 const PLUGIN_REPO = 'lingcang728/ZeppBridge';
 const PLUGIN_ID = 'zepp-coach@zeppbridge';
 /** MCP 默认只看用户在「交给 AI」里共享出去的任务（McpTaskScopes）。 */
