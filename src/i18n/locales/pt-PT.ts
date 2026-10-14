@@ -991,6 +991,17 @@ Se precisares de alguma informação minha (que cliente utilizo, onde está o fi
       syncingProgress: (current: number, total: number) => `A sincronizar ${current}/${total}`,
       syncWait: "Aguarda até a sincronização terminar",
     },
+    'components/shell/update': {
+      newVersion: (version: string) => `Versão ${version}`,
+      ready: (version: string) => `A versão ${version} está pronta`,
+      downloading: (percent: number | null) =>
+        percent === null
+          ? 'A descarregar a nova versão'
+          : `A descarregar a nova versão ${percent}%`,
+      update: 'Atualizar',
+      waitingSync: 'A aguardar que a sincronização termine…',
+      applying: 'A atualizar…',
+    },
     'composables/useAiHandoff': {
       clipboardUnsupported:
         'Este ambiente não suporta cópia para a área de transferência',
@@ -3387,8 +3398,22 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
     'err.data_folder.open_failed': 'Não foi possível abrir a pasta de dados',
     'err.data_folder.unsupported_os': 'Abertura direta da pasta suportada apenas em Windows e macOS',
     'err.update.localappdata_missing': 'Diretório LOCALAPPDATA do Windows indisponível',
+    'err.update.launch_failed':
+      'A nova versão está no devido lugar mas não arrancou; abre-a manualmente uma vez',
     'err.update.unsafe_data_location':
       'Instalação interrompida: não foi possível confirmar que os dados sobrevivem à atualização. Fecha o ZeppBridge, copia toda a pasta data do pacote da app para Application Support do teu utilizador, corrige ZEPPBRIDGE_DATA_DIR e tenta de novo. Não apagues os dados antigos.',
+    'err.update.check_failed':
+      'Não foi possível verificar novas versões; nova tentativa no próximo arranque',
+    'err.update.download_failed':
+      'Não foi possível descarregar a nova versão (ou a assinatura não coincide); nova tentativa no próximo arranque',
+    'err.update.not_ready': 'A nova versão ainda não acabou de ser descarregada',
+    'err.update.apply_failed':
+      'Não foi possível iniciar a atualização; tenta novamente mais tarde',
+    'err.update.package_invalid':
+      'O pacote de atualização não era o esperado, pelo que esta atualização foi ignorada',
+    'err.update.swap_failed':
+      'Não foi possível substituir os ficheiros do programa; tudo foi reposto como estava',
+    'err.update.install_failed': 'Não foi possível instalar a nova versão',
     'err.ai_task.invalid': 'Parâmetros da tarefa inválidos',
     'err.ai_task.not_found': 'Tarefa não encontrada ou já eliminada',
     'err.ai_task.workout_not_found':

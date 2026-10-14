@@ -142,6 +142,20 @@ export default {
     'err.update.localappdata_missing': 'Der Windows-Pfad LOCALAPPDATA ist nicht verfügbar',
     'err.update.unsafe_data_location':
       'Installation gestoppt: Es ließ sich nicht bestätigen, dass der Datenort das Update übersteht. Beende ZeppBridge, kopiere den data-Ordner aus dem App-Paket vollständig in den Benutzer-Ordner „Application Support", korrigiere ZEPPBRIDGE_DATA_DIR und versuche es erneut. Alte Daten nicht löschen.',
+    'err.update.check_failed':
+      'Suche nach neuer Version fehlgeschlagen; wird beim nächsten Start erneut versucht',
+    'err.update.download_failed':
+      'Herunterladen der neuen Version fehlgeschlagen (oder Signatur stimmt nicht überein); wird beim nächsten Start erneut versucht',
+    'err.update.not_ready': 'Die neue Version ist noch nicht vollständig heruntergeladen',
+    'err.update.apply_failed':
+      'Aktualisierung konnte nicht gestartet werden; bitte später erneut versuchen',
+    'err.update.package_invalid':
+      'Inhalt des Update-Pakets fehlerhaft; Aktualisierung wurde übersprungen',
+    'err.update.swap_failed':
+      'Ersetzen der Programmdateien fehlgeschlagen; der vorherige Zustand wurde wiederhergestellt',
+    'err.update.install_failed': 'Installation der neuen Version fehlgeschlagen',
+    'err.update.launch_failed':
+      'Die neue Version ist bereit, konnte aber nicht gestartet werden; bitte einmal manuell öffnen',
     'err.ai_task.attachment_missing': 'Eine Anhangsdatei liegt nicht mehr an ihrem ursprünglichen Ort',
     'err.ai_task.invalid': 'Aufgabeninhalt ungültig. Prüfe die Felder',
     'err.ai_task.not_found': 'Die Analyseaufgabe existiert nicht oder wurde gelöscht',
@@ -1214,6 +1228,17 @@ Wenn du weitere Informationen von mir brauchst (welcher Client, wo die Datei lie
       connectPill: 'Konto verbinden',
       syncingProgress: (current: number, total: number) => `Synchronisieren ${current}/${total}`,
       syncWait: "Bitte warte, bis die Synchronisierung fertig ist",
+    },
+    'components/shell/update': {
+      newVersion: (version: string) => `Version ${version}`,
+      ready: (version: string) => `Version ${version} ist bereit`,
+      downloading: (percent: number | null) =>
+        percent === null
+          ? 'Neue Version wird heruntergeladen'
+          : `Neue Version wird heruntergeladen ${percent}%`,
+      update: 'Aktualisieren',
+      waitingSync: 'Warten auf Abschluss der Synchronisierung…',
+      applying: 'Wird aktualisiert…',
     },
     'composables/useAiHandoff': {
       clipboardUnsupported: 'Zwischenablage wird in dieser Umgebung nicht unterstützt',

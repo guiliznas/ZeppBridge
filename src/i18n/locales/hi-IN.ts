@@ -928,6 +928,15 @@ export default {
       syncingProgress: (current: number, total: number) => `सिंक हो रहा है ${current}/${total}`,
       syncWait: "सिंक पूरा होने तक कृपया रुकें",
     },
+    'components/shell/update': {
+      newVersion: (version: string) => `नया संस्करण ${version}`,
+      ready: (version: string) => `नया संस्करण ${version} डाउनलोड हो चुका है`,
+      downloading: (percent: number | null) =>
+        percent === null ? 'नया संस्करण डाउनलोड हो रहा है' : `नया संस्करण डाउनलोड हो रहा है: ${percent}%`,
+      update: 'अपडेट करें',
+      waitingSync: 'सिंक पूरा होने का इंतज़ार है…',
+      applying: 'अपडेट हो रहा है…',
+    },
     'composables/useAiHandoff': {
       clipboardUnsupported: 'क्लिपबोर्ड समर्थित नहीं है',
       copiedButCannotOpen: (label: string) => `कॉपी हो गया, पर ${label} नहीं खुला`,
@@ -3092,6 +3101,14 @@ Markdown में उत्तर दें।`,
     'err.update.localappdata_missing': 'LOCALAPPDATA पाथ नहीं मिला',
     'err.update.unsafe_data_location':
       'अपडेट के बाद डेटा डायरेक्टरी के सुरक्षित रहने की पुष्टि नहीं हुई; इंस्टॉल रोक दिया गया। ZeppBridge बंद करें, ऐप बंडल का data फ़ोल्डर यूज़र की Application Support डायरेक्टरी में पूरा कॉपी करें, ZEPPBRIDGE_DATA_DIR ठीक करके फिर कोशिश करें। पुराना डेटा न मिटाएँ।',
+    'err.update.check_failed': 'नए संस्करण की जांच नहीं हो सकी; अगली बार ऐप खोलने पर फिर प्रयास किया जाएगा',
+    'err.update.download_failed': 'नया संस्करण डाउनलोड नहीं हो सका (या हस्ताक्षर मेल नहीं खाया); अगली बार ऐप खोलने पर फिर डाउनलोड होगा',
+    'err.update.not_ready': 'नया संस्करण अभी पूरी तरह डाउनलोड नहीं हुआ है',
+    'err.update.apply_failed': 'अपडेट शुरू नहीं हो सका; थोड़ी देर बाद पुनः प्रयास करें',
+    'err.update.package_invalid': 'अपडेट पैकेज की सामग्री सही नहीं थी, इसलिए यह अपडेट छोड़ दिया गया',
+    'err.update.swap_failed': 'प्रोग्राम फ़ाइलें बदली नहीं जा सकीं; सब कुछ पहले जैसा कर दिया गया है',
+    'err.update.install_failed': 'नया संस्करण इंस्टॉल नहीं हो सका',
+    'err.update.launch_failed': 'नया संस्करण तैयार है लेकिन शुरू नहीं हो सका; इसे एक बार मैन्युअल रूप से खोलें',
 
     /* —— AI 任务 / 模板 / MCP —— */
     'err.ai_task.attachment_missing': 'अटैचमेंट फ़ाइल नहीं मिली',

@@ -569,6 +569,15 @@ export default {
       syncWait: "Aguarde a sincronização terminar",
     },
 
+    'components/shell/update': {
+      newVersion: (version: string) => `Versão ${version}`,
+      ready: (version: string) => `A versão ${version} está pronta`,
+      downloading: (percent: number | null) => (percent === null ? 'Baixando a nova versão' : `Baixando a nova versão ${percent}%`),
+      update: 'Atualizar',
+      waitingSync: 'Aguardando o término da sincronização…',
+      applying: 'Atualizando…',
+    },
+
     'components/StageBar': {
       notProvided: 'Não informado',
       zeroMinutes: '0 min',
@@ -3168,6 +3177,14 @@ Se precisar de alguma informação minha (qual cliente uso, onde o arquivo está
     'err.data_folder.unsupported_os': 'Abertura da pasta de dados suportada apenas no Windows e macOS',
     'err.update.localappdata_missing': 'Diretório LOCALAPPDATA do Windows não encontrado',
     'err.update.unsafe_data_location': 'Instalação interrompida: não foi possível confirmar que os dados sobreviverão à atualização. Feche o ZeppBridge, copie a pasta data inteira de dentro do app para Application Support do seu usuário, corrija ZEPPBRIDGE_DATA_DIR e tente de novo. Não apague os dados originais.',
+    'err.update.check_failed': 'Não foi possível verificar se há uma nova versão; tentará novamente na próxima inicialização',
+    'err.update.download_failed': 'Não foi possível baixar a nova versão (ou a assinatura não confere); tentará novamente na próxima inicialização',
+    'err.update.not_ready': 'O download da nova versão ainda não terminou',
+    'err.update.apply_failed': 'Não foi possível iniciar a atualização; tente novamente mais tarde',
+    'err.update.package_invalid': 'O pacote de atualização não era o esperado, portanto esta atualização foi ignorada',
+    'err.update.swap_failed': 'Não foi possível substituir os arquivos do programa; tudo foi restaurado como estava',
+    'err.update.install_failed': 'Não foi possível instalar a nova versão',
+    'err.update.launch_failed': 'A nova versão já está instalada, mas não iniciou; abra-a manualmente uma vez',
     'err.ai_task.invalid': 'Os dados da tarefa não atendem aos requisitos necessários',
     'err.ai_task.not_found': 'A tarefa de análise solicitada não foi encontrada',
     'err.ai_task.workout_not_found': 'Alguns dos treinos selecionados não foram encontrados localmente',

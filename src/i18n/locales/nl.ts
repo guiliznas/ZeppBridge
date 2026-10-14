@@ -666,6 +666,14 @@ export default {
       syncingProgress: (current: number, total: number) => `Synchroniseren ${current}/${total}`,
       syncWait: "Wacht tot de synchronisatie klaar is",
     },
+    'components/shell/update': {
+      newVersion: (version: string) => `Versie ${version}`,
+      ready: (version: string) => `Versie ${version} is gereed`,
+      downloading: (percent: number | null) => (percent === null ? 'Nieuwe versie downloaden' : `Nieuwe versie downloaden ${percent}%`),
+      update: 'Bijwerken',
+      waitingSync: 'Wachten tot synchronisatie klaar is…',
+      applying: 'Bijwerken…',
+    },
     'composables/useAiHandoff': {
       clipboardUnsupported: 'Deze omgeving kan niet naar het klembord schrijven',
       targetNotAllowed: 'Dat AI-adres staat niet in de toelatingslijst',
@@ -3464,8 +3472,16 @@ Regels: vergelijk me alleen met mijn eigen historie, niet met populatiegemiddeld
     'err.sync.not_verified_probe':
       'Controleer eerst de verbinding voordat je mogelijkheden test',
     'err.update.localappdata_missing': 'Het Windows-LOCALAPPDATA-pad is niet beschikbaar',
+    'err.update.launch_failed': 'De nieuwe versie staat klaar, maar kon niet starten; open deze eenmalig handmatig',
     'err.update.unsafe_data_location':
       'Installatie gestopt: niet te bevestigen dat de gegevensmap een update overleeft. Sluit ZeppBridge, kopieer een eventuele data-map in de app-bundel volledig naar de Application Support-map van je gebruiker, corrigeer ZEPPBRIDGE_DATA_DIR en probeer opnieuw. Verwijder de oude gegevens niet.',
+    'err.update.check_failed': 'Kon niet controleren op nieuwe versie; probeert opnieuw bij volgende start',
+    'err.update.download_failed': 'Kon nieuwe versie niet downloaden (of handtekening klopte niet); probeert opnieuw bij volgende start',
+    'err.update.not_ready': 'De nieuwe versie is nog niet klaar met downloaden',
+    'err.update.apply_failed': 'Kon het bijwerken niet starten; probeer het later opnieuw',
+    'err.update.package_invalid': 'Updatepakket bevat onjuiste gegevens; deze update is overgeslagen',
+    'err.update.swap_failed': 'Kon programmabestanden niet vervangen; alles is teruggezet zoals het was',
+    'err.update.install_failed': 'Installeren van nieuwe versie mislukt',
     'err.workout.not_found': 'Die training bestaat niet',
   },
   backendText: {
