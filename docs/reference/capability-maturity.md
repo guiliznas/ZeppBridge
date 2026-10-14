@@ -66,9 +66,6 @@ as `3.0.0-beta.N`, so beta builds from CI ship NSIS only on Windows.
   have to be requested separately from Zepp business; long date ranges are
   silently truncated, so pulls are chunked to ≤90 days; official hourly steps
   are incomplete, so the legacy channel's per-minute data stays primary.
-- **Official token refresh**: single-flight within a process; it cannot stop
-  another process (the CLI) refreshing at the same moment, and across processes
-  only compare-before-write-back protects it.
 - **Switching accounts**: one `data` folder holds one account; switching means
   closing the app and moving the `data` folder away. When both channels are on
   with different accounts, the official supplementary sync only logs it and

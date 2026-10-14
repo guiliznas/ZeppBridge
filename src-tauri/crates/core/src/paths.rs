@@ -410,16 +410,12 @@ pub fn other_libraries_on_this_machine(data_dir: &Path) -> Vec<PathBuf> {
 /// Copy-or-move leftover AppData libraries into the install-local folder.
 /// Existing destination files are never overwritten.
 ///
-/// v3 注记：`legacy_source_dirs()` 列出的全部是「ZeppBridge」（2.x）产品线
-/// 的目录；3.x 线开发期间与 2.x 并存（当时叫 ZeppBridge3），与日常使用的 2.x
-/// 共存于同一台机器。把 2.x 的 AppData 遗留库搬进 v3 的 data/ 等于从还在
-/// 用的产品手里抢数据，所以 3.x 线整体跳过这次搬迁。2026-09-30 起本机不再
-/// 并行跑 2.x、测试版也改回叫 ZeppBridge；正式 3.0 发布前要把这道跳过去掉，
-/// 让还停在 AppData 时代的老用户能搬过来（v3 待办「发布 3.0 前的升级兼容清单」）。
+/// v3 注记：3.x 开发期间与 2.x 并存（当时叫 ZeppBridge3），这里曾整体跳过，免得从
+/// 还在用的 2.x 手里抢数据。2026-09-30 起测试版改回叫 ZeppBridge、产品名和
+/// identifier 与 2.x 相同、本机不再并行跑 2.x，3.0 是 2.x 的原地升级，于是
+/// 2026-10-14 去掉了那道跳过：还停在 AppData 时代的老用户升级到 3.x 也能搬过来。
+/// 目的地已有的文件照旧一个不覆盖（`zepp.db` 在就整组不动）。
 pub fn relocate_legacy_data(data_dir: &Path) -> Option<String> {
-    if env!("CARGO_PKG_VERSION").starts_with("3.") {
-        return None;
-    }
     let mut failed = Vec::new();
     for source in legacy_source_dirs() {
         if source == data_dir {
