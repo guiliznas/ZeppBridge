@@ -25,3 +25,10 @@ it('repeated keyboard events cannot restart a hold or deliver twice', () => {
   step(600); expect(sent).toHaveBeenCalledTimes(1);
   hold.keyup({code:'Space',preventDefault} as unknown as KeyboardEvent); expect(hold.progress.value).toBe(0);
 });
+it('a frame stamped before the press never reports negative progress', () => {
+  // rAF passes the frame's start time, which can precede the performance.now() taken on press.
+  const sent = vi.fn(), hold = usePressHold(sent);
+  clock = 1000; hold.start(); step(984);
+  expect(hold.progress.value).toBe(0);
+  expect(Number.isNaN(hold.progress.value ** 2.2)).toBe(false);
+});

@@ -5,7 +5,8 @@ export const usePressHold = (complete: () => void, duration = 600) => {
   let frame = 0, started = 0;
   const cancel = () => { cancelAnimationFrame(frame); holding.value = false; progress.value = 0; };
   const tick = (at: number) => {
-    progress.value = Math.min(1, (at - started) / duration);
+    // rAF 给的是这一帧开始的时间，可能早于按下时记的 performance.now()：第一帧会是负数，夹到 0（负数做小数次幂是 NaN）。
+    progress.value = Math.max(0, Math.min(1, (at - started) / duration));
     if (progress.value === 1) { holding.value = false; complete(); }
     else frame = requestAnimationFrame(tick);
   };

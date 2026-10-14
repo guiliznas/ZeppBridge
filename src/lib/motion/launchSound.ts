@@ -51,7 +51,7 @@ export const chargeHum = (): ChargeHum => {
     set: (level) => {
       if (stopped) return;
       const t = ac.currentTime;
-      const k = Math.max(0, Math.min(1, level));
+      const k = Number.isFinite(level) ? Math.max(0, Math.min(1, level)) : 0;
       osc.frequency.setTargetAtTime(55 + k * 130, t, 0.03);
       sub.frequency.setTargetAtTime(38 + k * 40, t, 0.03);
       filter.frequency.setTargetAtTime(180 + k * 1400, t, 0.03);
