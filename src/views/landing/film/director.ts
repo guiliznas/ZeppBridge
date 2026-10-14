@@ -1,7 +1,8 @@
 import type { PlaybackClock } from '../playback';
 import type { DemoPresentation } from '../../../demo/presentation';
-import type { Camera, Chapter, Pose, Shot, Stage } from './types';
+import type { Camera, Pose, Shot, Stage } from './types';
 import type { CaptionKey } from './copy';
+import type { LandingLocale } from '../../../composables/useLandingLocale';
 
 /** 演示应用在窗口里的固定尺寸（CSS 像素）。镜头、指针都用这套坐标。 */
 export const APP_W = 1280;
@@ -18,7 +19,7 @@ interface Point { x: number; y: number }
  */
 export class Director {
   private pointerAt: Point = { x: APP_W / 2, y: APP_H / 2 };
-  constructor(readonly view: Window, readonly clock: PlaybackClock, readonly stage: Stage) {}
+  constructor(readonly view: Window, readonly clock: PlaybackClock, readonly stage: Stage, readonly locale: LandingLocale = 'en') {}
 
   get api(): DemoPresentation {
     const api = this.view.__ZB_PRESENTATION__;
@@ -193,14 +194,7 @@ export const frame = (r: { x: number; y: number; width: number; height: number }
 
 export interface ShotTiming { chapter: string; shot: string; planned: number; actual: number }
 
-/**
- * 放一章：每一镜先摆姿态、上字幕，做完动作后补足到计划时长。
- * 返回每镜实际用时，录片和调节奏时看哪一镜超了。
- */
-export async function playChapter(chapter: Chapter, director: Director, onShot?: (timing: ShotTiming) => void): Promise<void> {
-  for (const shot of chapter.shots) await playShot(chapter.id, shot, director, onShot);
-}
-
+/** 放一镜：先摆姿态、上字幕，做完动作后补足到计划时长；回报实际用时（录片和调节奏时看哪一镜超了）。 */
 export async function playShot(chapter: string, shot: Shot, director: Director, onShot?: (timing: ShotTiming) => void) {
   const start = director.clock.elapsed();
   director.stage.shot(chapter, shot.id);

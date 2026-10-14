@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { PlaybackClock } from '../playback';
 import { useShowcase } from '../useShowcase';
-import { Director, playChapter, type ShotTiming } from './director';
+import { Director, playShot, type ShotTiming } from './director';
 import { FILM } from './chapters';
 import { filmCaption, type CaptionKey } from './copy';
 import type { Camera, Pose } from './types';
@@ -73,6 +73,10 @@ const stage = {
 };
 
 const timings: ShotTiming[] = [];
+/* 录片 / 调试：?from=<章>:<镜> 从那一镜开始放（只在录片模式认）。 */
+const fromParam = props.record ? new URLSearchParams(location.search).get('from')?.split(':') ?? null : null;
+const startChapter = fromParam ? Math.max(0, FILM.findIndex((chapter) => chapter.id === fromParam[0])) : 0;
+const startShot = fromParam?.[1] ?? null;
 const stop = () => { generation++; controller?.abort(); clock?.dispose(); };
 const run = async (from = 0) => {
   stop();
@@ -82,14 +86,20 @@ const run = async (from = 0) => {
   clock = new PlaybackClock(controller.signal);
   clock.setPaused(!show.running.value);
   finished.value = false; timings.length = 0;
-  const director = new Director(frame.value.contentWindow, clock, stage);
+  const director = new Director(frame.value.contentWindow, clock, stage, props.locale);
   try {
     director.api.pause(false);
+    const note = (timing: ShotTiming) => {
+      timings.push(timing);
+      if (timing.actual > timing.planned) console.info(`[film] ${timing.chapter}/${timing.shot} ran ${timing.actual}ms > ${timing.planned}ms`);
+    };
+    let skipTo = from === startChapter ? startShot : null;
     for (const chapter of FILM.slice(from)) {
-      await playChapter(chapter, director, (timing) => {
-        timings.push(timing);
-        if (timing.actual > timing.planned) console.info(`[film] ${timing.chapter}/${timing.shot} ran ${timing.actual}ms > ${timing.planned}ms`);
-      });
+      for (const shot of chapter.shots) {
+        if (skipTo && shot.id !== skipTo) continue;
+        skipTo = null;
+        await playShot(chapter.id, shot, director, note);
+      }
     }
     if (token !== generation) return;
     finished.value = true;
@@ -109,7 +119,7 @@ const message = (event: MessageEvent) => {
   if (event.origin !== location.origin || event.source !== frame.value?.contentWindow) return;
   if (event.data?.source !== 'zeppbridge-demo' || event.data.type !== 'ready') return;
   ready.value = true;
-  void run();
+  void run(startChapter);
 };
 watch(show.running, (running) => {
   clock?.setPaused(!running);
