@@ -4,15 +4,16 @@ import type { DayStripRow } from '../types/timeBridge';
 import { addDays } from '../lib/aiTask/bridgeScale';
 import { dayKey } from './rng';
 
-/** Browser demo adapter: derive the same seven rows from its existing synthetic dataset. */
+/** Browser demo adapter: derive the same seven rows from its existing synthetic dataset.
+    Same window as the desktop command (clamp 1..186): the card table's six months need up to 184 days. */
 export const demoDayStrip = (data: DemoData, count: number, end: string): DayStripRow[] => {
   const specs: [AiTaskCategory, string, string][] = [
     ['sleep','duration_minutes','min'], ['recovery','readiness','score'],
     ['resting_hr','resting_hr','bpm'], ['heart_rate','heart_rate','bpm'], ['workout','moving_seconds','min'],
     ['training','training_load','load'], ['body','weight','kg'],
   ];
-  return specs.map(([category,metric,unit]) => ({ category, metric, cells: Array.from({ length: Math.min(90,Math.max(1,count)) },(_,i) => {
-    const date = addDays(end,1-count+i);
+  return specs.map(([category,metric,unit]) => ({ category, metric, cells: Array.from({ length: Math.min(186,Math.max(1,count)) },(_,i) => {
+    const date = addDays(end,1-Math.min(186,Math.max(1,count))+i);
     const workouts = data.workouts.filter(w => dayKey(new Date(w.start_time)) === date);
     const sleeps = data.sleeps.filter(s => dayKey(new Date(s.end_time)) === date);
     const reading = data.metrics[metric]?.find(p => p.date === date);

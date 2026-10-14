@@ -6,10 +6,20 @@ import { demoPreview, demoTemplates } from '../ai';
 import { createDemoPlan } from '../plan';
 import { dayKey, at } from '../rng';
 import { newTaskDraft } from '../../lib/aiTask/draft';
+import { demoDayStrip } from '../bridge';
 
 const NOW = new Date(2026, 9, 2, 12, 0, 0);
 
 describe('演示数据集', () => {
+  it('日条带和桌面命令一样给到 186 天：牌桌 6 个月不能只剩前 90 天', () => {
+    const data = buildDemoData(NOW);
+    const rows = demoDayStrip(data, 184, dayKey(NOW));
+    const sleep = rows.find(r => r.category === 'sleep')!;
+    expect(sleep.cells).toHaveLength(184);
+    expect(sleep.cells.at(-1)!.date).toBe(dayKey(NOW));
+    expect(sleep.cells.slice(-30).some(c => c.has)).toBe(true);
+  });
+
   it('血压 mock 保持成对趋势、稀疏日期和可选脉搏', () => {
     const data = buildDemoData(NOW);
     const series = metricSeries(data, 30, ['blood_pressure_systolic', 'blood_pressure_diastolic', 'blood_pressure_pulse']);
