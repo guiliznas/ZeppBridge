@@ -268,10 +268,10 @@ export class Director {
   }
   pose(next: Pose, ms = 800) { this.stage.pose(next, ms / SPEED); return this.wait(ms); }
   /**
-   * 换场：窗口淡进光晕里（不黑场，10-14 用户：样片的转场丝滑，我们的太生硬），期间做 `setup`（换页、开牌桌），
-   * 再从微微放大处淡回来。镜头同时复位。
+   * 换场：窗口边模糊边淡进光晕里（不黑场，10-14 用户：样片的转场丝滑，我们的太生硬），期间做 `setup`（换页、开牌桌），
+   * 再从模糊、微微放大处清晰浮回来。镜头同时复位。
    */
-  async cut(setup: () => Promise<void>, ms = 240) {
+  async cut(setup: () => Promise<void>, ms = 300) {
     this.stage.dissolve(true, ms / SPEED); this.hidePointer(); await this.wait(ms);
     this.stage.camera({ x: 0, y: 0, zoom: 1 }, 0);
     await setup();

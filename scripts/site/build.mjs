@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { spawn, spawnSync } from 'node:child_process';
 import { createServer as createNetServer } from 'node:net';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
@@ -24,6 +24,8 @@ try {
   await run(python, ['scripts/site/verify-demo.py', '--url', `http://127.0.0.1:${port}`]);
   await run(python, ['scripts/site/capture-features.py', '--all', '--url', `http://127.0.0.1:${port}`]);
 } finally { await server.close(); }
+// 开场短片的配乐是合成出来的（public/landing/media 不进 git）：缺了就现做一份，不下载任何东西。
+if (!existsSync(resolve(root, 'public/landing/media/film-score.m4a'))) await run(python, ['scripts/site/compose-score.py']);
 await run(node, ['node_modules/vite/bin/vite.js', 'build', '--mode', 'site']);
 mkdirSync(resolve(root, '.site-cache/site-dist'), { recursive: true });
 writeFileSync(resolve(root, '.site-cache/site-dist/robots.txt'), 'User-agent: *\nDisallow: /\n');

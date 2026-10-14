@@ -1,6 +1,6 @@
-import { SPEED, type Director } from '../director';
+import type { Director } from '../director';
 import type { Chapter, Shot } from '../types';
-import { FILM_SCRIPT, filmLocale } from '../copy';
+import { filmLocale, filmScript } from '../copy';
 import { lookIntro, prologue } from './look';
 import { lookCards, openTable } from './cards';
 import { finale } from './settings';
@@ -27,23 +27,46 @@ const shot = (list: Shot[], id: string): Shot => {
 /** 沿用长版的一镜，只改时长（和姿态 / 字幕）。 */
 const reuse = (list: Shot[], id: string, ms: number, extra: Partial<Shot> = {}): Shot => ({ ...shot(list, id), ms, ...extra });
 
-/**
- * 展示墙：窗口侧转着浮在光晕上，整镜慢慢转回来，镜头同时缓缓推近。
- * 墙盖着应用，`warm` 趁这时在底下把后面要切去的页先走一遍——第一次进「交给 AI」、设置页要一两秒，
- * 不预热的话换场时只剩光晕和字幕干等。
- */
-const wall = (id: string, kind: 'glass' | 'cards', caption: Shot['caption'], ms: number, warm: string[] = []): Shot => ({
-  id, ms, pose: 'tilt', caption,
+/** 展示墙：窗口正面浮在光晕上，镜头缓缓推近（10-14 用户：不要左右侧转）。 */
+const wall = (id: string, kind: 'glass' | 'cards', caption: Shot['caption'], ms: number): Shot => ({
+  id, ms, pose: 'full', caption,
   async run(d) {
     await d.cut(async () => { await d.wall(kind); });
-    void d.pose('tiltBack', (ms - 400) * SPEED);
     await d.wait(500);
-    const push = d.camera(d.all(`.film-wall.${kind} .wall-row`), { zoom: 1.16, fill: 1, ms: ms - 1200, hold: ms - 1200 });
-    for (const path of warm) await d.go(path, 0);
-    await push;
+    await d.camera(d.all(`.film-wall.${kind} .wall-row`), { zoom: 1.16, fill: 1, ms: ms - 1200, hold: ms - 1200 });
   },
 });
 
+/**
+ * 片头：先只有光晕（约一秒），这时在看不见的窗口里把后面要用的先走一遍——展示墙模块、「交给 AI」页、
+ * 设置页第一次打开都要几百毫秒，放进镜头里做画面会停一下（录像里整整停过 0.7 秒）；最后把玻璃墙先挂好。
+ * 预热完标语才逐字入焦（入焦时页面已经闲下来，字不会卡）。
+ */
+const opening: Shot = {
+  ...shot(prologue.shots, 'tagline'), ms: 3000, caption: null,
+  async run(d) {
+    const start = d.clock.elapsed();
+    await shot(prologue.shots, 'tagline').run(d);
+    for (const path of ['/ai', '/settings', '/']) await d.go(path, 0);
+    await d.wall('glass');
+    await d.settle(600);
+    // 1.5 秒（第三拍）上字，和配乐的钟片动机对齐（compose-score.py 的 TAGLINE_AT）；预热一般要 1.4 秒左右。
+    const rest = 1500 - (d.clock.elapsed() - start);
+    if (rest > 0) await d.clock.wait(rest);
+    d.caption('tagline');
+  },
+};
+
+/** 玻璃墙：墙在片头就挂好了，这一镜只是窗口从模糊里浮出来、镜头推近。 */
+const glass: Shot = {
+  id: 'glass', ms: 4000, pose: 'full', caption: 'glass',
+  async run(d) {
+    await d.wait(300);
+    await d.camera(d.all('.film-wall.glass .wall-row'), { zoom: 1.16, fill: 1, ms: 2600, hold: 2600 });
+  },
+};
+
+const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
 const pileOnto = async (d: Director, from: HTMLElement, onto: HTMLElement) => {
   const a = d.center(from), b = d.center(onto);
   await d.drag(from, { x: b.x - a.x, y: b.y - a.y }, { ms: 480, settle: 380, grab: 140 });
@@ -53,13 +76,13 @@ export const short: Chapter = {
   id: 'short',
   label: 'tagline',
   shots: [
-    reuse(prologue.shots, 'tagline', 2500),
-    wall('glass', 'glass', 'glass', 4000, ['/ai', '/settings']),
+    opening,
+    glass,
     reuse(lookIntro, 'morph', 4000),
     wall('deckwall', 'cards', 'poker', 3000),
     {
       // 一层层展开：6 个月 → 点进一月（月牌收到左上角、周牌展开）→ 点进一周（日牌展开）。
-      id: 'layers', ms: 6000, pose: 'full', caption: 'poker',
+      id: 'layers', ms: 6500, pose: 'full', caption: 'poker',
       async run(d) {
         await d.cut(() => openTable(d));
         await d.tap(await d.find(`${TABLE} .segment-item`, { index: 2 }), { after: 500, travel: 240 });
@@ -73,15 +96,26 @@ export const short: Chapter = {
       async run(d) {
         const days = d.all(DAY);
         if (days.length >= 3) {
+          const target = d.center(days[days.length - 2]!);
           await pileOnto(d, days[days.length - 1]!, days[days.length - 2]!);
-          await d.hold(days[days.length - 2]!, 600, { after: 400 });
+          // 叠好后牌会重新渲染，原来那个元素可能已经不在了：按落点重新找那一叠再长按。
+          await d.settle(800);
+          const nearest = d.all(DAY).sort((a, b) => dist(d.center(a), target) - dist(d.center(b), target))[0];
+          if (nearest) await d.hold(nearest, 600, { after: 400 });
+        }
+        // 偶尔叠牌落在了动画半途、长按没把整叠送进去（录片时三次里会碰上一次）：改用翻面点「✓ 交给 AI」送一张，箱子不能空着开。
+        // 牌飞进箱子要一会儿，箱子落定才变成「有牌」：先等它，真没进去再兜底。
+        const filled = await d.find(BOX, { limit: 2500 }).then(() => true, () => false);
+        if (!filled) {
+          await d.tap(await d.find(DAY, { index: 1 }), { after: 400 });
+          await d.tap(`${TABLE} .pcard.confirm .back-send`, { after: 500 });
         }
         await d.tap(BOX, { after: 600 });
         await d.tap('.box-spread .spread-foot .foot-button', { after: 650 });
       },
     },
     reuse(lookCards, 'lines', 5000),
-    reuse(lookCards, 'deck', 4000),
+    reuse(lookCards, 'deck', 4500),
     {
       // 章节卡：训练计划，交给 AI。窗口退场时在后面换到「交给 AI」页，台词换成这一版。
       id: 'planIntro', ms: 1500, pose: 'title', caption: 'planIntro',
@@ -89,16 +123,16 @@ export const short: Chapter = {
         d.hidePointer();
         await d.clear();
         await d.go('/ai', 200);
-        d.api.script([{ prompt: FILM_SCRIPT[filmLocale(d.locale)].prompt, answer: FILM_SCRIPT[filmLocale(d.locale)].answer }]);
+        d.api.script([{ prompt: filmScript(filmLocale(d.locale)).prompt, answer: filmScript(filmLocale(d.locale)).answer }]);
       },
     },
     {
       // 身体怎样，直接告诉它：在自定义问题里一个字一个字写下身体状况。
-      id: 'tell', ms: 3500, pose: 'full', caption: 'tell',
+      id: 'tell', ms: 3000, pose: 'full', caption: 'tell',
       async run(d) {
         await d.camera('.fcard', { zoom: 1.6, fill: 0.85, ms: 500, hold: 100 });
         const field = d.all('.fcard textarea, .fcard input')[0];
-        if (field) await d.type(field, FILM_SCRIPT[filmLocale(d.locale)].prompt, { replace: true, perChar: filmLocale(d.locale) === 'zh' ? 34 : 14 });
+        if (field) await d.type(field, filmScript(filmLocale(d.locale)).prompt, { replace: true, perChar: filmLocale(d.locale) === 'zh' ? 34 : 14 });
         await d.camera(null, { ms: 400, hold: 100 });
       },
     },
@@ -115,7 +149,7 @@ export const short: Chapter = {
     },
     {
       // 电脑上定稿，手表上开练：一周计划落到电脑上，窗口让到左边、手表进来；长按发到手表，训练卡飞过去，表盘亮起。
-      id: 'toWatch', ms: 6500, pose: 'watch', caption: 'toWatch',
+      id: 'toWatch', ms: 6000, pose: 'watch', caption: 'toWatch',
       async run(d) {
         await d.cut(async () => { await d.clear(); d.api.script(null); await d.go('/ai/plan', 200); });
         d.watch('shown');
@@ -126,7 +160,7 @@ export const short: Chapter = {
         await d.wait(1600);
       },
     },
-    reuse(finale.shots, 'free', 2000, { async run(d) { d.hidePointer(); d.watch('hidden'); await d.clear(); } }),
+    reuse(finale.shots, 'free', 1500, { async run(d) { d.hidePointer(); d.watch('hidden'); await d.clear(); } }),
     reuse(finale.shots, 'try', 2500),
   ],
 };

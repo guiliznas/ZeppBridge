@@ -94,23 +94,31 @@ const en: Record<CaptionKey, Caption> = {
   toWatch: { title: 'Finalise on your computer. Train on your watch.' },
 };
 
-const BY_LOCALE: Partial<Record<LandingLocale, Record<CaptionKey, Caption>>> = { zh, en };
+export interface FilmScript { prompt: string; answer: string; watchName: string; watchMeta: string }
+/** 其余八种语言各一个文件 `film/locales/<语言>.ts`（default 导出这个结构），放进去就生效。 */
+export interface FilmPack { captions: Record<CaptionKey, Caption>; script: FilmScript }
 
-export const filmCaption = (locale: LandingLocale, key: CaptionKey): Caption => (BY_LOCALE[locale] ?? en)[key];
+const PACKS: Partial<Record<LandingLocale, FilmPack>> = {};
+for (const [path, module] of Object.entries(import.meta.glob<{ default: FilmPack }>('./locales/*.ts', { eager: true }))) {
+  PACKS[path.slice('./locales/'.length, -'.ts'.length) as LandingLocale] = module.default;
+}
 
 /**
- * 宣传片只出中、英两版（10-14 用户定）：字幕和 iframe 里的界面必须是同一种语言，
- * 所以别的语言的访客看英文版——不然就是英文字幕配西语界面。
+ * 字幕和 iframe 里的界面必须是同一种语言：某语言的字幕文件还没到，这一语言的访客整片看英文版，
+ * 不然就是英文字幕配法语界面。
  */
-export type FilmLocale = 'zh' | 'en';
-export const filmLocale = (locale: LandingLocale): FilmLocale => (locale === 'zh' ? 'zh' : 'en');
+export type FilmLocale = LandingLocale;
+export const filmLocale = (locale: LandingLocale): FilmLocale => (locale === 'zh' || locale === 'en' || PACKS[locale] ? locale : 'en');
+
+export const filmCaption = (locale: FilmLocale, key: CaptionKey): Caption =>
+  (locale === 'zh' ? zh : locale === 'en' ? en : PACKS[locale]?.captions ?? en)[key];
 
 /**
  * 短片「训练计划」那段的台词：访客把身体状况发给 AI（附上记录），AI 读完排出一周。
  * 演示对话是合成的示例（界面上标着「示例对话」），排出的一周就是演示数据里那份计划（demo/plan.ts）：
  * 今天休息、明天轻松跑（接回时改成 40 分钟）、恢复骑行、节奏跑、间歇、长距离。
  */
-export const FILM_SCRIPT: Record<FilmLocale, { prompt: string; answer: string; watchName: string; watchMeta: string }> = {
+const SCRIPT: Record<'zh' | 'en', FilmScript> = {
   zh: {
     prompt: '最近左膝有点酸，这两晚也没睡好。帮我排下周的训练，强度低一点。',
     answer: '看了你附上的记录：这两晚睡得偏短，静息心率比平时略高；膝盖不舒服，先减量，不做快跑。\n\n下周这样排：今天休息；明天 40 分钟轻松跑起步，第二天恢复骑行；节奏跑、间歇和长距离隔天穿插，每次都留出热身和放松。计划已整理好，接回 ZeppBridge 就能逐日查看、发到手表。',
@@ -124,3 +132,6 @@ export const FILM_SCRIPT: Record<FilmLocale, { prompt: string; answer: string; w
     watchMeta: '40 min',
   },
 };
+
+export const filmScript = (locale: FilmLocale): FilmScript =>
+  locale === 'zh' || locale === 'en' ? SCRIPT[locale] : PACKS[locale]?.script ?? SCRIPT.en;

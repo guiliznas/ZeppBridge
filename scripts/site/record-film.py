@@ -85,11 +85,22 @@ def record(url: str, lang: str, cut: str, work: Path, limit_s: float) -> tuple[l
         print("  page:", line)
     if not done:
         raise SystemExit("film did not finish in time")
+    if any("failed:" in line for line in errors):
+        raise ShotFailed("a shot failed (see page lines above)")
     if not marks:
         raise SystemExit("no [film:shot] marks: is the build older than the recorder?")
     print("  shots:", ", ".join(f"{t['shot']} {t['used']}/{t['planned']}" for t in done))
+    late = [t["shot"] for t in done if t["used"] > t["planned"]]
+    if late:
+        print("  WARNING: these shots ran past their planned length, so cuts drift off the score:", ", ".join(late))
+    if cut == "short" and any(t["used"] > t["planned"] + 150 for t in done):
+        raise ShotFailed("a shot overran by more than 150ms; the score would be off the beat")
     total = sum(t["actual"] for t in done) / 1000
     return frames, marks[0][1], marks[0][1] + total + 0.3
+
+
+class ShotFailed(RuntimeError):
+    pass
 
 
 def resample(frames: list[tuple[float, Path]], start: float, end: float, fps: int, out: Path) -> int:
@@ -121,6 +132,7 @@ def main() -> None:
     parser.add_argument("--fps", type=int, default=60)
     parser.add_argument("--out", default=str(ROOT / "output" / "film"))
     parser.add_argument("--work", default=None)
+    parser.add_argument("--score", default=str(ROOT / "output" / "film" / "score.wav"), help="配乐 wav（只配短片；不存在就出无声版）")
     args = parser.parse_args()
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -128,7 +140,16 @@ def main() -> None:
     if work.exists():
         shutil.rmtree(work)
     print(f"recording {args.cut} / {args.lang} …")
-    frames, start, end = record(args.url, args.lang, args.cut, work, 300 if args.cut == "full" else 120)
+    # 应用动画偶尔没落定就点了下一下，那一镜会被跳过：整条重录（最多三次），不交出缺镜的片子。
+    for attempt in range(3):
+        try:
+            frames, start, end = record(args.url, args.lang, args.cut, work, 300 if args.cut == "full" else 120)
+            break
+        except ShotFailed as error:
+            print(f"  attempt {attempt + 1}: {error}; recording again")
+            shutil.rmtree(work, ignore_errors=True)
+    else:
+        raise SystemExit("three takes in a row had a failed shot")
     concat = work / "frames.txt"
     count = resample(frames, start, end, args.fps, concat)
     print(f"  {len(frames)} screencast frames → {count} output frames ({count / args.fps:.1f}s)")
@@ -138,7 +159,25 @@ def main() -> None:
            "-threads", "2", "-x264-params", "threads=2", "-movflags", "+faststart", str(target)]
     subprocess.run(cmd, check=True, **low_priority())
     shutil.rmtree(work)
+    score = Path(args.score)
+    if args.cut == "short" and score.exists():
+        mux(target, score)
     print("  wrote", target)
+
+
+def mux(video: Path, score: Path) -> None:
+    """配乐（compose-score.py）混进视频：两遍 loudnorm 线性对齐到 -14 LUFS（各视频平台的常用响度），画面不重编码。"""
+    probe = subprocess.run(["ffmpeg", "-hide_banner", "-threads", "2", "-i", str(score), "-af", "loudnorm=I=-14:TP=-1:LRA=11:print_format=json",
+                            "-f", "null", "-"], capture_output=True, text=True, check=True, **low_priority())
+    m = json.loads(probe.stderr[probe.stderr.rindex("{"):probe.stderr.rindex("}") + 1])
+    norm = (f"loudnorm=I=-14:TP=-1:LRA=11:linear=true:measured_I={m['input_i']}:measured_TP={m['input_tp']}"
+            f":measured_LRA={m['input_lra']}:measured_thresh={m['input_thresh']}:offset={m['target_offset']}")
+    scored = video.with_suffix(".scored.mp4")
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-threads", "2", "-i", str(video), "-i", str(score), "-map", "0:v", "-map", "1:a",
+                    "-c:v", "copy", "-af", norm, "-ar", "48000", "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart",
+                    str(scored)], check=True, **low_priority())
+    scored.replace(video)
+    print("  scored with", score.name)
 
 
 if __name__ == "__main__":

@@ -17,3 +17,5 @@ export const FULL_FILM: Chapter[] = [prologue, look, connect, read, ai, settings
 export const SHORT_FILM: Chapter[] = [short];
 /** 这次放哪一版：默认短片，地址里带 `cut=full` 放长版。 */
 export const pickFilm = (search: string): Chapter[] => (new URLSearchParams(search).get('cut') === 'full' ? FULL_FILM : SHORT_FILM);
+/** 配乐（scripts/site/compose-score.py）只为短片编排；长版不配乐。 */
+export const FILM_SCORE = '/landing/media/film-score.m4a';
