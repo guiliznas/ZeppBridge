@@ -46,7 +46,7 @@ const missing = (code: string) => props.issues.some((issue) => issue.message_cod
 const apply = (change: (document: PlanDocument, index: number) => PlanDocument) => hub.queueEdit((doc) => {
   const index = props.locate(doc);
   return index === null ? doc : change(doc, index);
-});
+}, [props.workout.date]);
 
 const sportItems = computed(() => (['running', 'cycling', 'pool_swim', 'open_water_swim'] as PlanSport[]).map((value) => ({ value, label: sport(value) })));
 const variantItems = computed(() => SPORT_VARIANTS[props.workout.sport].map((value) => ({ value, label: variant(props.workout.sport, value) ?? value })));

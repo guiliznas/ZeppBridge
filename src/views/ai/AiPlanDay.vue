@@ -82,7 +82,7 @@ const canDelete = computed(() => hub.editable.value && !!row.value && (row.value
 const canEdit = computed(() => hub.editable.value && !!row.value);
 /** 能存成模板的：校验通过的训练（缺东西的先补齐再存）。 */
 const savable = computed(() => entries.value.filter((entry) => !entry.held));
-const library = usePlanAdd((workout) => hub.queueEdit((doc) => addWorkout(doc, workout, date.value)));
+const library = usePlanAdd((workout) => hub.queueEdit((doc) => addWorkout(doc, workout, date.value), [date.value]));
 const menu = ref(false);
 const moreButton = ref<HTMLElement | null>(null);
 const menuPop = ref<InstanceType<typeof GlassPopover> | null>(null);

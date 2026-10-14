@@ -476,3 +476,42 @@ fn editing_a_sent_plan_repushes_only_the_weeks_that_changed() {
     assert_eq!(dates(&undo[0].body), ["2026-10-11"]);
     assert_eq!(undo[0].body["workouts"][0]["workoutName"], "B");
 }
+
+#[test]
+fn clearing_the_watch_removes_every_week_not_just_this_one() {
+    // 10-14 用户反馈：发过两周的计划，「清空手表计划」只清了本周，下周的训练还留在手表上。
+    let db = Database::in_memory().unwrap();
+    deliver(
+        &db,
+        publish(
+            &db,
+            PublishRequest::Draft {
+                id: draft(
+                    &db,
+                    json!({ "workouts": [run("2026-10-06", "A"), run("2026-10-11", "B")] }),
+                ),
+            },
+            false,
+        ),
+    );
+    let batch = sends(publish(&db, PublishRequest::Clear, true));
+    let plan: Vec<(String, SendRole)> = batch
+        .iter()
+        .map(|s| (s.window_start.to_string(), s.role))
+        .collect();
+    assert_eq!(
+        plan,
+        [
+            ("2026-10-09".to_string(), SendRole::Placeholder),
+            (TODAY.to_string(), SendRole::Clear),
+        ],
+        "先用占位清掉下一周，再用空数组清本周（顺带盖掉占位）"
+    );
+    for send in batch {
+        db.finish_plan_publish(send.publish_id, &SendOutcome::Delivered)
+            .unwrap();
+    }
+    let overview = db.plan_overview(day(TODAY)).unwrap();
+    assert!(overview.planned.is_empty(), "两周都不该再算生效");
+    assert!(sent_names(&db).is_empty());
+}

@@ -393,7 +393,11 @@ impl Database {
                 if !confirm_clear {
                     return Ok(Prepared::NeedsClearConfirmation);
                 }
-                deactivated = self.active_ids_between(current.start, current.end())?;
+                // 清掉今天起**全部**窗口里 ZeppBridge 发过去的训练，不只本周（10-14 用户：
+                // 只清本周时，下周的训练留在手表上，手机上又找不到删除的地方）。
+                // 未来窗口由下面的占位 + 重推前一窗口清掉（v2::clear_future_window）。
+                let last = horizon(today).last().map_or(current.end(), |w| w.end());
+                deactivated = self.active_ids_between(current.start, last)?;
                 self.set_active(&deactivated, false)?;
             }
             PublishRequest::Roll => {}

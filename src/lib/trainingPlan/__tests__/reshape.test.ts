@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { reactive } from 'vue';
-import { moveDay, deleteDay, retypeWorkout, deleteWorkout, insertDay } from '../reshape';
+import { moveDay, deleteDay, retypeWorkout, deleteWorkout, insertDay, absorbPlanned } from '../reshape';
 import type { PlanDocument } from '../../../types/trainingPlan';
 const document = (): PlanDocument => ({ from:'2026-10-04',to:'2026-10-10',summary:'A week',workouts:[{date:'2026-10-05',name:'Run',sport:'running',steps:[{kind:'active',duration:'30min',target:'hr 120-140'}]}],rest:[{date:'2026-10-04',bedtime:'22:30',sleepTarget:'8h30m',note:'Recover'}] });
 describe('whole-day reshaping', () => {
@@ -58,5 +58,32 @@ describe('inserting a day into a gap', () => {
   });
   it('refuses to push a day outside the declared range', () => {
     expect(insertDay(week(), '2026-10-05', '2026-10-12')).toEqual(week());
+  });
+});
+describe('editing a day the draft does not cover', () => {
+  // 10-14 用户的真实情形：草稿只写了 16 号（已被删空），周视图里 18、20 号是已发到手表的计划。
+  const draft = (): PlanDocument => ({ from: '2026-10-16', to: '2026-10-16', workouts: [] });
+  const planned = [
+    { date: '2026-10-13', sport: 'running' as const, name: 'Past', steps: [] },
+    { date: '2026-10-16', sport: 'running' as const, name: 'Covered', steps: [] },
+    { date: '2026-10-18', sport: 'cycling' as const, name: 'Ride', steps: [] },
+    { date: '2026-10-20', sport: 'running' as const, name: 'Run', steps: [] },
+  ];
+  it('pulls the sent workouts into the draft so deleting the day actually removes it', () => {
+    const widened = absorbPlanned(draft(), planned, ['2026-10-18'], '2026-10-14');
+    expect(widened.from).toBe('2026-10-16');
+    expect(widened.to).toBe('2026-10-18');
+    expect(widened.workouts.map(w => w.name)).toEqual(['Ride']);
+    expect(deleteDay(widened, '2026-10-18').workouts).toEqual([]);
+  });
+  it('swapping with a day outside the range works instead of silently refusing', () => {
+    const widened = absorbPlanned(draft(), planned, ['2026-10-20', '2026-10-17'], '2026-10-14');
+    const swapped = moveDay(widened, '2026-10-20', '2026-10-17');
+    expect(swapped.workouts.map(w => [w.name, w.date])).toEqual([['Ride', '2026-10-18'], ['Run', '2026-10-17']]);
+  });
+  it('leaves a draft alone when the day is already inside it, and never pulls in past days', () => {
+    const inside = absorbPlanned(draft(), planned, ['2026-10-16'], '2026-10-14');
+    expect(inside).toEqual(draft());
+    expect(absorbPlanned(draft(), planned, ['2026-10-13'], '2026-10-14')).toEqual(draft());
   });
 });

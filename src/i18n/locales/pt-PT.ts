@@ -2721,7 +2721,6 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
       aiOriginal: 'Texto original da IA',
       aiOriginalHint:
         'Este é o texto original da IA; o ZeppBridge não o traduz. Os planos que pedires a partir de agora serão redigidos no idioma da interface.',
-      noticeCleared: 'Os próximos 7 dias foram limpos.',
       noticeError: 'Esta ação não foi concluída. Tenta novamente dentro de momentos.',
       noticeInvalid: 'O plano ainda tem pontos a corrigir. Corrige-os antes de enviar.',
       noticeNotNeeded: 'Este plano é igual ao último enviado; não há nada para enviar.',
@@ -2738,9 +2737,7 @@ Regras: compara-me apenas com o meu próprio histórico, não com médias da pop
       chartAria: 'Intervalo da frequência cardíaca alvo ao longo do tempo',
       chartNoHr: 'Este treino não tem um alvo de frequência cardíaca; é apresentada apenas a duração',
       chartTitle: 'Intensidade',
-      clearBody: 'Isto remove do relógio os planos enviados pelo ZeppBridge para os próximos 7 dias. Os planos de outras origens, como o RQrun, não são afetados. Podes restaurá-los com «Anular último envio».',
       clearConfirm: 'Limpar',
-      clearTitle: 'Limpar os próximos 7 dias?',
       cooldown: 'Retorno à calma',
       discard: 'Descartar',
       dismiss: 'Percebi',

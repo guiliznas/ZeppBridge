@@ -46,6 +46,8 @@ const busy = ref(false);
 const notice = ref<PlanNotice | null>(null);
 /** 「清空」要先问一遍：后端说需要确认时置真，界面弹确认，确认后带 confirm 再发。 */
 const clearPending = ref(false);
+/** 要确认的是哪种清空：「清空手表计划」（今天起全部）还是发一份草稿时顺带清掉某几天。确认框按它换说法。 */
+const clearScope = ref<'all' | 'days'>('all');
 let pendingAction: PlanPublishAction | null = null;
 const document = ref<PlanDocument | null>(null);
 
@@ -249,6 +251,7 @@ const run = async (action: PlanPublishAction, confirmClear: boolean): Promise<vo
         break;
       case 'needs_clear_confirmation':
         pendingAction = action;
+        clearScope.value = action.kind === 'clear' ? 'all' : 'days';
         clearPending.value = true;
         break;
       case 'invalid':
@@ -283,7 +286,7 @@ const blocking = computed(() => preview.value?.check.issues.filter((issue) => is
 const unverified = computed(() => preview.value?.check.issues.filter((issue) => issue.severity === 'unverified') ?? []);
 
 export const useTrainingPlan = () => ({
-  state, draftId, preview, busy, notice, clearPending, blocking, unverified,
+  state, draftId, preview, busy, notice, clearPending, clearScope, blocking, unverified,
   document, accepted, revision, editingSent, readClipboardPlan, receiveFromClipboard, reshape, editActive,
   accept: () => { accepted.value = true; },
   load, resume, paste, startDraft, discard, publish, undo, clear, dismissNotice, cancelClear, confirmClear,

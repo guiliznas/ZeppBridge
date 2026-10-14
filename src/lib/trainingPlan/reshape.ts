@@ -1,6 +1,27 @@
 import type { PlanDocument, PlanSport, PlanVariant, PlanWorkoutInput } from '../../types/trainingPlan';
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
+/**
+ * 草稿只管它写明的日子（from..to）；范围外，周视图显示的是已经发到手表的计划（后端预览就是这么拼的）。
+ * 要动范围外的某天，先把范围撑到包住这些日子，并把撑进来的日子上已发的训练搬进草稿，再交给 moveDay / deleteDay 等去改。
+ * 不先搬：改的是草稿里不存在的那一天，什么也不会发生——「删了一天以后就再也删不动、排不了序」（10-14 反馈）。
+ * `planned` 只收今天及以后的；已经过去的日子不往草稿里放（发不出去，也改不到）。
+ */
+export const absorbPlanned = (document: PlanDocument, planned: PlanWorkoutInput[], dates: string[], today: string): PlanDocument => {
+  const wanted = dates.filter((date) => date >= today);
+  if (!wanted.length) return document;
+  const written = document.workouts.map((w) => w.date).sort();
+  const oldFrom = document.from ?? written[0];
+  const oldTo = document.to ?? written[written.length - 1];
+  const bounds = [oldFrom, oldTo, ...wanted].filter((date): date is string => !!date).sort();
+  const from = bounds[0]!;
+  const to = bounds[bounds.length - 1]!;
+  if (from === oldFrom && to === oldTo) return document;
+  const outside = (date: string) => !oldFrom || !oldTo || date < oldFrom || date > oldTo;
+  const moved = planned.filter((w) => w.date >= today && w.date >= from && w.date <= to && outside(w.date));
+  return { ...clone(document), from, to, workouts: [...clone(document.workouts), ...clone(moved)] };
+};
+
 /** Swap whole days, including local rest notes. Never overwrite a destination. */
 export const moveDay = (document: PlanDocument, from: string, to: string): PlanDocument => {
   if (from === to) return clone(document);

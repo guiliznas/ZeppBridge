@@ -11,8 +11,8 @@ const { t } = usePlanText();
 <template>
   <ModalDialog v-if="plan.clearPending.value" labelledby="plan-clear-title" @close="plan.cancelClear()">
     <div class="clear-dialog">
-      <h2 id="plan-clear-title">{{ t.clearTitle }}</h2>
-      <p>{{ t.clearBody }}</p>
+      <h2 id="plan-clear-title">{{ plan.clearScope.value === 'all' ? t.clearAllTitle : t.clearDaysTitle }}</h2>
+      <p>{{ plan.clearScope.value === 'all' ? t.clearAllBody : t.clearDaysBody }}</p>
       <footer>
         <button class="pill-button quiet" @click="plan.cancelClear()">{{ t.cancel }}</button>
         <button class="pill-button danger" :disabled="plan.busy.value" @click="plan.confirmClear()">{{ t.clearConfirm }}</button>

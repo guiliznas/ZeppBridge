@@ -14,7 +14,8 @@ import { directionText, templateName } from '../../lib/aiTask/prompt';
 import { displayableWorkouts } from '../../lib/workouts';
 import { addDays, dayKey, daysBetween } from '../../lib/aiTask/bridgeScale';
 import { dayRows } from '../../lib/trainingPlan/week';
-import { deleteDay, deleteWorkout, insertDay, moveDay, retypeWorkout } from '../../lib/trainingPlan/reshape';
+import { absorbPlanned, deleteDay, deleteWorkout, insertDay, moveDay, retypeWorkout } from '../../lib/trainingPlan/reshape';
+import { workoutToInput } from '../../lib/trainingPlan/edit';
 import type { PlanCheck, PlanDocument, PlanDraftPreview, PlanSport } from '../../types/trainingPlan';
 import { useAiTaskDraft } from '../useAiTaskDraft';
 import { useAiTaskLibrary } from '../useAiTaskLibrary';
@@ -32,6 +33,8 @@ const demo = ref(false);
 const handedOff = ref(0);
 /** 连着拨滚轮、拖图时攒下的改动：停手 350ms 后一次交给后端（每一下都去改草稿、重新校验太密了）。 */
 let pendingEdits: Array<(document: PlanDocument) => PlanDocument> = [];
+/** 这批改动碰到的日子：在草稿范围外的，先把已发的训练搬进草稿（absorbPlanned）。 */
+let pendingDates: string[] = [];
 let editTimer = 0;
 const editWaiters: Array<() => void> = [];
 let started = false;
@@ -161,22 +164,27 @@ export const useAiHub = () => {
   const editable = computed(() => (plan.preview.value ? plan.accepted.value : !!plan.state.value?.planned.length));
 
   /** 改草稿：手上没有草稿、但有已经发出去的计划时，先把它拿回来变成草稿（发出后还能改，批次 4.3）。 */
-  const edit = async (change: (document: PlanDocument) => PlanDocument): Promise<void> => {
+  const edit = async (change: (document: PlanDocument) => PlanDocument, dates: string[] = []): Promise<void> => {
     if (!plan.document.value && !(await plan.editActive(today.value))) return;
     if (!plan.document.value || !plan.accepted.value) return;
-    await plan.reshape(change(plan.document.value));
+    // 要改的日子在草稿范围外（那里显示的是已发的计划）：先把它们搬进草稿，见 absorbPlanned。
+    const planned = (plan.state.value?.planned ?? []).map(workoutToInput);
+    await plan.reshape(change(absorbPlanned(plan.document.value, planned, dates, today.value)));
   };
   /** 攒一下再改：返回的 Promise 在这批改动落定（新预览画上来）以后才 resolve。 */
-  const queueEdit = (change: (document: PlanDocument) => PlanDocument): Promise<void> => {
+  const queueEdit = (change: (document: PlanDocument) => PlanDocument, dates: string[] = []): Promise<void> => {
     pendingEdits.push(change);
+    pendingDates.push(...dates);
     window.clearTimeout(editTimer);
     const flush = async () => {
       if (plan.busy.value) { editTimer = window.setTimeout(() => void flush(), 120); return; }
       const batch = pendingEdits;
+      const touched = pendingDates;
       pendingEdits = [];
+      pendingDates = [];
       const waiters = editWaiters.splice(0);
       try {
-        if (batch.length) await edit((doc) => batch.reduce((current, step) => step(current), doc));
+        if (batch.length) await edit((doc) => batch.reduce((current, step) => step(current), doc), touched);
       } finally {
         for (const done of waiters) done();
       }
@@ -184,9 +192,9 @@ export const useAiHub = () => {
     editTimer = window.setTimeout(() => void flush(), 350);
     return new Promise((resolve) => { editWaiters.push(resolve); });
   };
-  const changeDay = (from: string, to: string) => edit((doc) => moveDay(doc, from, to));
-  const insertAt = (from: string, to: string) => edit((doc) => insertDay(doc, from, to));
-  const removeDay = (date: string) => edit((doc) => deleteDay(doc, date));
+  const changeDay = (from: string, to: string) => edit((doc) => moveDay(doc, from, to), [from, to]);
+  const insertAt = (from: string, to: string) => edit((doc) => insertDay(doc, from, to), [from, to]);
+  const removeDay = (date: string) => edit((doc) => deleteDay(doc, date), [date]);
   const retype = (index: number, sport: PlanSport) => edit((doc) => retypeWorkout(doc, index, sport));
   const removeWorkout = (index: number) => edit((doc) => deleteWorkout(doc, index));
 
@@ -197,7 +205,7 @@ export const useAiHub = () => {
     switch (n.kind) {
       case 'sent': return demo.value ? t.value.demoDelivered : pt.value.noticeSent;
       case 'undone': return pt.value.noticeUndone;
-      case 'cleared': return pt.value.noticeCleared;
+      case 'cleared': return pt.value.noticeClearedAll;
       case 'unconfirmed': return pt.value.noticeUnconfirmed;
       case 'rejected': return pt.value.noticeRejected;
       case 'partial': return pt.value.noticePartial(n.weeks.map((w) => w.slice(5).replace('-', '/')).join('、'));
