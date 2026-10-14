@@ -107,7 +107,9 @@ export const demoZones = (data: DemoData, preference: HeartRateZonePreference, d
 
 export const demoInsight = (data: DemoData, workout: Workout): WorkoutInsight => {
   if (workout.effective_type !== 'running') return { workout_id: workout.workout_id, workout_type: workout.effective_type, supported: false, unsupported_reason: null, unsupported_code: 'unsupported_workout_type', facts: [], baseline_included: [], baseline_excluded: [] };
-  const peers = data.workouts.filter(w => w.workout_id !== workout.workout_id && w.effective_type === workout.effective_type && w.start_time < workout.start_time).slice(0, 8);
+  // 「距离相近」：和真应用一样只拿距离差 20% 以内的往次比（insight::baseline::DISTANCE_TOLERANCE）（以前不筛，12 公里长距离拿去和 6 公里比）。
+  const near = (w: Workout) => Math.abs((w.distance_meters ?? 0) - (workout.distance_meters ?? 0)) <= (workout.distance_meters ?? 0) * 0.2;
+  const peers = data.workouts.filter(w => w.workout_id !== workout.workout_id && w.effective_type === workout.effective_type && w.start_time < workout.start_time && near(w)).slice(0, 8);
   return { workout_id: workout.workout_id, workout_type: workout.effective_type, supported: true, unsupported_reason: null,
     baseline_included: peers.map(w => ({ workout_id: w.workout_id, start_time: w.start_time, distance_meters: w.distance_meters ?? 0 })), baseline_excluded: [],
     heart_rate_drift: null, heart_rate_drift_unavailable: 'not_enough_samples',

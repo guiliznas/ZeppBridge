@@ -1,6 +1,6 @@
 import type { PlaybackClock } from '../playback';
 import type { DemoPresentation, FilmWall } from '../../../demo/presentation';
-import type { Camera, Pose, Shot, Stage } from './types';
+import type { Camera, Pose, Shot, Stage, WatchState } from './types';
 import type { CaptionKey } from './copy';
 import type { LandingLocale } from '../../../composables/useLandingLocale';
 
@@ -230,7 +230,7 @@ export class Director {
   /** 关掉所有浮层、牌桌、收集箱、展示墙，回到干净的页面（章首、跳章时用）。 */
   async clear() {
     this.api.wall(null);
-    for (let n = 0; n < 5 && this.doc.querySelector('[data-modal-dialog], .card-table, .box-spread, .anchored-popover, dialog[open]'); n++) await this.escape(320);
+    for (let n = 0; n < 5 && this.doc.querySelector('[data-modal-dialog], .card-table, .box-spread, .anchored-popover, dialog[open]'); n++) await this.escape(160);
   }
   /** 盖在应用上的展示墙（演示专用，见 demo/walls）：多根玻璃条 / 多排牌并排滚动。 */
   async wall(kind: FilmWall | null) { this.api.wall(kind); if (kind) await this.find(`.film-wall.${kind}`); }
@@ -267,13 +267,20 @@ export class Director {
     await this.clock.wait(options.hold === undefined ? ms : options.hold / SPEED);
   }
   pose(next: Pose, ms = 800) { this.stage.pose(next, ms / SPEED); return this.wait(ms); }
-  /** 硬切：黑一下，期间做 `setup`（换页、开牌桌），再亮起来。镜头同时复位。 */
-  async cut(setup: () => Promise<void>, ms = 160) {
-    this.stage.veil(true, ms / SPEED); this.hidePointer(); await this.wait(ms);
+  /**
+   * 换场：窗口淡进光晕里（不黑场，10-14 用户：样片的转场丝滑，我们的太生硬），期间做 `setup`（换页、开牌桌），
+   * 再从微微放大处淡回来。镜头同时复位。
+   */
+  async cut(setup: () => Promise<void>, ms = 240) {
+    this.stage.dissolve(true, ms / SPEED); this.hidePointer(); await this.wait(ms);
     this.stage.camera({ x: 0, y: 0, zoom: 1 }, 0);
     await setup();
     await this.settle(500);
-    this.stage.veil(false, (ms + 80) / SPEED); await this.wait(ms);
+    this.stage.dissolve(false, (ms + 260) / SPEED); await this.wait(ms);
+  }
+  /** 手表道具；给了 `from`（应用里的元素）就先从它飞一张训练卡到表盘上，再亮起来。 */
+  watch(state: WatchState, from?: Element, ms = 900) {
+    this.stage.watch(state, from ? { from: this.center(from), ms: ms / SPEED } : undefined);
   }
   caption(key: CaptionKey | null) { this.stage.caption(key); }
 }
@@ -292,7 +299,8 @@ export const frame = (r: Box, zoom: number): Camera => {
   return { x, y, zoom };
 };
 
-export interface ShotTiming { chapter: string; shot: string; planned: number; actual: number }
+/** `used`：动作本身用了多久（不算补足）；离计划越近，越说明这一镜没有余量。 */
+export interface ShotTiming { chapter: string; shot: string; planned: number; actual: number; used: number }
 
 /** 放一镜：先摆姿态、上字幕，做完动作后补足到计划时长（真实毫秒）；回报实际用时（录片和调节奏时看哪一镜超了）。 */
 export async function playShot(chapter: string, shot: Shot, director: Director, onShot?: (timing: ShotTiming) => void) {
@@ -303,5 +311,5 @@ export async function playShot(chapter: string, shot: Shot, director: Director, 
   await shot.run(director);
   const used = director.clock.elapsed() - start;
   if (used < shot.ms) await director.clock.wait(shot.ms - used);
-  onShot?.({ chapter, shot: shot.id, planned: shot.ms, actual: Math.round(Math.max(used, shot.ms)) });
+  onShot?.({ chapter, shot: shot.id, planned: shot.ms, actual: Math.round(Math.max(used, shot.ms)), used: Math.round(used) });
 }

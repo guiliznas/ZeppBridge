@@ -6,9 +6,14 @@ import { connect } from './connect';
 import { read } from './read';
 import { ai } from './ai';
 import { finale, settings } from './settings';
+import { short } from './short';
 
 /** 第一章 外观（计划 1.1–1.8）。 */
 const look: Chapter = { id: 'look', label: 'chapterLook', shots: [...lookIntro, ...lookCards, ...lookSwitches] };
 
-/** 整片的章节顺序（计划第四节）。章节条按这个顺序画，跳章从章首重来。 */
-export const FILM: Chapter[] = [prologue, look, connect, read, ai, settings, finale];
+/** 完整长版的章节顺序（计划第四节，约 3 分 20 秒），`?cut=full`。 */
+export const FULL_FILM: Chapter[] = [prologue, look, connect, read, ai, settings, finale];
+/** 一分钟短片（网站开场与社交平台用的就是它）。 */
+export const SHORT_FILM: Chapter[] = [short];
+/** 这次放哪一版：默认短片，地址里带 `cut=full` 放长版。 */
+export const pickFilm = (search: string): Chapter[] => (new URLSearchParams(search).get('cut') === 'full' ? FULL_FILM : SHORT_FILM);

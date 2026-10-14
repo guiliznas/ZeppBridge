@@ -9,12 +9,22 @@
   overflow: hidden;
   isolation: isolate;
   color: var(--film-ink);
-  background:
-    radial-gradient(60% 55% at 70% 40%, rgba(120, 150, 255, .10), transparent 70%),
-    radial-gradient(50% 50% at 25% 70%, rgba(166, 208, 90, .08), transparent 70%),
-    #05070a;
+  background: #05070a;
+}
+/* 光晕底：三团大色光慢慢漂（只动 transform）；窗口退场只剩大字时亮起来，像样片里流动的背景。 */
+.film-aurora { position: absolute; inset: -25%; pointer-events: none; opacity: .5; transition: opacity 900ms cubic-bezier(.22, 1, .36, 1); }
+.film[data-pose='title'] .film-aurora { opacity: 1; }
+.film-aurora i { position: absolute; width: 62%; height: 62%; border-radius: 50%; will-change: transform; animation: film-drift 19s ease-in-out infinite alternate; }
+.film-aurora .a1 { left: 4%; top: 30%; background: radial-gradient(closest-side, rgba(166, 208, 90, .42), rgba(166, 208, 90, 0)); }
+.film-aurora .a2 { left: 40%; top: 6%; background: radial-gradient(closest-side, rgba(52, 196, 168, .32), rgba(52, 196, 168, 0)); animation-duration: 23s; animation-delay: -7s; }
+.film-aurora .a3 { left: 46%; top: 40%; background: radial-gradient(closest-side, rgba(110, 140, 255, .30), rgba(110, 140, 255, 0)); animation-duration: 27s; animation-delay: -13s; }
+@keyframes film-drift {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(14%, -9%) scale(1.18); }
+  100% { transform: translate(-10%, 8%) scale(.92); }
 }
 .film-stage { position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: 50% 50%; }
+.film-prop { position: absolute; inset: 0; transform-origin: 50% 46%; }
 .film-window {
   position: absolute; left: 0; top: 0; width: 1280px; height: 800px;
   transform-origin: 0 0; opacity: 0;
@@ -34,31 +44,48 @@
 @keyframes film-press { 0% { opacity: .7; transform: scale(.4); } 100% { opacity: 0; transform: scale(1.6); } }
 @keyframes film-hold { from { opacity: .2; transform: scale(.6) rotate(-90deg); } to { opacity: 1; transform: scale(1) rotate(270deg); } }
 
-.film-caption { position: absolute; pointer-events: none; text-wrap: balance; }
+.film-caption { position: absolute; pointer-events: none; text-wrap: balance; z-index: 2; }
+/* 大字逐字（西文逐词）模糊入焦。 */
+.film-caption h2 .k { display: inline-block; white-space: pre; animation: film-k 680ms cubic-bezier(.22, 1, .36, 1) both; animation-delay: calc(var(--i) * 32ms); }
+.film[data-lang='en'] .film-caption h2 .k { animation-delay: calc(var(--i) * 30ms); }
+.film-caption p { animation: film-k 760ms cubic-bezier(.22, 1, .36, 1) 260ms both; }
+@keyframes film-k { from { opacity: 0; filter: blur(14px); transform: translateY(.2em) scale(1.08); } }
 .film-caption h2 { margin: 0; font-size: 64px; line-height: 1.12; font-weight: 650; letter-spacing: -.02em; }
 .film-caption p { margin: 18px 0 0; font-size: 26px; line-height: 1.5; color: var(--film-muted); }
-.film-caption.at-full { left: 160px; right: 160px; bottom: 26px; text-align: center; }
-.film-caption.at-full h2 { font-size: 48px; text-shadow: 0 4px 30px rgba(0, 0, 0, .8); }
-.film-caption.at-full p { margin-top: 8px; font-size: 22px; }
+.film-caption:is(.at-full, .at-tilt, .at-tiltBack, .at-watch) { left: 160px; right: 160px; bottom: 26px; text-align: center; }
+.film-caption:is(.at-full, .at-tilt, .at-tiltBack, .at-watch) h2 { font-size: 48px; text-shadow: 0 4px 30px rgba(0, 0, 0, .8); }
+.film-caption:is(.at-full, .at-tilt, .at-tiltBack, .at-watch) p { margin-top: 8px; font-size: 22px; }
 .film-caption.at-right { left: 110px; width: 460px; top: 50%; transform: translateY(-50%); }
 .film-caption.at-left { right: 110px; width: 460px; top: 50%; transform: translateY(-50%); text-align: right; }
 .film-caption.at-title { left: 160px; right: 160px; top: 50%; transform: translateY(-50%); text-align: center; }
 .film-caption.at-title h2 { font-size: 92px; }
-.film-caption-enter-active { transition: opacity 700ms cubic-bezier(.22, 1, .36, 1), translate 700ms cubic-bezier(.22, 1, .36, 1); }
-.film-caption-leave-active { transition: opacity 280ms ease; }
-.film-caption-enter-from { opacity: 0; translate: 0 22px; }
-.film-caption-leave-to { opacity: 0; }
+.film-caption.url h2 { font-size: 128px; letter-spacing: -.035em; color: var(--film-accent); }
+.film-caption-leave-active { transition: opacity 260ms ease, filter 260ms ease, scale 260ms ease; }
+.film-caption-leave-to { opacity: 0; filter: blur(10px); scale: .98; }
+
+/* 手表道具：训练计划从电脑飞到手表上，表盘亮起那一节。 */
+.film-watch { position: absolute; left: 1331px; top: 194px; width: 518px; height: 700px; opacity: 0; transform: translateX(90px) scale(.94); transition: opacity 700ms cubic-bezier(.22, 1, .36, 1), transform 1000ms cubic-bezier(.22, 1, .36, 1); }
+.film-watch:is(.shown, .lit) { opacity: 1; transform: none; }
+.film-watch img { display: block; width: 100%; height: 100%; filter: drop-shadow(0 40px 60px rgba(0, 0, 0, .6)); }
+.film-face { position: absolute; left: 94px; top: 182px; width: 330px; height: 330px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  background: radial-gradient(circle at 50% 40%, #16200f, #050705 72%); box-shadow: inset 0 0 0 7px rgba(166, 208, 90, .9), inset 0 0 40px rgba(166, 208, 90, .25);
+  opacity: 0; transform: scale(.9); transition: opacity 500ms ease, transform 700ms cubic-bezier(.22, 1, .36, 1); }
+.film-watch.lit .film-face { opacity: 1; transform: none; }
+.film-face small { font-size: 26px; color: var(--film-accent); font-weight: 600; }
+.film-face strong { font-size: 46px; font-weight: 700; letter-spacing: -.02em; }
+.film-face em { display: grid; place-items: center; width: 54px; height: 54px; margin-top: 8px; border-radius: 50%; background: var(--film-accent); color: #10140a; font-style: normal; font-size: 20px; }
+.film-flyer { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; gap: 4px; padding: 20px 26px; min-width: 220px; border-radius: 22px; opacity: 0; pointer-events: none; z-index: 3;
+  background: rgba(22, 27, 22, .92); box-shadow: 0 0 0 1px rgba(166, 208, 90, .5), 0 24px 60px rgba(0, 0, 0, .5); }
+.film-flyer strong { font-size: 34px; } .film-flyer small { font-size: 22px; color: var(--film-accent); }
 
 .film-veil { position: absolute; inset: -2px; background: #05070a; opacity: 0; pointer-events: none; }
 
-.film-controls { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 18px; padding: 14px 24px 18px; background: linear-gradient(transparent, rgba(0, 0, 0, .5)); }
-.recording .film-controls { display: none; }
-.film-chapters { display: flex; flex: 1; gap: 6px; margin: 0; padding: 0; list-style: none; }
-.film-chapters li { flex: 1; min-width: 0; }
-.film-chapters button { width: 100%; padding: 10px 0 0; border: 0; border-top: 2px solid rgba(255, 255, 255, .18); background: none; color: var(--film-muted); font: inherit; font-size: 12px; text-align: left; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.film-chapters li.past button { border-top-color: rgba(255, 255, 255, .5); }
-.film-chapters li.on button { border-top-color: var(--film-accent); color: var(--film-ink); }
-.film-buttons { display: flex; gap: 8px; }
+.film-buttons { position: absolute; right: 22px; top: 18px; display: flex; gap: 8px; z-index: 4; opacity: .55; transition: opacity 200ms ease; }
+.film-buttons:hover, .film-buttons:focus-within { opacity: 1; }
+.recording .film-buttons { display: none; }
 .film-buttons button { width: 40px; height: 40px; border: 1px solid rgba(255, 255, 255, .16); border-radius: 50%; background: rgba(255, 255, 255, .06); color: var(--film-ink); font: inherit; font-size: 13px; cursor: pointer; }
 .film-buttons button:hover { background: rgba(255, 255, 255, .14); }
-@media (prefers-reduced-motion: reduce) { .film-camera iframe, .film-pointer { transition: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .film-camera iframe, .film-pointer, .film-watch, .film-face { transition: none; }
+  .film-aurora i, .film-caption h2 .k, .film-caption p { animation: none; }
+}

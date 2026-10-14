@@ -35,19 +35,6 @@ export const settings: Chapter = {
       },
     },
     {
-      // 四种格式，一次满足：默认导出 JSON → CSV → GPX（FIT 在运动页，上一章拍过）。
-      id: 'formats', ms: 3800, pose: 'full', caption: 'formats',
-      async run(d) {
-        const track = d.all(CARD_TRACK).pop();
-        if (track) {
-          await d.camera(null, { ms: 300, hold: 0 });
-          await d.scrollTo(track, 380, 450);
-          await d.camera(track, { zoom: 2, ms: 450, hold: 100 });
-          await tapIn(d, track, [1, 2, 0]);
-        }
-      },
-    },
-    {
       // 公里或英里：显示与语言卡里切距离单位。
       id: 'units', ms: 3600, pose: 'full', caption: 'display',
       async run(d) {
@@ -99,7 +86,7 @@ export const settings: Chapter = {
   ],
 };
 
-/** 尾：标语、免费开源三平台、请你试玩。窗口退场，只留大字。 */
+/** 尾：标语、免费开源三平台、网址。窗口退场，只留大字。 */
 export const finale: Chapter = {
   id: 'finale',
   label: 'tryIt',

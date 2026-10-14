@@ -21,7 +21,7 @@ export interface JourneyCopy {
 }
 
 const zh: JourneyCopy = {
-  title: ['睡眠、运动和恢复', '留在这台电脑上。'],
+  title: ['腕上所记，', '尽归于你。'],
   lead: '从 Zepp 同步到本机。概览、睡眠分期、运动对比和训练计划在同一处查看。',
   nav: { product: '产品', motion: '动效', try: '亲自试试', download: '下载', menu: '打开菜单' },
   groups: { records: '记录', ai: '交给 AI', connect: '接出去' },
@@ -81,7 +81,7 @@ const zh: JourneyCopy = {
 };
 
 const en: JourneyCopy = {
-  title: ['Sleep, workouts, recovery', 'on this computer.'],
+  title: ['Everything your wrist remembers.', 'Yours to keep.'],
   lead: 'Sync from Zepp to this machine. Overview, sleep stages, workout comparison and the training plan sit in one place.',
   nav: { product: 'Product', motion: 'Motion', try: 'Try it', download: 'Download', menu: 'Open menu' },
   groups: { records: 'Records', ai: 'Send to AI', connect: 'Connect' },
@@ -147,7 +147,7 @@ function pack(partial: Pick<JourneyCopy, 'title' | 'lead' | 'nav' | 'groups' | '
 export const JOURNEY: Record<LandingLocale, JourneyCopy> = {
   zh, en,
   es: pack({
-    title: ['Sueño, entrenos y recuperación', 'en este ordenador.'],
+    title: ['Todo lo que recuerda tu muñeca.', 'Tuyo para siempre.'],
     lead: 'Sincroniza desde Zepp a este equipo. Resumen, fases del sueño, comparación de entrenos y plan quedan juntos.',
     nav: { product: 'Producto', motion: 'Movimiento', try: 'Probar', download: 'Descargar', menu: 'Abrir menú' },
     groups: { records: 'Registros', ai: 'Enviar a la IA', connect: 'Salidas' },
@@ -201,7 +201,7 @@ export const JOURNEY: Record<LandingLocale, JourneyCopy> = {
     starOnGithub: 'Dar estrella en GitHub',
   }),
   fr: pack({
-    title: ['Sommeil, séances, récupération', 'sur cet ordinateur.'],
+    title: ['Tout ce que retient votre poignet.', 'Rien qu’à vous.'],
     lead: 'Synchronisez Zepp vers cette machine. Vue d’ensemble, stades de sommeil, comparaison des séances et plan au même endroit.',
     nav: { product: 'Produit', motion: 'Mouvement', try: 'Essayer', download: 'Télécharger', menu: 'Ouvrir le menu' },
     groups: { records: 'Relevés', ai: 'Envoyer à l’IA', connect: 'Sorties' },
@@ -255,7 +255,7 @@ export const JOURNEY: Record<LandingLocale, JourneyCopy> = {
     starOnGithub: 'Star sur GitHub',
   }),
   de: pack({
-    title: ['Schlaf, Training, Erholung', 'auf diesem Computer.'],
+    title: ['Alles, was dein Handgelenk festhält.', 'Ganz und gar deins.'],
     lead: 'Von Zepp auf diesen Rechner synchronisieren. Überblick, Schlafphasen, Trainingsvergleich und Plan an einem Ort.',
     nav: { product: 'Produkt', motion: 'Bewegung', try: 'Ausprobieren', download: 'Download', menu: 'Menü öffnen' },
     groups: { records: 'Aufzeichnungen', ai: 'An KI geben', connect: 'Weitergeben' },
@@ -309,7 +309,7 @@ export const JOURNEY: Record<LandingLocale, JourneyCopy> = {
     starOnGithub: 'Stern auf GitHub',
   }),
   nl: pack({
-    title: ['Slaap, training, herstel', 'op deze computer.'],
+    title: ['Alles wat je pols onthoudt.', 'Helemaal van jou.'],
     lead: 'Synchroniseer van Zepp naar deze machine. Overzicht, slaapfases, trainingsvergelijking en plan op één plek.',
     nav: { product: 'Product', motion: 'Beweging', try: 'Probeer', download: 'Download', menu: 'Menu openen' },
     groups: { records: 'Gegevens', ai: 'Naar AI', connect: 'Doorgeven' },
@@ -363,7 +363,7 @@ export const JOURNEY: Record<LandingLocale, JourneyCopy> = {
     starOnGithub: 'Ster op GitHub',
   }),
   'pt-BR': pack({
-    title: ['Sono, treinos e recuperação', 'neste computador.'],
+    title: ['Tudo o que seu pulso registra.', 'É seu, de verdade.'],
     lead: 'Sincronize do Zepp para esta máquina. Visão geral, fases do sono, comparação de treinos e plano no mesmo lugar.',
     nav: { product: 'Produto', motion: 'Movimento', try: 'Experimentar', download: 'Baixar', menu: 'Abrir menu' },
     groups: { records: 'Registros', ai: 'Enviar à IA', connect: 'Saídas' },
@@ -417,7 +417,7 @@ export const JOURNEY: Record<LandingLocale, JourneyCopy> = {
     starOnGithub: 'Dar estrela no GitHub',
   }),
   'pt-PT': pack({
-    title: ['Sono, treinos e recuperação', 'neste computador.'],
+    title: ['Tudo o que o teu pulso regista.', 'É teu, de verdade.'],
     lead: 'Sincroniza do Zepp para esta máquina. Resumo, fases do sono, comparação de treinos e plano no mesmo sítio.',
     nav: { product: 'Produto', motion: 'Movimento', try: 'Experimentar', download: 'Transferir', menu: 'Abrir menu' },
     groups: { records: 'Registos', ai: 'Enviar à IA', connect: 'Saídas' },
@@ -471,7 +471,7 @@ export const JOURNEY: Record<LandingLocale, JourneyCopy> = {
     starOnGithub: 'Dar estrela no GitHub',
   }),
   ru: pack({
-    title: ['Сон, тренировки, восстановление', 'на этом компьютере.'],
+    title: ['Всё, что запомнило запястье,', 'остаётся вашим.'],
     lead: 'Синхронизация из Zepp на этот компьютер. Обзор, фазы сна, сравнение тренировок и план в одном месте.',
     nav: { product: 'Продукт', motion: 'Движение', try: 'Попробовать', download: 'Скачать', menu: 'Открыть меню' },
     groups: { records: 'Записи', ai: 'Отдать ИИ', connect: 'Наружу' },
@@ -525,7 +525,7 @@ export const JOURNEY: Record<LandingLocale, JourneyCopy> = {
     starOnGithub: 'Оценить на GitHub',
   }),
   'hi-IN': pack({
-    title: ['नींद, कसरत, रिकवरी', 'इसी कंप्यूटर पर।'],
+    title: ['आपकी कलाई ने जो कुछ सहेजा,', 'वह सब आपका।'],
     lead: 'Zepp से इस मशीन पर सिंक करें। सार, नींद की अवस्थाएँ, कसरत की तुलना और योजना एक जगह।',
     nav: { product: 'उत्पाद', motion: 'गति', try: 'आज़माएँ', download: 'डाउनलोड', menu: 'मेनू खोलें' },
     groups: { records: 'रिकॉर्ड', ai: 'AI को दें', connect: 'बाहर' },

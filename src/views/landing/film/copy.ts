@@ -26,10 +26,10 @@ const zh = {
   devices: { title: '每一块表，都认得。', sub: '自动识别；认错了，亲手指认。' },
   local: { title: '健康数据只在你的电脑上。', sub: '从不经过我们的服务器。' },
   metrics: { title: '数十项指标，尽收眼底。' },
-  focusAreas: { title: '你在意什么，就看什么。' },
-  hourly: { title: '一日之计，按时细数。' },
+  focusAreas: { title: '睡眠还是训练，首页随你排。' },
+  hourly: { title: '一日之步，按时细数。' },
   workout: { title: '跑过的路，都有回声。', sub: '和自己以往相近距离的每一次相比。' },
-  blank: { title: '没测到，就留白。', sub: '绝不编造。' },
+  blank: { title: '绝不编造任何数据。' },
   events: { title: '身有起伏，事出有因。', sub: '记下感冒、发烧、旅行、出差，让 AI 读懂你的生活。' },
   subscription: { title: '复用已有订阅，不多花一分钱。' },
   prompt: { title: '问什么，你说了算。' },
@@ -41,7 +41,12 @@ const zh = {
   backup: { title: '快照在手，进退有据。', sub: '数据库快照，一键生成，随时恢复。' },
   api: { title: '本机 API，只对你开门。', sub: '只绑 127.0.0.1，只读，要令牌。' },
   free: { title: '免费，开源，处处可用。', sub: 'Windows · macOS · Linux · 十种语言' },
-  tryIt: { title: '犹豫不决？不妨试玩一下。' },
+  tryIt: { title: 'zeppbridge.com' },
+  pile: { title: '叠成一叠，收进箱里。' },
+  planIntro: { title: '训练计划，交给 AI。' },
+  tell: { title: '身体怎样，直接告诉它。', sub: '附上睡眠和训练记录，一起发过去。' },
+  summarize: { title: 'AI 读完记录，排好一周。' },
+  toWatch: { title: '电脑上定稿，手表上开练。' },
 } satisfies Record<string, Caption>;
 
 export type CaptionKey = keyof typeof zh;
@@ -66,10 +71,10 @@ const en: Record<CaptionKey, Caption> = {
   devices: { title: 'Every watch you wear, recognised.', sub: 'Detected for you, and yours to correct.' },
   local: { title: 'Your health data stays on your computer.', sub: 'It never passes through our servers.' },
   metrics: { title: 'Every metric, at a glance.' },
-  focusAreas: { title: 'See what matters to you.' },
+  focusAreas: { title: 'Sleep or training. Your overview, your order.' },
   hourly: { title: 'Every hour, accounted for.' },
   workout: { title: 'Every run echoes the last.', sub: 'Compared with your own runs of a similar distance.' },
-  blank: { title: 'Not measured? Left blank.', sub: 'Never made up.' },
+  blank: { title: 'Nothing is ever made up.' },
   events: { title: 'Every dip has a reason.', sub: 'Note a cold, a fever, a trip, so AI reads your life right.' },
   subscription: { title: 'The AI you already pay for. Not a cent more.' },
   prompt: { title: 'Ask it your way.' },
@@ -81,9 +86,41 @@ const en: Record<CaptionKey, Caption> = {
   backup: { title: 'Snapshots to step back to.', sub: 'Save the database in one click. Restore whenever you need.' },
   api: { title: 'A local API that answers only you.', sub: 'Bound to 127.0.0.1, read-only, token required.' },
   free: { title: 'Free. Open source. Everywhere.', sub: 'Windows · macOS · Linux · Ten languages' },
-  tryIt: { title: 'Try it before you download it.' },
+  tryIt: { title: 'zeppbridge.com' },
+  pile: { title: 'Stack them. Toss them in.' },
+  planIntro: { title: 'Your training plan, by AI.' },
+  tell: { title: 'Tell it how you feel.', sub: 'Your sleep and training records go along.' },
+  summarize: { title: 'AI reads your records and plans the week.' },
+  toWatch: { title: 'Finalise on your computer. Train on your watch.' },
 };
 
 const BY_LOCALE: Partial<Record<LandingLocale, Record<CaptionKey, Caption>>> = { zh, en };
 
 export const filmCaption = (locale: LandingLocale, key: CaptionKey): Caption => (BY_LOCALE[locale] ?? en)[key];
+
+/**
+ * 宣传片只出中、英两版（10-14 用户定）：字幕和 iframe 里的界面必须是同一种语言，
+ * 所以别的语言的访客看英文版——不然就是英文字幕配西语界面。
+ */
+export type FilmLocale = 'zh' | 'en';
+export const filmLocale = (locale: LandingLocale): FilmLocale => (locale === 'zh' ? 'zh' : 'en');
+
+/**
+ * 短片「训练计划」那段的台词：访客把身体状况发给 AI（附上记录），AI 读完排出一周。
+ * 演示对话是合成的示例（界面上标着「示例对话」），排出的一周就是演示数据里那份计划（demo/plan.ts）：
+ * 今天休息、明天轻松跑（接回时改成 40 分钟）、恢复骑行、节奏跑、间歇、长距离。
+ */
+export const FILM_SCRIPT: Record<FilmLocale, { prompt: string; answer: string; watchName: string; watchMeta: string }> = {
+  zh: {
+    prompt: '最近左膝有点酸，这两晚也没睡好。帮我排下周的训练，强度低一点。',
+    answer: '看了你附上的记录：这两晚睡得偏短，静息心率比平时略高；膝盖不舒服，先减量，不做快跑。\n\n下周这样排：今天休息；明天 40 分钟轻松跑起步，第二天恢复骑行；节奏跑、间歇和长距离隔天穿插，每次都留出热身和放松。计划已整理好，接回 ZeppBridge 就能逐日查看、发到手表。',
+    watchName: '轻松跑',
+    watchMeta: '40 分钟',
+  },
+  en: {
+    prompt: 'My left knee has been a bit sore and I slept badly the last two nights. Plan next week for me, and go easy.',
+    answer: "From the records you attached: the last two nights were short and your resting heart rate is a little above usual. With the sore knee, we'll cut the volume and skip the sprints.\n\nNext week: rest today, a 40-minute easy run tomorrow, then a recovery ride. Tempo, intervals and the long run are spaced out, each with a warm-up and cool-down. The plan is ready. Bring it back into ZeppBridge to review each day and send it to your watch.",
+    watchName: 'Easy run',
+    watchMeta: '40 min',
+  },
+};

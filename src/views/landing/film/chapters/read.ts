@@ -22,7 +22,7 @@ export const read: Chapter = {
       },
     },
     {
-      // 3.2 你在意什么，就看什么：概览「我关注」在 睡眠 → 日常状态 → 训练 → 均衡 之间切，指标卡跟着换。
+      // 3.2 睡眠还是训练，首页随你排：概览「我关注」在 睡眠 → 日常状态 → 训练 → 均衡 之间切，指标卡跟着换。
       id: 'focusAreas', ms: 5600, pose: 'full', caption: 'focusAreas',
       async run(d) {
         await page(d, '/');
@@ -30,7 +30,7 @@ export const read: Chapter = {
       },
     },
     {
-      // 3.3 一日之计，按时细数：今日步数下钻到每小时（步数、距离、热量、活动时长）。
+      // 3.3 一日之步，按时细数：今日步数下钻到每小时（步数、距离、热量、活动时长）。
       id: 'hourly', ms: 5200, pose: 'full', caption: 'hourly',
       async run(d) {
         await page(d, '/activity');
@@ -39,28 +39,35 @@ export const read: Chapter = {
       },
     },
     {
-      // 3.4 跑过的路，都有回声：一次跑步的详情，和自己以往相近距离的对比，再到导出（JSON / CSV / GPX / FIT）。
-      id: 'workout', ms: 7200, pose: 'full', caption: 'workout',
+      // 3.4 跑过的路，都有回声：一次跑步的详情，推近到「和你自己距离相近的最近几次相比」那张卡（10-14 用户：以前没凸显对比）。
+      id: 'workout', ms: 6400, pose: 'full', caption: 'workout',
       async run(d) {
         await d.cut(async () => {
           await d.clear();
           await d.go('/workouts', 200);
           await d.follow('.record-list a');
+          await d.scrollTo('.insight-card', 70, 1);
         });
-        await d.wait(900);
-        await d.scrollTo('.insight-card', 90, 700);
-        await d.wait(1500);
-        await d.scrollTo('.deliver-card', 120, 600);
+        const card = await d.find('.insight-card');
+        await d.camera(card, { zoom: 1.6, fill: 0.96, ms: 900, hold: 2600 });
+        await d.camera(null, { ms: 700, hold: 200 });
+      },
+    },
+    {
+      // 四种格式，一次满足：同一次运动的「导出与分享」，JSON → CSV → GPX → FIT 四格都在（设置里只有前三种）。
+      id: 'formats', ms: 4400, pose: 'full', caption: 'formats',
+      async run(d) {
+        await d.scrollTo('.deliver-card', 160, 600);
         const track = d.all('.deliver-card .segment-track')[0];
         if (track) {
-          await d.camera(track, { zoom: 1.8, ms: 500, hold: 100 });
+          await d.camera(track.closest('.deliver-card') ?? track, { zoom: 1.8, fill: 0.8, ms: 500, hold: 100 });
           const items = [...track.querySelectorAll<HTMLElement>('.segment-item')];
-          for (const item of items.slice(1)) await d.tap(item, { after: 320, travel: 200 });
+          for (const item of items.slice(1)) await d.tap(item, { after: 380, travel: 200 });
         }
       },
     },
     {
-      // 3.5 没测到，就留白：牌桌里没有记录的那天，读数是「—」，压暗、不能挑。
+      // 3.5 绝不编造任何数据：牌桌里没有记录的那天，读数是「—」，压暗、不能挑。
       id: 'blank', ms: 6000, pose: 'full', caption: 'blank',
       async run(d) {
         await d.cut(() => openTable(d));

@@ -7,11 +7,14 @@ import { dialogueCopy } from './dialogueCopy';
 import Icon from '../components/Icon.vue';
 import { useTrainingPlan } from '../composables/useTrainingPlan';
 import type { DemoPlan } from './plan';
+import type { DemoTurn } from './presentation';
 const emit = defineEmits<{ review: [] }>();
 const dialog = ref<HTMLDialogElement | null>(null), feed = ref<HTMLElement | null>(null);
 const copy = computed(() => JOURNEY[locale.value]);
 const labels = computed(() => dialogueCopy(locale.value));
-const turns = computed(() => [...copy.value.turns.slice(0, 2), labels.value.finalTurn]);
+/** 宣传片可以换掉整段台词（presentation.script）；对话打开时读一次。 */
+const scripted = ref<DemoTurn[] | null>(null);
+const turns = computed(() => scripted.value ?? [...copy.value.turns.slice(0, 2), labels.value.finalTurn]);
 const shown = ref(0), answered = ref(0), thinking = ref(false), status = ref('ready');
 let controller: AbortController | undefined, clock: PlaybackClock | undefined;
 /** 宣传片会把整段对话压快（presentation.pace）；网站的试玩和引导照原速。 */
@@ -23,6 +26,7 @@ const stop = () => { controller?.abort(); clock?.dispose(); thinking.value = fal
 const close = () => { stop(); dialog.value?.close(); };
 const open = () => {
   if (dialog.value?.open) return;
+  scripted.value = (window as Window & { __ZB_DEMO_TURNS__?: DemoTurn[] | null }).__ZB_DEMO_TURNS__ ?? null;
   stop(); shown.value = 0; answered.value = 0; status.value = 'ready'; dialog.value?.showModal();
 };
 const scroll = async (reply = false) => {
@@ -55,12 +59,13 @@ const send = async () => {
   const timeline = { wait: (ms: number) => playing.wait(ms * pace()) };
   status.value = 'chat';
   try {
-    for (let index = 0; index < 3; index++) {
+    const count = turns.value.length;
+    for (let index = 0; index < count; index++) {
       shown.value = index + 1; thinking.value = true; await scroll();
       await timeline.wait(1600);
       answered.value = index + 1; thinking.value = false; await scroll(true);
-      await timeline.wait(index === 0 ? 8500 : index === 1 ? 8000 : 6500);
-      if (index < 2) await timeline.wait(700);
+      await timeline.wait(index === count - 1 ? 6500 : index === 0 ? 8500 : 8000);
+      if (index < count - 1) await timeline.wait(700);
     }
     status.value = 'plan'; await scroll(); await timeline.wait(2600);
     status.value = 'copy'; await timeline.wait(1400);
@@ -91,7 +96,7 @@ onBeforeUnmount(() => {
       <div v-if="['plan', 'copy', 'return'].includes(status)" class="plan-result" :class="{ copying: status !== 'plan' }"><Icon name="file" :size="30" /><div><strong>{{ labels.ready }}</strong><span>ZeppBridge.plan.json</span></div><span class="copy-state"><Icon :name="status === 'plan' ? 'copy' : 'check'" :size="18" />{{ status === 'plan' ? labels.copy : labels.returning }}</span></div>
     </div>
     <footer v-if="status === 'ready'" class="chat-compose"><div class="attachment"><Icon name="file" :size="20" /><span>ZeppBridge.md<small>Markdown · 14 KB</small></span></div><p>{{ turns[0].prompt }}</p><button class="conversation-send" type="button" @click="send"><Icon name="send" :size="18" />{{ labels.send }}</button></footer>
-    <footer v-else class="chat-progress"><span v-for="n in 3" :key="n" :class="{ done: answered >= n, active: shown === n }">0{{ n }}</span><small>{{ labels.example }}</small></footer>
+    <footer v-else class="chat-progress"><span v-for="n in turns.length" :key="n" :class="{ done: answered >= n, active: shown === n }">0{{ n }}</span><small>{{ labels.example }}</small></footer>
   </dialog>
 </template>
 

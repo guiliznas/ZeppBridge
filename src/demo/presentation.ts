@@ -13,7 +13,10 @@ export interface DemoPresentation {
   wall(kind: FilmWall | null): void;
   /** Pace of the scripted demo conversation (1 = as on the website's try-it; the film plays it faster). */
   pace(value: number): void;
+  /** Replace the scripted conversation's turns (the short film sends one message about how the body feels); null restores the default. */
+  script(turns: DemoTurn[] | null): void;
 }
+export interface DemoTurn { prompt: string; answer: string }
 export type FilmWall = 'glass' | 'cards' | 'devices' | 'metrics';
 declare global { interface Window { __ZB_PRESENTATION__?: DemoPresentation } }
 
@@ -90,6 +93,7 @@ export function installPresentation(router: Router) {
       applyRate();
     },
     pace(value) { (window as Window & { __ZB_DEMO_PACE__?: number }).__ZB_DEMO_PACE__ = value > 0 ? value : 1; },
+    script(turns) { (window as Window & { __ZB_DEMO_TURNS__?: DemoTurn[] | null }).__ZB_DEMO_TURNS__ = turns?.length ? turns : null; },
     wall(kind) {
       const token = ++wallToken;
       wall?.unmount(); wall = null;
