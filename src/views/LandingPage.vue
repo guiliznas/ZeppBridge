@@ -13,6 +13,11 @@ import FinalCta from './landing/FinalCta.vue';
 import { useDownloads } from './landing/useDownloads';
 import SiteNav, { type NavTarget } from './landing/SiteNav.vue';
 import { scrollToSection, useScrollMotion } from './landing/motion';
+import FilmPlayer from './landing/film/FilmPlayer.vue';
+
+/** `?film=record`：只放宣传片（scripts/site/record-film.py 录对外视频用）。 */
+const recordFilm = new URLSearchParams(location.search).get('film') === 'record';
+const skipFilm = () => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
 
 const { locale, localeLoadError, initializeLocale, setLocale, landingCopyFor } = useLandingLocale();
 const t = computed(() => (locale.value === 'zh' || locale.value === 'en' ? COPY[locale.value] : landingCopyFor(locale.value) ?? COPY.en));
@@ -89,10 +94,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div id="top" ref="page" class="lp">
+  <FilmPlayer v-if="recordFilm" :locale="locale" record />
+  <div v-else id="top" ref="page" class="lp">
     <a class="lp-skip" href="#motion">{{ journey.nav.motion }}</a>
     <SiteNav :copy="t" :journey="journey" :locale="locale" :active="active" :away="away" @locale="setLocale" @go="go" />
     <main>
+      <FilmPlayer :locale="locale" @skip="skipFilm" />
       <p v-if="localeLoadError" class="locale-load-error lp-wrap" role="status">{{ COPY.en.rebuild.languageFallback }}</p>
       <HeroLanding :journey="journey" :locale="locale" />
       <MotionStage :journey="journey" :locale="locale" />

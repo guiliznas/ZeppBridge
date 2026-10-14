@@ -17,8 +17,9 @@ spec.loader.exec_module(fontcut)
 
 def main():
     sources = [
-        *(ROOT / 'src/views/landing').glob('*.ts'),
-        *(ROOT / 'src/views/landing').glob('*.vue'),
+        # 子目录（如 film/ 的宣传片字幕）也是网站文案；测试不是。
+        *(f for f in (ROOT / 'src/views/landing').rglob('*.ts') if '__tests__' not in f.parts),
+        *(ROOT / 'src/views/landing').rglob('*.vue'),
         ROOT / 'src/views/LandingPage.vue',
         ROOT / 'src/composables/useLandingLocale.ts',
     ]

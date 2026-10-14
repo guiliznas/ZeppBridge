@@ -1,0 +1,83 @@
+import type { LandingLocale } from '../../../composables/useLandingLocale';
+
+/**
+ * 宣传片字幕。中文定稿见 桌面「视频文案&网站\网站与视频计划.md」第四、八节；英文求信达。
+ * 其余八种语言在 P5 按信达雅补齐，未补之前回落英文（不回落中文：看不懂中文的人更多）。
+ */
+export interface Caption { title: string; sub?: string }
+
+const zh = {
+  tagline: { title: '腕上所记，尽归于你。' },
+  chapterLook: { title: '外观' },
+  chapterConnect: { title: '连接' },
+  chapterRead: { title: '看懂' },
+  chapterAi: { title: '交给 AI' },
+  chapterSettings: { title: '设置' },
+  glass: { title: '一见，倾心。', sub: 'Liquid Glass，贯穿每一处导航。' },
+  morph: { title: '从哪里来，回哪里去。', sub: '卡片展开成页，收起时回到原位。' },
+  focus: { title: '一处清晰，万物退后。', sub: '说明、事件、卡片，居中浮起，四周虚化。' },
+  poker: { title: '一叠光阴，信手翻阅。', sub: '7 天、1 个月、6 个月，一层层展开。' },
+  deck: { title: '专注一张，或随心铺开。' },
+  lines: { title: '随手一拨，自有分寸。' },
+  night: { title: '一键入夜，覆盖全局。' },
+  ash: { title: '弹指之间，换一种语言。', sub: '十种语言。' },
+  cloud: { title: '云上有的，桌上都有。', sub: '登录 Zepp 账号，记录同步到这台电脑。' },
+  autosync: { title: '你睡你的，它同步它的。', sub: '关、15、30、60 分钟，自动同步。' },
+  devices: { title: '每一块表，都认得。', sub: '自动识别；认错了，亲手指认。' },
+  local: { title: '健康数据只在你的电脑上。', sub: '从不经过我们的服务器。' },
+  metrics: { title: '数十项指标，尽收眼底。' },
+  focusAreas: { title: '你在意什么，就看什么。' },
+  hourly: { title: '一日之计，按时细数。' },
+  workout: { title: '跑过的路，都有回声。', sub: '和自己以往相近距离的每一次相比。' },
+  blank: { title: '没测到，就留白。', sub: '绝不编造。' },
+  events: { title: '身有起伏，事出有因。', sub: '记下感冒、发烧、旅行、出差，让 AI 读懂你的生活。' },
+  subscription: { title: '复用已有订阅，不多花一分钱。' },
+  prompt: { title: '问什么，你说了算。' },
+  coach: { title: '一键复制，一键粘回。', sub: '最聪明的教练，就在你手边。' },
+  plan: { title: '计划由你，落笔成训。' },
+  formats: { title: '四种格式，一次满足。', sub: 'JSON · CSV · GPX · FIT' },
+  settings: { title: '细节，都由你定。' },
+  free: { title: '免费 · 开源 · Windows / macOS / Linux' },
+  tryIt: { title: '犹豫不决？不妨试玩一下。' },
+} satisfies Record<string, Caption>;
+
+export type CaptionKey = keyof typeof zh;
+
+const en: Record<CaptionKey, Caption> = {
+  tagline: { title: 'Everything your wrist remembers. Yours to keep.' },
+  chapterLook: { title: 'Look' },
+  chapterConnect: { title: 'Connect' },
+  chapterRead: { title: 'Understand' },
+  chapterAi: { title: 'Send to AI' },
+  chapterSettings: { title: 'Settings' },
+  glass: { title: 'Fluid at first sight.', sub: 'Liquid Glass, in every bar you touch.' },
+  morph: { title: 'Back to where it began.', sub: 'A card opens into a page, and folds back to its place.' },
+  focus: { title: 'One thing in focus. The rest steps back.', sub: 'Notes, events and cards rise to the centre.' },
+  poker: { title: 'Shuffle through time.', sub: 'Seven days, a month, six months, layer by layer.' },
+  deck: { title: 'Focus on one. Or spread them all.' },
+  lines: { title: 'Toss it around. It always comes back.' },
+  night: { title: 'One tap. Night falls everywhere.' },
+  ash: { title: 'One snap. Another language.', sub: 'Ten languages.' },
+  cloud: { title: "If it's in the cloud, it's on your desk.", sub: 'Sign in with Zepp and your records sync to this computer.' },
+  autosync: { title: 'You sleep. It syncs.', sub: 'Off, 15, 30 or 60 minutes.' },
+  devices: { title: 'Every watch you wear, recognised.', sub: 'Detected for you, and yours to correct.' },
+  local: { title: 'Your health data stays on your computer.', sub: 'It never passes through our servers.' },
+  metrics: { title: 'Every metric, at a glance.' },
+  focusAreas: { title: 'See what matters to you.' },
+  hourly: { title: 'Every hour, accounted for.' },
+  workout: { title: 'Every run echoes the last.', sub: 'Compared with your own runs of a similar distance.' },
+  blank: { title: 'Not measured? Left blank.', sub: 'Never made up.' },
+  events: { title: 'Every dip has a reason.', sub: 'Note a cold, a fever, a trip, so AI reads your life right.' },
+  subscription: { title: 'The AI you already pay for. Not a cent more.' },
+  prompt: { title: 'Ask it your way.' },
+  coach: { title: 'Copy. Paste back.', sub: 'The smartest coach is already at hand.' },
+  plan: { title: 'Your plan, your call.' },
+  formats: { title: 'Four formats. One click.', sub: 'JSON · CSV · GPX · FIT' },
+  settings: { title: 'Every detail, yours to set.' },
+  free: { title: 'Free · Open source · Windows / macOS / Linux' },
+  tryIt: { title: 'Try it before you download it.' },
+};
+
+const BY_LOCALE: Partial<Record<LandingLocale, Record<CaptionKey, Caption>>> = { zh, en };
+
+export const filmCaption = (locale: LandingLocale, key: CaptionKey): Caption => (BY_LOCALE[locale] ?? en)[key];

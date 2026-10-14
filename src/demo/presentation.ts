@@ -7,6 +7,8 @@ export interface DemoPresentation {
   escape(): void;
   pause(value: boolean): void;
   glass(value: boolean): void;
+  /** Slow every web animation in the frame (film speed ramps). JS-driven springs keep their own pace. */
+  rate(value: number): void;
 }
 declare global { interface Window { __ZB_PRESENTATION__?: DemoPresentation } }
 
@@ -21,6 +23,11 @@ export function installPresentation(router: Router) {
     }
   };
   const observer = new MutationObserver(freeze);
+  let rate = 1, rateLoop = 0;
+  const applyRate = () => {
+    for (const animation of document.getAnimations()) if (animation.playbackRate !== rate) animation.playbackRate = rate;
+    rateLoop = rate === 1 ? 0 : requestAnimationFrame(applyRate);
+  };
   const pointer = (el: Element, type: string, x: number, y: number) => {
     // Synthetic events have no browser pointer to capture. Scope the shim to this dispatch,
     // including capture-phase handlers on window; never patch the browser's prototype.
@@ -66,6 +73,11 @@ export function installPresentation(router: Router) {
       else { observer.disconnect(); frozen.forEach(animation => { if (animation.playState === 'paused') animation.play(); }); frozen.clear(); }
     },
     glass(value) { document.documentElement.classList.toggle('showcase-glass', value); },
+    rate(value) {
+      rate = value > 0 ? value : 1;
+      cancelAnimationFrame(rateLoop);
+      applyRate();
+    },
   };
   window.addEventListener('pagehide', () => { observer.disconnect(); frozen.clear(); }, { once: true });
 }

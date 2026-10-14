@@ -32,6 +32,7 @@ const SKIP_FILES = [
   'views/landing/copy.ts',
   'views/landing/journeyCopy.ts', // Typed ten-language website copy, selected by LandingLocale.
   'views/landing/reelCopy.ts', // Typed ten-language MotionReel controls.
+  'views/landing/film/copy.ts', // Film captions per LandingLocale; untranslated locales fall back to English.
   'demo/dialogueCopy.ts', // Typed ten-language demo dialogue strings.
 ];
 

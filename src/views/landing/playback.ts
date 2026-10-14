@@ -3,8 +3,15 @@ export class PlaybackClock {
   private paused = true;
   private disposed = false;
   private waiters = new Set<() => void>();
+  /** Playing time banked before the current run; `since` is when the current run started. */
+  private banked = 0;
+  private since = 0;
   constructor(readonly signal: AbortSignal) {}
+  /** Milliseconds actually played (paused time excluded). A film shot uses it to pad itself to its planned length. */
+  elapsed(): number { return this.banked + (this.paused ? 0 : performance.now() - this.since); }
   setPaused(value: boolean) {
+    if (value === this.paused) return;
+    if (value) this.banked += performance.now() - this.since; else this.since = performance.now();
     this.paused = value;
     if (!value) { this.waiters.forEach(wake => wake()); this.waiters.clear(); }
   }
