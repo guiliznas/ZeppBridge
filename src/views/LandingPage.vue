@@ -114,7 +114,7 @@ onBeforeUnmount(() => {
       </template>
       <SettingsBoard :journey="journey" :locale="locale" :p4="p4" />
       <InteractiveDemoSection :copy="t" :journey="journey" :locale="locale" @back="go('top')" />
-      <FinalCta :copy="t" :journey="journey" :windows="downloads.windows.value" :macos="downloads.macos.value" :linux="downloads.linux.value" :available="downloads.state.value === 'ready'" />
+      <FinalCta :copy="t" :journey="journey" :windows="downloads.windows.value" :macos="downloads.macos.value" :linux="downloads.linux.value" :available="downloads.state.value === 'ready'" :unreachable="downloads.state.value === 'fallback' && !downloads.notYet.value" />
     </main>
   </div>
 </template>

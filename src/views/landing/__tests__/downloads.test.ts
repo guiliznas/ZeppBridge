@@ -20,6 +20,13 @@ describe('website download recovery', () => {
     environment(); vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ...payload(), version }) }));
     const downloads = useDownloads(ref(COPY.en)); await downloads.load();
     expect(downloads.state.value).toBe('fallback');
+    expect(downloads.notYet.value).toBe(true);
+  });
+  it('a failing release endpoint is not "not released yet": the page links to GitHub Releases instead', async () => {
+    environment(); vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 502, json: async () => ({}) }));
+    const downloads = useDownloads(ref(COPY.en)); await downloads.load();
+    expect(downloads.state.value).toBe('fallback');
+    expect(downloads.notYet.value).toBe(false);
   });
   it('exposes explicit Windows/macOS installers and safely falls back without Linux assets', async () => {
     environment(); vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => payload() }));

@@ -5,6 +5,7 @@ import type { LandingCopy } from './types';
 
 export const GITHUB_URL = 'https://github.com/lingcang728/ZeppBridge';
 const RELEASE_URL = `${GITHUB_URL}/releases/latest`;
+export const RELEASES_URL = RELEASE_URL;
 const RELEASE_ENDPOINT = '/api/release';
 
 /** Mac 访客默认看到 macOS 按钮，其余一律 Windows；判断不出来就退回 Windows，另一个平台的入口始终在。 */
@@ -23,9 +24,11 @@ const isTrustedAssetUrl = (value: string): boolean => value.startsWith(`${GITHUB
 export const useDownloads = (t: Ref<LandingCopy>) => {
   const latest = ref<LatestRelease | null>(null);
   const state = ref<'loading' | 'ready' | 'fallback'>('loading');
+  /** 接口通了，但最新的正式版还不是 3.x：这才是「尚未发布」。读失败只是 fallback，按钮改去 GitHub Releases，不能说没发布。 */
+  const notYet = ref(false);
 
   const load = async () => {
-    state.value = 'loading'; latest.value = null;
+    state.value = 'loading'; latest.value = null; notYet.value = false;
     const abort = new AbortController();
     const timer = window.setTimeout(() => abort.abort(), 8000);
     try {
@@ -33,7 +36,7 @@ export const useDownloads = (t: Ref<LandingCopy>) => {
       if (!response.ok) throw new Error(`release endpoint returned ${response.status}`);
       const payload = await response.json() as LatestRelease;
       // This website presents v3. Never send visitors to an old v2 installer or a beta as a v3 release.
-      if (!/^3\.\d+\.\d+$/.test(payload.version)) throw new Error('v3 stable release is not available');
+      if (!/^3\.\d+\.\d+$/.test(payload.version)) { notYet.value = true; throw new Error('v3 stable release is not available'); }
       if (!isUsableReleasePayload(payload.downloads, isTrustedAssetUrl)) throw new Error('invalid asset set');
       latest.value = payload;
       state.value = 'ready';
@@ -77,5 +80,5 @@ export const useDownloads = (t: Ref<LandingCopy>) => {
 
   const windows = computed(() => ({ ...t.value.downloads.windows, href: assetFor('windows')?.url ?? RELEASE_URL }));
   const macos = computed(() => ({ ...t.value.downloads.macos, href: assetFor('macos')?.url ?? RELEASE_URL }));
-  return { load, primary, secondary, windows, macos, state, msiHref, linux, linuxIsPreview, statusText };
+  return { load, primary, secondary, windows, macos, state, notYet, msiHref, linux, linuxIsPreview, statusText };
 };
