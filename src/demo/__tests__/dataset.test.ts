@@ -16,7 +16,7 @@ describe('演示数据集', () => {
     const rows = demoDayStrip(data, 184, dayKey(NOW));
     const sleep = rows.find(r => r.category === 'sleep')!;
     expect(sleep.cells).toHaveLength(184);
-    expect(sleep.cells.at(-1)!.date).toBe(dayKey(NOW));
+    expect(sleep.cells[sleep.cells.length - 1]!.date).toBe(dayKey(NOW));
     expect(sleep.cells.slice(-30).some(c => c.has)).toBe(true);
   });
 
