@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
 import { COPY } from '../copy';
 import { GITHUB_URL, isMobileVisitor, useDownloads } from '../useDownloads';
+import { JOURNEY } from '../journeyCopy';
+import { downloadLeadFor } from '../release';
 
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 const payload = () => ({ version: '3.0.0', downloads: {
@@ -46,5 +48,15 @@ describe('website download recovery', () => {
     ['MacIntel','Safari',5,true], ['MacIntel','Safari',0,false], ['Linux armv8l','Android',1,true], ['iPhone','iPhone',1,true], ['Win32','Windows',0,false],
   ])('identifies mobile visitors %s/%s without treating iPad as desktop Mac', (platform,userAgent,maxTouchPoints,expected) => {
     vi.stubGlobal('navigator',{platform,userAgent,maxTouchPoints}); expect(isMobileVisitor()).toBe(expected);
+  });
+});
+
+describe('download lead once the release is out', () => {
+  it.each(Object.entries(JOURNEY))('%s drops the "not released yet" sentence when installers are available', (_locale, copy) => {
+    const lead = downloadLeadFor(copy.downloadLead, true);
+    expect(lead.length).toBeGreaterThan(0);
+    expect(lead.length).toBeLessThan(copy.downloadLead.length);
+    expect(lead).not.toMatch(/v3/);
+    expect(downloadLeadFor(copy.downloadLead, false)).toBe(copy.downloadLead);
   });
 });

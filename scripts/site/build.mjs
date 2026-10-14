@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { spawn, spawnSync } from 'node:child_process';
 import { createServer as createNetServer } from 'node:net';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
@@ -27,7 +27,5 @@ try {
 // 开场短片的配乐是合成出来的（和其他网站媒体一样放 .site-cache/media，不进 git）：缺了就现做一份，不下载任何东西。
 if (!existsSync(resolve(root, '.site-cache/media/film-score.m4a'))) await run(python, ['scripts/site/compose-score.py']);
 await run(node, ['node_modules/vite/bin/vite.js', 'build', '--mode', 'site']);
-mkdirSync(resolve(root, '.site-cache/site-dist'), { recursive: true });
-writeFileSync(resolve(root, '.site-cache/site-dist/robots.txt'), 'User-agent: *\nDisallow: /\n');
-writeFileSync(resolve(root, '.site-cache/site-dist/_headers'), '/*\n  X-Robots-Tag: noindex, nofollow\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n');
-console.log('Local website ready: .site-cache/site-dist (not deployed).');
+await run(node, ['scripts/site/finish-dist.mjs']);
+console.log('Local website ready: .site-cache/site-dist (not deployed; npm run site:deploy publishes it).');
