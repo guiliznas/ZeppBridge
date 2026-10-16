@@ -1,0 +1,30 @@
+[package]
+name = "zeppbridge-web"
+version = "0.1.0"
+description = "Serve o app do ZeppBridge num navegador, lendo a mesma biblioteca local que o desktop usa"
+edition = "2021"
+publish = false
+
+# Workspace próprio: este crate NÃO entra em `src-tauri/Cargo.toml`, então o build e o CI do desktop
+# não mudam. O core é consumido pelo caminho, do jeito que o CLI e o MCP consomem.
+[workspace]
+
+[[bin]]
+name = "zeppbridge-web"
+path = "src/main.rs"
+
+[dependencies]
+zeppbridge-core = { path = "../../src-tauri/crates/core" }
+axum = "0.7"
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+getrandom = "0.2"
+hex = "0.4"
+mime_guess = "2"
+directories = "5.0"
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
